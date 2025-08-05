@@ -1,2 +1,6 @@
 .vscode/
 **/build/
+
+**/*.sofa
+**/*.npy
+**/*.wav
