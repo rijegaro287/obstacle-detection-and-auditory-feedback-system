@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "image_capture_module.h"
-#include "image_capture_module.hpp"
+//#include "image_capture_module.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
