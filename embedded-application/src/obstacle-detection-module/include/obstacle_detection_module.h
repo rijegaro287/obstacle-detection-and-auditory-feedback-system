@@ -19,7 +19,7 @@ private:
     cv::Scalar lowerRed2_;
     cv::Scalar upperRed2_;
 
-    cv::Mat filterByColorDensity(const cv::Mat& mask, double minArea = 700.0, double minDensity = 0.85) const;
+    //cv::Mat filterByColorDensity(const cv::Mat& mask, double minArea = 700.0, double minDensity = 0.85) const;
     cv::Mat filterByDepth(const cv::Mat& mask, const cv::Mat& depthImage, float maxDepthThreshold = 1000.0f) const; // AJUSTAR!!!
 
 };

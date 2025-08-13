@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include "image_capture_module.h"
 #include "obstacle_detection_module.h"
 
 // Contructor: asigna los rangos de rojo para la detección
@@ -59,18 +59,37 @@ cv::Mat ObstacleDetectionModule::filterByDepth(const cv::Mat& mask, const cv::Ma
 }
 
 int main() {
-    std::cout << "Obstacle Detection Module - Starting..." << std::endl;
-    
-    // Initialize detection algorithms
-    std::cout << "Loading obstacle detection models..." << std::endl;
-    std::cout << "Initializing computer vision algorithms..." << std::endl;
-    
-    // Configure detection parameters
-    std::cout << "Setting detection thresholds..." << std::endl;
-    std::cout << "Configuring depth analysis..." << std::endl;
-    
-    // Start detection process
-    std::cout << "Obstacle detection module ready for real-time analysis." << std::endl;
-    
+    ImageCaptureModule capturemod;
+    ObstacleDetectionModule detmod;
+
+    // Inicializar ToF camera
+    if (!capturemod.initialize()) {
+        return -1;
+    }
+
+    // Capturar frames
+    while (true) {
+        // si la captura NO fue exitosa vuelve a intentarlo en la siguiente iteracion/captura
+        if (!capturemod.captureFrame()) {
+            continue;
+        }
+
+        cv::Mat img = capturemod.preprocessDepth(); // imagen preprocesada
+        if (!img.empty()) {
+            cv::Mat img_bgr;
+            cv::cvtColor(img, img_bgr, cv::COLOR_HSV2BGR);
+            cv::imshow("Preprocessed Depth Preview", img_bgr);
+
+            cv::Mat seg =detmod.segmentRed(img);
+            cv::Mat seg_bgr; 
+            cv::cvtColor(seg, seg_bgr, cv::COLOR_GRAY2BGR);
+            cv::imshow("Segmented red mask", seg_bgr);
+
+        }
+
+        int key = cv::waitKey(1);
+        if (key == 27 || key == 'q') break;
+    }
+
     return 0;
 }
