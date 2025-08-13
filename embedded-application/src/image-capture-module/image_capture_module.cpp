@@ -1,20 +1,149 @@
 #include <iostream>
 
 #include "image_capture_module.h"
+//#include "image_capture_module.hpp"
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+
+using namespace Arducam;
+
+#define MAX_DISTANCE 4000
+int max_range = 0;
+
+// Constructor: Inicializacion del modulo (frame=nullptr)
+ImageCaptureModule::ImageCaptureModule() : frame_(nullptr) {}
+
+// Destructor 
+ImageCaptureModule::~ImageCaptureModule() {
+    tof_.stop();
+    tof_.close();
+}
+
+// Metodo initialize: inicializar camara ToF
+bool ImageCaptureModule::initialize() {
+    if (tof_.open(Connection::CSI, 0)) {
+        std::cerr << "Failed to open camera" << std::endl;
+        return false;
+    }
+    if (tof_.start(FrameType::DEPTH_FRAME)) {
+        std::cerr << "Failed to start camera" << std::endl;
+        return false;
+    }
+    tof_.setControl(Control::RANGE, MAX_DISTANCE);
+    tof_.getControl(Control::RANGE, &max_range);
+
+    return true;
+}
+
+// Metodo captureFrame: captura imagenes
+bool ImageCaptureModule::captureFrame() {
+    frame_ = tof_.requestFrame(200); // capturar frame
+    if (!frame_) {
+        return false;
+    }
+
+    FrameFormat format;
+    frame_->getFormat(FrameType::DEPTH_FRAME, format);
+
+    float* depth_ptr = (float*)frame_->getData(FrameType::DEPTH_FRAME);
+    // verificar que se pudieron obtener los datos de profundidad
+    if (!depth_ptr) {
+        tof_.releaseFrame(frame_);
+        return false;
+    }
+
+    depth_frame_ = cv::Mat(format.height, format.width, CV_32F, depth_ptr).clone(); // imagen de profundidad en blanco y negro
+
+    // Ver la imagen de profundidad original
+    if (!depth_frame_.empty()) {
+        cv::Mat depth_vis;
+        depth_frame_.convertTo(depth_vis, CV_8U, 255.0 / 7000);
+        cv::applyColorMap(depth_vis, result_frame_, cv::COLORMAP_RAINBOW);
+        cv::imshow("Original Depth Frame", result_frame_);
+    }
+
+    tof_.releaseFrame(frame_); // liberar frame_
+    return !depth_frame_.empty(); // vacio = false, no vacio = true (success)
+}
+
+// Metodo preprocessDepth: preprocesamiento de la imagen
+cv::Mat ImageCaptureModule::preprocessDepth() {
+    if (depth_frame_.empty()) {
+        std::cerr << "[WARNING] La imagen de profundidad está vacía, no se puede preprocesar" << std::endl;
+        return cv::Mat();
+    }
+
+    // Clonar y limitar valores mayores a MAX_DISTANCE para reducir ruido en zonas lejanas
+    cv::Mat depth_clipped = depth_frame_.clone();
+    depth_clipped.setTo(MAX_DISTANCE, depth_clipped > MAX_DISTANCE);
+
+    // Normalización usando el máximo fijo
+    cv::Mat depth_normalized;
+    depth_clipped.convertTo(depth_normalized, CV_32F);
+    depth_normalized /= MAX_DISTANCE;   // Escala 0.0 a 1.0
+    depth_normalized = cv::min(depth_normalized, 1.0f);
+
+    // Convertir a 8 bits para visualización
+    cv::Mat depth_8u;
+    depth_normalized.convertTo(depth_8u, CV_8U, 255);
+
+    // Aplicar mapa de colores
+    cv::applyColorMap(depth_8u, result_frame_, cv::COLORMAP_RAINBOW);
+
+    // Convertir a HSV para filtrar brillo (canal V)
+    cv::Mat hsv_image;
+    cv::cvtColor(result_frame_, hsv_image, cv::COLOR_BGR2HSV);
+
+    std::vector<cv::Mat> hsv_channels;
+    cv::split(hsv_image, hsv_channels);
+
+    // Extraer canal V
+    cv::Mat& v_channel = hsv_channels[2];
+
+    // Si el tipo no es CV_8U, convertirlo
+    if (v_channel.type() != CV_8U) {
+        v_channel.convertTo(v_channel, CV_8U, 255.0);  // escala si es flotante normalizado
+    }
+
+    // Aplicar filtro bilateral
+    cv::Mat v_filtered;
+    cv::bilateralFilter(v_channel, v_filtered, 9, 75, 75);
+
+     // Combinar resultados
+    cv::merge(hsv_channels, hsv_image);
+    cv::cvtColor(hsv_image, result_frame_, cv::COLOR_HSV2BGR);
+
+    return result_frame_;
+}
 
 int main() {
-    std::cout << "Image Capture Module - Starting..." << std::endl;
-    
-    // Initialize camera system
-    std::cout << "Initializing camera device..." << std::endl;
-    
-    // Configure camera settings
-    std::cout << "Setting camera resolution and frame rate..." << std::endl;
-    std::cout << "Configuring image processing pipeline..." << std::endl;
-    
-    // Start image capture loop
-    std::cout << "Starting continuous image capture..." << std::endl;
-    std::cout << "Image capture module ready for obstacle detection." << std::endl;
-    
+    ImageCaptureModule capturemod;
+
+    // Inicializar ToF camera
+    if (!capturemod.initialize()) {
+        return -1;
+    }
+
+    // Capturar frames
+    while (true) {
+        // si la captura NO fue exitosa vuelve a intentarlo en la siguiente iteracion/captura
+        if (!capturemod.captureFrame()) {
+            continue;
+        }
+
+        cv::Mat img = capturemod.preprocessDepth(); // imagen preprocesada
+        if (!img.empty()) {
+            cv::imshow("Preprocessed Depth Preview", img);
+        }
+
+        int key = cv::waitKey(1);
+        if (key == 27 || key == 'q') break;
+    }
+
     return 0;
 }
+
+
+

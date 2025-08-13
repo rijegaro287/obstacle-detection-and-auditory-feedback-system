@@ -8,13 +8,26 @@ project(ImageCaptureModule)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+find_package(ArducamDepthCamera REQUIRED)
+
+set(CLIBS ArducamDepthCamera::ArducamDepthCamera4C)
+set(CXXLIBS ArducamDepthCamera::ArducamDepthCamera)
+
 # Define the module executable
 add_executable(image_capture_module image_capture_module.cpp)
 target_include_directories(image_capture_module PRIVATE include)
+target_link_libraries(image_capture_module PRIVATE ${CXXLIBS} ${OpenCV_LIBS})
 
 # Define the test executable
 add_executable(test_image_capture_module test/test_image_capture_module.cpp)
 target_include_directories(test_image_capture_module PRIVATE include)
+
+# Define preview depth executable
+add_executable(preview_depth preview_depth.cpp)
+target_link_libraries(preview_depth ${CXXLIBS} ${OpenCV_LIBS})
 
 # Enable testing for this module
 enable_testing()
