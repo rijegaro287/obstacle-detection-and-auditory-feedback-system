@@ -9,6 +9,9 @@
 
 using namespace Arducam;
 
+#define MAX_DISTANCE 4000
+int max_range = 0;
+
 // Constructor: Inicializacion del modulo (frame=nullptr)
 ImageCaptureModule::ImageCaptureModule() : frame_(nullptr) {}
 
@@ -28,6 +31,9 @@ bool ImageCaptureModule::initialize() {
         std::cerr << "Failed to start camera" << std::endl;
         return false;
     }
+    tof_.setControl(Control::RANGE, MAX_DISTANCE);
+    tof_.getControl(Control::RANGE, &max_range);
+
     return true;
 }
 
@@ -53,8 +59,9 @@ bool ImageCaptureModule::captureFrame() {
     // Ver la imagen de profundidad original
     if (!depth_frame_.empty()) {
         cv::Mat depth_vis;
-        depth_frame_.convertTo(depth_vis, CV_8U, 255.0 / 7000); // normalizar para visualización
-        cv::imshow("Original Depth Frame", depth_vis); // mostrar imagen original 
+        depth_frame_.convertTo(depth_vis, CV_8U, 255.0 / 7000);
+        cv::applyColorMap(depth_vis, result_frame_, cv::COLORMAP_RAINBOW);
+        cv::imshow("Original Depth Frame", result_frame_);
     }
 
     tof_.releaseFrame(frame_); // liberar frame_
@@ -63,32 +70,48 @@ bool ImageCaptureModule::captureFrame() {
 
 // Metodo preprocessDepth: preprocesamiento de la imagen
 cv::Mat ImageCaptureModule::preprocessDepth() {
-    //verificar si la imagen de profundidad esta vacia 
-    if (depth_frame_.empty()){
-        std::cerr << "[WARNING] La imagen de profundidad esta vacia, no se puede preprocesar" << std::endl;
-        return cv::Mat(); // retorna vacio
+    if (depth_frame_.empty()) {
+        std::cerr << "[WARNING] La imagen de profundidad está vacía, no se puede preprocesar" << std::endl;
+        return cv::Mat();
     }
-    // Normalizacion de la imagen de profundidad (a flotante 0.0 - 1.0)
-    cv::Mat depth_normalized;
-    cv::normalize(depth_frame_, depth_normalized, 0.0, 1.0, cv::NORM_MINMAX);
 
-    // Conversion a 8 bits para visualización
+    // Clonar y limitar valores mayores a MAX_DISTANCE para reducir ruido en zonas lejanas
+    cv::Mat depth_clipped = depth_frame_.clone();
+    depth_clipped.setTo(MAX_DISTANCE, depth_clipped > MAX_DISTANCE);
+
+    // Normalización usando el máximo fijo
+    cv::Mat depth_normalized;
+    depth_clipped.convertTo(depth_normalized, CV_32F);
+    depth_normalized /= MAX_DISTANCE;   // Escala 0.0 a 1.0
+    depth_normalized = cv::min(depth_normalized, 1.0f);
+
+    // Convertir a 8 bits para visualización
     cv::Mat depth_8u;
     depth_normalized.convertTo(depth_8u, CV_8U, 255);
 
-    // Mapa de colores (JET)
-    cv::applyColorMap(depth_8u, result_frame_, cv::COLORMAP_JET);
+    // Aplicar mapa de colores
+    cv::applyColorMap(depth_8u, result_frame_, cv::COLORMAP_RAINBOW);
 
-    // Convertir de BGR a HSV
+    // Convertir a HSV para filtrar brillo (canal V)
     cv::Mat hsv_image;
     cv::cvtColor(result_frame_, hsv_image, cv::COLOR_BGR2HSV);
 
-    // Filtro de mediana al canal de brillo (V) para reducir ruido
     std::vector<cv::Mat> hsv_channels;
     cv::split(hsv_image, hsv_channels);
-    cv::medianBlur(hsv_channels[2], hsv_channels[2], 5);  // filtro a canal V
 
-    // Unir resultados
+    // Extraer canal V
+    cv::Mat& v_channel = hsv_channels[2];
+
+    // Si el tipo no es CV_8U, convertirlo
+    if (v_channel.type() != CV_8U) {
+        v_channel.convertTo(v_channel, CV_8U, 255.0);  // escala si es flotante normalizado
+    }
+
+    // Aplicar filtro bilateral
+    cv::Mat v_filtered;
+    cv::bilateralFilter(v_channel, v_filtered, 9, 75, 75);
+
+     // Combinar resultados
     cv::merge(hsv_channels, hsv_image);
     cv::cvtColor(hsv_image, result_frame_, cv::COLOR_HSV2BGR);
 
@@ -102,8 +125,6 @@ int main() {
     if (!capturemod.initialize()) {
         return -1;
     }
-
-    cv::namedWindow("Depth Preview", cv::WINDOW_AUTOSIZE);
 
     // Capturar frames
     while (true) {

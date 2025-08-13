@@ -1,30 +1,29 @@
 #!/bin/sh
-# compile script para solo preview_depth.cpp
+# compile script para preview_depth.cpp y image_capture_module.cpp
 
 workpath=$(cd "$(dirname "$0")" && pwd)
 builddir="$workpath/build"
 
-echo "workpath: $workpath"
+echo "Cleaning old build..."
+rm -rf "$builddir"
 
-# Crear carpeta build si no existe
 mkdir -p "$builddir"
 
-# Generar archivos de build con cmake, indicando el source dir
 if ! cmake -B "$builddir" -S "$workpath"; then
     echo "== CMake failed"
     exit 1
 fi
 
-# Construir solo el target preview_depth
-if cmake --build "$builddir" --config Release --target preview_depth -j4; then
+# Construir ambos targets
+if cmake --build "$builddir" --config Release --target preview_depth --target image_capture_module -j4; then
     echo "== Build success"
     echo "== Run $builddir/preview_depth"
+    echo "== Run $builddir/image_capture_module"
 else
     echo "== Build failed"
     exit 1
 fi
 
-# Ejecutar pruebas si existen
 if command -v ctest >/dev/null 2>&1; then
     ctest --output-on-failure -V
 else

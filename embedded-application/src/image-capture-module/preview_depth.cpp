@@ -155,8 +155,8 @@ int main()
         cv::applyColorMap(result_frame, result_frame, cv::COLORMAP_RAINBOW);
         getPreviewRGB(result_frame, confidence_frame);
 
-        //confidence_frame.convertTo(confidence_frame, CV_8U, 255.0 / 1024, 0);
-        //cv::imshow("confidence", confidence_frame);
+        confidence_frame.convertTo(confidence_frame, CV_8U, 255.0 / 1024, 0);
+        cv::imshow("confidence", confidence_frame);
 
         cv::rectangle(result_frame, seletRect, cv::Scalar(0, 0, 0), 2);
         cv::rectangle(result_frame, followRect, cv::Scalar(255, 255, 255), 1);
