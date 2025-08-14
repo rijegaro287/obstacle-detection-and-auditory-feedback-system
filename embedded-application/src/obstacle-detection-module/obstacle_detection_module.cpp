@@ -9,21 +9,28 @@ ObstacleDetectionModule::ObstacleDetectionModule():
       upperRed1_(10, 255, 255),
       // Rango 2 – Tonos (H) del 160 al 180, para todas las saturaciones (S) y brillos (V)
       lowerRed2_(160, 0, 0),
-      upperRed2_(180, 255, 255)
+      upperRed2_(180, 255, 255),
+      // Rango 3 - Naranja
+      lowerOrange_(11, 0, 0),
+      upperOrange_(25, 255, 255)
 {}
 
 // Método segmentRed: segmenta los rangos de rojo en las imagenes usando una mascara de color
 cv::Mat ObstacleDetectionModule::segmentRed(const cv::Mat& image) const { //imagen en HSV
-    cv::Mat mask1, mask2, redMask;
+    cv::Mat mask1, mask2, mask3, redOrangeMask;
 
     // Crear máscaras para cada rango
     cv::inRange(image, lowerRed1_, upperRed1_, mask1);
     cv::inRange(image, lowerRed2_, upperRed2_, mask2);
 
-    // Combinar las dos máscaras
-    cv::bitwise_or(mask1, mask2, redMask);
+    // Naranja
+    cv::inRange(image, lowerOrange_, upperOrange_, mask3);
 
-    return redMask;
+    // Combinar todo
+    cv::bitwise_or(mask1, mask2, redOrangeMask);
+    cv::bitwise_or(redOrangeMask, mask3, redOrangeMask);
+
+    return redOrangeMask;
 }
 
 // Método filterByDepth: verifica que el obstáculo encontrado tenga valores de profundidad coherentes (control FP)
