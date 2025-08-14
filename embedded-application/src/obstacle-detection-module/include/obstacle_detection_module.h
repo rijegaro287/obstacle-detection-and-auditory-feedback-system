@@ -11,8 +11,8 @@ public:
 
     // Segmenta el color rojo usando los rangos privados
     cv::Mat segmentRed(const cv::Mat& image) const;
-    cv::Mat filterByDepth(const cv::Mat& mask, const cv::Mat& depthImage, float maxDepthThreshold = 3000.0f) const; // AJUSTAR!!!
-    cv::Mat filterByColorDensity(const cv::Mat& mask, double minArea = 700.0, double minDensity = 0.85) const;
+    cv::Mat filterByDepth(const cv::Mat& mask, const cv::Mat& depthImage, float maxDepthThreshold = 2000.0f) const; // AJUSTAR!!!
+    cv::Mat filterByColorDensity(const cv::Mat& mask, double minArea = 700.0, double minDensity = 0.95) const;
 
 private:
     // Rangos HSV para rojo (dos rangos para cubrir todo el rojo)
