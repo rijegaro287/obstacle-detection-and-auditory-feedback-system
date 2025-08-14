@@ -74,16 +74,23 @@ int main() {
             continue;
         }
 
-        cv::Mat img = capturemod.preprocessDepth(); // imagen preprocesada
+        auto [depth_og, img] = capturemod.preprocessDepth(); // imagen preprocesada y de profundidad
         if (!img.empty()) {
             cv::Mat img_bgr;
             cv::cvtColor(img, img_bgr, cv::COLOR_HSV2BGR);
             cv::imshow("Preprocessed Depth Preview", img_bgr);
-
-            cv::Mat seg =detmod.segmentRed(img);
+            
+            // Aplicar segmentar rojo
+            cv::Mat seg = detmod.segmentRed(img);
             cv::Mat seg_bgr; 
             cv::cvtColor(seg, seg_bgr, cv::COLOR_GRAY2BGR);
-            cv::imshow("Segmented red mask", seg_bgr);
+            //cv::imshow("Segmented red mask", seg_bgr);
+
+            // Aplicar filtrado por profundidad
+            cv::Mat depth = detmod.filterByDepth(seg, depth_og);
+            cv::Mat depth_bgr; 
+            cv::cvtColor(depth, depth_bgr, cv::COLOR_GRAY2BGR);
+            cv::imshow("Filtered by depth", depth_bgr);
 
         }
 
