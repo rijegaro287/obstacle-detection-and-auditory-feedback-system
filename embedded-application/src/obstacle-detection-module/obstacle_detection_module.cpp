@@ -58,6 +58,46 @@ cv::Mat ObstacleDetectionModule::filterByDepth(const cv::Mat& mask, const cv::Ma
     return filteredMask;
 }
 
+// Metodo filterByColorDensity: descarta las areas muy pequeños o con poca densidad de color (control FP)
+// mask: máscara binaria
+// minArea: tamaño minimo del area de un obstaculo
+// minDensity: densidad minima de color en el area de un obstaculo 
+
+cv::Mat ObstacleDetectionModule::filterByColorDensity(const cv::Mat& mask, double minArea, double minDensity) const {
+    // Extracción de contornos de los obstáculos en la máscara para analizar la densidad por región
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    cv::Mat solidMask = cv::Mat::zeros(mask.size(), CV_8UC1); //inicializacion del resultado
+
+    for (const auto& contour : contours) {
+        double area = cv::contourArea(contour);
+        if (area < minArea) {
+            continue; // Ignorar objetos muy pequeños
+        }
+
+        // extraer la region para analisis de densidad
+        cv::Mat contourMask = cv::Mat::zeros(mask.size(), CV_8UC1);
+        cv::drawContours(contourMask, std::vector<std::vector<cv::Point>>{contour}, -1, cv::Scalar(255), cv::FILLED);
+
+        double colorPixels = cv::countNonZero(mask & contourMask); // separar area de interes de la mascara, deja solo los pixeles de interes (AND)
+        double totalPixels = cv::countNonZero(contourMask); // total de pixeles que comprenden la region de interes
+        double colorDensity = colorPixels / totalPixels; //densidad de color de la region de interes
+
+        if (colorDensity < minDensity) {
+            continue;
+        }
+        solidMask |= contourMask;
+    }
+
+    // Mejorar la segmentación con morfología: reduce el ruido y rellena huecos
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    cv::dilate(solidMask, solidMask, kernel, cv::Point(-1,-1), 1);
+    cv::erode(solidMask, solidMask, kernel, cv::Point(-1,-1), 1);
+
+    return solidMask;
+}
+
 int main() {
     ImageCaptureModule capturemod;
     ObstacleDetectionModule detmod;
@@ -91,6 +131,11 @@ int main() {
             cv::Mat depth_bgr; 
             cv::cvtColor(depth, depth_bgr, cv::COLOR_GRAY2BGR);
             cv::imshow("Filtered by depth", depth_bgr);
+
+            cv::Mat solid = detmod.filterByColorDensity(depth);
+            cv::Mat solid_bgr; 
+            cv::cvtColor(solid, solid_bgr, cv::COLOR_GRAY2BGR);
+            cv::imshow("Filtered by density", solid_bgr);
 
         }
 
