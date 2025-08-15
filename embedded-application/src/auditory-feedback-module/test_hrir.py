@@ -4,8 +4,9 @@ import soundfile as sf
 from scipy import signal
 
 audio = sf.read('./tap_alert.wav')[0]
-hrirs = np.load('./hrirs.npy')
-positions = np.load('./positions.npy')
+
+hrirs = np.load('./dataset/hrirs.npy')
+positions = np.load('./dataset/positions.npy')
 
 print('=' * 75)
 print(f"HRIRs shape: {hrirs.shape}")
