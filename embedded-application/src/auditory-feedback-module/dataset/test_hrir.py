@@ -3,8 +3,7 @@ import numpy as np
 import soundfile as sf
 from scipy import signal
 
-audio = sf.read('./pink_noise.wav')[0]
-
+audio = sf.read('./tap_alert.wav')[0]
 hrirs = np.load('./hrirs.npy')
 positions = np.load('./positions.npy')
 
@@ -14,11 +13,11 @@ print(f"Positions shape: {positions.shape}")
 print('=' * 75)
 
 fs = 48000
-duration_s = 10
+audio_samples = audio.shape[0]
+n_filters = 10
 
-rend = np.zeros((fs*duration_s, 2), dtype=np.float64)
-n_samples = fs
-for i in range(duration_s):
+rend = np.zeros((n_filters * audio_samples, 2), dtype=np.float64)
+for i in range(n_filters):
     sample_idx = np.random.randint(0, len(positions))
     
     position = positions[sample_idx]
@@ -31,11 +30,11 @@ for i in range(duration_s):
     H[:, 0] = hrir[:, 0]
     H[:, 1] = hrir[:, 1]
 
-    audio_start = int(i * n_samples)
-    audio_end = int((i + 1) * n_samples)
+    audio_start = int(i * audio_samples)
+    audio_end = int((i + 1) * audio_samples)
 
-    rend_L = signal.fftconvolve(audio[audio_start:audio_end], H[:, 0], mode='same')
-    rend_R = signal.fftconvolve(audio[audio_start:audio_end], H[:, 1], mode='same')
+    rend_L = signal.fftconvolve(audio, H[:, 0], mode='same')
+    rend_R = signal.fftconvolve(audio, H[:, 1], mode='same')
 
     rend_L /= np.max(np.abs(rend_L))
     rend_R /= np.max(np.abs(rend_R))
