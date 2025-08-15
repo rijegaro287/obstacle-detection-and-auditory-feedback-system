@@ -22,7 +22,7 @@ add_executable(auditory_feedback_module
   auditory_feedback_module.cpp
 )
 target_include_directories(auditory_feedback_module PRIVATE include)
-target_link_libraries(auditory_feedback_module PRIVATE kfr)
+target_link_libraries(auditory_feedback_module PRIVATE kfr kfr_dsp)
 
 # Define the test executable
 add_executable(test_auditory_feedback_module 
