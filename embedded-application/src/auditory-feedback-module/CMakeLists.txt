@@ -14,15 +14,15 @@ FetchContent_Declare(kfr
 FetchContent_MakeAvailable(kfr)
 
 # AddressSanitizer configuration
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
-set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
+# set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Define the module executable
 add_executable(auditory_feedback_module 
   auditory_feedback_module.cpp
 )
 target_include_directories(auditory_feedback_module PRIVATE include)
-target_link_libraries(auditory_feedback_module PRIVATE kfr kfr_dsp)
+target_link_libraries(auditory_feedback_module PRIVATE kfr kfr_dsp kfr_io)
 
 # Define the test executable
 add_executable(test_auditory_feedback_module 

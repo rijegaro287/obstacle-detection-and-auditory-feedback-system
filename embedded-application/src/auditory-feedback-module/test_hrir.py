@@ -8,8 +8,6 @@ audio = sf.read('./tap_alert.wav', dtype='float64')[0]
 hrirs = np.load('./dataset/hrirs.npy').astype(np.float64)
 positions = np.load('./dataset/positions.npy').astype(np.float64)
 
-
-
 print('=' * 75)
 print(f"HRIRs shape: {hrirs.shape}")
 print(f"Positions shape: {positions.shape}")
