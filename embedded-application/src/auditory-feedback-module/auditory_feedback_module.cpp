@@ -1,18 +1,20 @@
 #include <iostream>
-
 #include "auditory_feedback_module.h"
 
+using namespace std;
+using namespace npy;
+using namespace kfr;
+
 int main() {
-    std::cout << "Auditory Feedback Module - Starting..." << std::endl;
-    
-    // Initialize auditory feedback system
-    std::cout << "Initializing audio output system..." << std::endl;
-    
-    // Example: Generate audio feedback for detected obstacles
-    std::cout << "Auditory feedback module ready for obstacle notifications." << std::endl;
-    
-    // Main loop would go here for continuous audio feedback
-    std::cout << "Press Ctrl+C to exit." << std::endl;
-    
+    npy_data audio = read_npy<double>("./tap_alert.npy");
+    npy_data hrirs = read_npy<double>("./dataset/hrirs.npy");
+    npy_data positions = read_npy<double>("./dataset/positions.npy");
+
+    tensor<double, 2> audio_tensor = {};
+
+    printf("oela    %zu\n", audio.data.size());
+    printf("hrirs   %zu\n", hrirs.data.size());
+    printf("positions %zu\n", positions.data.size());
+
     return 0;
 }

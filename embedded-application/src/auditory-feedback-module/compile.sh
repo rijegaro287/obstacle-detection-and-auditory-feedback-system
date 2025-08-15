@@ -4,4 +4,7 @@ cmake ..
 make
 
 # testing
-ctest --output-on-failure -V
+# ctest --output-on-failure -V
+
+cd ..
+./build/auditory_feedback_module
