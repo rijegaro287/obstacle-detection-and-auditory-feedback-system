@@ -10,7 +10,7 @@ auditory_feedback_module& auditory_feedback_module::get_instance() {
 auditory_feedback_module::auditory_feedback_module() {
 	this->init_tap_signal();
 	this->init_hrir_tensor();
-	this->init_position_tensor();
+	this->init_position_tree();
 }
 
 void auditory_feedback_module::init_tap_signal() {
@@ -30,13 +30,15 @@ void auditory_feedback_module::init_hrir_tensor() {
 	}
 }
 
-void auditory_feedback_module::init_position_tensor() {
-	this->position_tensor = tensor<double, 2>({HRIR_N_SAMPLES, POSITION_N_CHANNELS});
+void auditory_feedback_module::init_position_tree() {
 	npy_data positions = read_npy<double>(POSITION_PATH);
 	for (size_t i = 0; i < HRIR_N_SAMPLES; i++) {
-		for (size_t j = 0; j < POSITION_N_CHANNELS; j++) {
-			position_tensor(i, j) = positions.data[i * POSITION_N_CHANNELS + j];
-		}
+		uint64_t sample_addr = i * POSITION_N_CHANNELS;
+		float azimuth = positions.data[sample_addr + AZIMUTH_POSITION];
+		float elevation = positions.data[sample_addr + ELEVATION_POSITION];
+		float distance = positions.data[sample_addr + DISTANCE_POSITION];
+
+		this->position_tree.insert(i, {azimuth, elevation, distance});
 	}
 }
 
@@ -66,54 +68,51 @@ void auditory_feedback_module::generate_feedback(uint64_t sample_idx) {
 	filter_l.apply(output_l, this->tap_signal);
 	filter_r.apply(output_r, this->tap_signal);
 
-	// npy_data<double> output_l_npy;
-	// npy_data<double> output_r_npy;
+	npy_data<double> output_l_npy;
+	npy_data<double> output_r_npy;
 	
-	// vector<double> rend_l(this->tap_signal.size());
-	// vector<double> rend_r(this->tap_signal.size());
-	// for (size_t i = 0; i < this->tap_signal.size(); i++) {
-	// 	rend_l[i] = output_l[i];
-	// 	rend_r[i] = output_r[i];
-	// }
+	vector<double> rend_l(this->tap_signal.size());
+	vector<double> rend_r(this->tap_signal.size());
+	for (size_t i = 0; i < this->tap_signal.size(); i++) {
+		rend_l[i] = output_l[i];
+		rend_r[i] = output_r[i];
+	}
 
-	// output_l_npy.data = rend_l;
-	// output_r_npy.data = rend_r;
+	output_l_npy.data = rend_l;
+	output_r_npy.data = rend_r;
 	
-	// output_l_npy.shape = {this->tap_signal.size()};
-	// output_r_npy.shape = {this->tap_signal.size()};
+	output_l_npy.shape = {this->tap_signal.size()};
+	output_r_npy.shape = {this->tap_signal.size()};
 
-	// write_npy("./output_l.npy", output_l_npy);
-	// write_npy("./output_r.npy", output_r_npy);
+	write_npy("./output_l.npy", output_l_npy);
+	write_npy("./output_r.npy", output_r_npy);
 }
 
 void auditory_feedback_module::start() {
-	uint64_t pos_sample_idx = 3919;
-
-	float azimuth = this->position_tensor(pos_sample_idx, AZIMUTH_POSITION);
-	float elevation = this->position_tensor(pos_sample_idx, ELEVATION_POSITION);
-	float distance = this->position_tensor(pos_sample_idx, DISTANCE_POSITION);
+	float azimuth = 0.0f;
+	float elevation = 10.0f;
+	float distance = 0.5f;
 
 	printf("Azimuth: %f, Elevation: %f, Distance: %f\n", azimuth, elevation, distance);
 
-	uint64_t sample_idx = this->find_hrir_sample(azimuth, elevation, distance);
-	// this->generate_feedback(sample_idx);
-	this->generate_feedback(pos_sample_idx);
+	uint64_t sample_idx = this->position_tree.find_nearest({azimuth, elevation, distance});
+	this->generate_feedback(sample_idx);
 }
 
 int main() {
-	// auditory_feedback_module& feedback_module = auditory_feedback_module::get_instance();
-	// feedback_module.start();
+	auditory_feedback_module& feedback_module = auditory_feedback_module::get_instance();
+	feedback_module.start();
 
-	kd_tree<3> kd_tree;
-	kd_tree.insert(0, {0.0, 0.0, 0.0});
-	kd_tree.insert(1, {1.0, 1.0, 1.0});
-	kd_tree.insert(2, {2.0, 2.0, 2.0});
-	kd_tree.insert(3, {3.0, 3.0, 3.0});
-	kd_tree.insert(4, {4.0, 4.0, 4.0});
+	// kd_tree<3> kd_tree;
+	// kd_tree.insert(0, {0.0, 0.0, 0.0});
+	// kd_tree.insert(1, {1.0, 1.0, 1.0});
+	// kd_tree.insert(2, {2.0, 2.0, 2.0});
+	// kd_tree.insert(3, {3.0, 3.0, 3.0});
+	// kd_tree.insert(4, {4.0, 4.0, 4.0});
 
-	array<double, 3> target = {3.4, 0.21, 2.0};
-	uint64_t nearest = kd_tree.find_nearest(target);
-	cout << "Nearest neighbor index: " << nearest << endl;
+	// array<double, 3> target = {3.4, 0.21, 2.0};
+	// uint64_t nearest = kd_tree.find_nearest(target);
+	// cout << "Nearest neighbor index: " << nearest << endl;
 
 	return 0;
 }

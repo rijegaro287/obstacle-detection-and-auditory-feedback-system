@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cmath>
 
+#include <iostream>
+
 using namespace std;
 
 template <uint8_t K>

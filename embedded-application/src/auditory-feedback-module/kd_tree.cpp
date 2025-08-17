@@ -49,6 +49,9 @@ typename kd_tree<K>::Node* kd_tree<K>::find_nearest_recursive(Node* node, Node*&
     find_nearest_recursive(other_node, best, target, depth + 1);
   }
 
+  printf("Best match found at index: %llu\n", best->idx);
+  printf("Best match coordinates: (%f, %f, %f)\n", best->point[0], best->point[1], best->point[2]);
+
   return best;
 }
 

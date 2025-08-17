@@ -45,14 +45,14 @@ public:
 private:
   univector<double, TAP_N_SAMPLES> tap_signal;
   tensor<double, 3> hrir_tensor;
-  tensor<double, 2> position_tensor;
+  kd_tree<3> position_tree;
   
   auditory_feedback_module();
   ~auditory_feedback_module() = default;
 
   void init_tap_signal();
   void init_hrir_tensor();
-  void init_position_tensor();
+  void init_position_tree();
   univector<double, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
   
   uint64_t find_hrir_sample(float azimuth, float elevation, float distance);
