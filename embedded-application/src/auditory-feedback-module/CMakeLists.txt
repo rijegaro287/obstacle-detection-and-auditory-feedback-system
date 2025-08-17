@@ -20,13 +20,15 @@ FetchContent_MakeAvailable(kfr)
 # Define the module executable
 add_executable(auditory_feedback_module 
   auditory_feedback_module.cpp
+  kd_tree.cpp
 )
 target_include_directories(auditory_feedback_module PRIVATE include)
-target_link_libraries(auditory_feedback_module PRIVATE kfr kfr_dsp kfr_io)
+target_link_libraries(auditory_feedback_module PRIVATE kfr kfr_dsp)
 
 # Define the test executable
 add_executable(test_auditory_feedback_module 
-test/test_auditory_feedback_module.cpp
+  test/test_auditory_feedback_module.cpp
+  kd_tree.cpp
 )
 target_include_directories(test_auditory_feedback_module PRIVATE include)
 target_link_libraries(test_auditory_feedback_module PRIVATE kfr)
