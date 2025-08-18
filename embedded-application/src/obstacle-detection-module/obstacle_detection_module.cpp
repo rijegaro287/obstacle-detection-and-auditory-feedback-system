@@ -105,6 +105,37 @@ cv::Mat ObstacleDetectionModule::filterByColorDensity(const cv::Mat& mask, doubl
     return solidMask;
 }
 
+// Método divideComponents para separar y visualizar componentes conectados
+cv::Mat ObstacleDetectionModule::divideComponents(const cv::Mat& mask) const{
+    // Aplicar connected components a la máscara 
+    cv::Mat labels, stats, centroids;
+    int numComponents = cv::connectedComponentsWithStats(binaryMask, labels, stats, centroids);
+
+    // Inicializar imagen de salida en color
+    cv::Mat output(binaryMask.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+
+    // Colores aleatorios para cada componente
+    cv::RNG rng(12345);
+    std::vector<cv::Vec3b> colors(numComponents);
+    colors[0] = cv::Vec3b(0, 0, 0); // Fondo = negro
+    for (int i = 1; i < numComponents; i++) {
+        colors[i] = cv::Vec3b(rng.uniform(0, 255),
+                              rng.uniform(0, 255),
+                              rng.uniform(0, 255));
+    }
+
+    // Asignar color según etiqueta
+    for (int y = 0; y < labels.rows; y++) {
+        for (int x = 0; x < labels.cols; x++) {
+            int label = labels.at<int>(y, x);
+            output.at<cv::Vec3b>(y, x) = colors[label];
+        }
+    }
+
+    return output;
+}
+
+
 int main() {
     ImageCaptureModule capturemod;
     ObstacleDetectionModule detmod;
@@ -137,12 +168,16 @@ int main() {
             cv::Mat depth = detmod.filterByDepth(seg, depth_og);
             cv::Mat depth_bgr; 
             cv::cvtColor(depth, depth_bgr, cv::COLOR_GRAY2BGR);
-            cv::imshow("Filtered by depth", depth_bgr);
+            //cv::imshow("Filtered by depth", depth_bgr);
 
             cv::Mat solid = detmod.filterByColorDensity(depth);
             cv::Mat solid_bgr; 
             cv::cvtColor(solid, solid_bgr, cv::COLOR_GRAY2BGR);
             cv::imshow("Filtered by density", solid_bgr);
+
+            cv::Mat componentes = detmod.divideComponents(solid);
+            cv::imshow("Componentes Detectados", componentes);
+            //cv::waitKey(0);
 
         }
 
