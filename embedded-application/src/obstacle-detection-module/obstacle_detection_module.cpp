@@ -69,6 +69,7 @@ cv::Mat ObstacleDetectionModule::filterByDepth(const cv::Mat& mask, const cv::Ma
 // mask: máscara binaria
 // minArea: tamaño minimo del area de un obstaculo
 // minDensity: densidad minima de color en el area de un obstaculo 
+
 cv::Mat ObstacleDetectionModule::filterByColorDensity(const cv::Mat& mask, double minArea, double minDensity) const {
     // Extracción de contornos de los obstáculos en la máscara para analizar la densidad por región
     std::vector<std::vector<cv::Point>> contours;
@@ -146,6 +147,78 @@ ObstacleDetectionModule::Components ObstacleDetectionModule::divideComponents(co
     return comp;
 }
 
+
+// Metodo selectObstacle: selecciona el obstaculo mas importante bajo un criterio matematico 
+ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
+        const cv::Mat& labels,
+        const cv::Mat& stats,
+        const cv::Mat& centroids,
+        const cv::Mat& depthMap,
+        double areaWeight) const 
+{
+    Obstacle mainObstacle{0, 0, 0, -1.0, cv::Point(-1, -1)};
+    int numComponents = stats.rows;
+
+    for (int i = 1; i < numComponents; i++) { // 0 = fondo
+        int area = stats.at<int>(i, cv::CC_STAT_AREA);
+        if (area <= 0) continue;
+
+        // bounding box
+        int x = stats.at<int>(i, cv::CC_STAT_LEFT);
+        int y = stats.at<int>(i, cv::CC_STAT_TOP);
+        int w = stats.at<int>(i, cv::CC_STAT_WIDTH);
+        int h = stats.at<int>(i, cv::CC_STAT_HEIGHT);
+
+        // promedio de profundidad
+        double sumDepth = 0.0;
+        int count = 0;
+        for (int yy = y; yy < y + h; yy++) {
+            for (int xx = x; xx < x + w; xx++) {
+                if (labels.at<int>(yy, xx) == i) {
+                    float d = depthMap.at<float>(yy, xx);
+                    if (d > 0) {
+                        sumDepth += d;
+                        count++;
+                    }
+                }
+            }
+        }
+        if (count == 0) continue;
+        
+        double meanDepth = sumDepth / count;
+        
+        // aplicar criterio: area^peso + promedio
+        double score = std::pow(area, areaWeight) + meanDepth;
+
+        if (score > mainObstacle.score) {
+            mainObstacle.id = i;
+            mainObstacle.area = area;
+            mainObstacle.meanDepth = meanDepth;
+            mainObstacle.score = score;
+            mainObstacle.centroid = cv::Point(
+                static_cast<int>(centroids.at<double>(i,0)),
+                static_cast<int>(centroids.at<double>(i,1))
+            );
+        }
+    }
+    
+    // dibujar mascara del obstaculo seleccionado como main
+    if (mainObstacle.id > 0) {  // si se selecciona un obstaculo valido
+        mainObstacle.image = cv::Mat::zeros(labels.size(), CV_8UC1); // mascara vacia
+        for (int y = 0; y < labels.rows; y++) {
+            for (int x = 0; x < labels.cols; x++) {
+                if (labels.at<int>(y,x) == mainObstacle.id) {
+                    mainObstacle.image.at<uchar>(y,x) = 255; // pixeles del obstaculo
+                }
+            }
+        }
+    }
+
+    return mainObstacle;
+}
+
+
+
 int main() {
     ImageCaptureModule capturemod;
     ObstacleDetectionModule detmod;
@@ -183,11 +256,15 @@ int main() {
             cv::Mat solid = detmod.filterByColorDensity(depth);
             cv::Mat solid_bgr; 
             cv::cvtColor(solid, solid_bgr, cv::COLOR_GRAY2BGR);
-            cv::imshow("Filtered by density", solid_bgr);
+            //cv::imshow("Filtered by density", solid_bgr);
 
             ObstacleDetectionModule::Components components = detmod.divideComponents(solid);
             cv::imshow("Componentes Detectados", components.image);
             //cv::waitKey(0);
+            
+            ObstacleDetectionModule::Obstacle obs = detmod.selectObstacle(components.labels, components.stats, components.centroids, depth_og);
+            cv::imshow("Obstaculo seleccionado", obs.image);
+            
 
         }
 
