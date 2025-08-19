@@ -69,7 +69,6 @@ cv::Mat ObstacleDetectionModule::filterByDepth(const cv::Mat& mask, const cv::Ma
 // mask: máscara binaria
 // minArea: tamaño minimo del area de un obstaculo
 // minDensity: densidad minima de color en el area de un obstaculo 
-
 cv::Mat ObstacleDetectionModule::filterByColorDensity(const cv::Mat& mask, double minArea, double minDensity) const {
     // Extracción de contornos de los obstáculos en la máscara para analizar la densidad por región
     std::vector<std::vector<cv::Point>> contours;
@@ -106,10 +105,12 @@ cv::Mat ObstacleDetectionModule::filterByColorDensity(const cv::Mat& mask, doubl
 }
 
 // Método divideComponents: Separar y visualizar componentes conectados
-cv::Mat ObstacleDetectionModule::divideComponents(const cv::Mat& mask) const {
+ObstacleDetectionModule::Components ObstacleDetectionModule::divideComponents(const cv::Mat& mask) const {
+    Components comp;
+
     if (mask.empty()) {
         std::cerr << "[ERROR] La máscara está vacía" << std::endl;
-        return cv::Mat();
+        return comp;
     }
 
     // Aplicar morfología para separar componentes cercanos
@@ -119,11 +120,10 @@ cv::Mat ObstacleDetectionModule::divideComponents(const cv::Mat& mask) const {
     cv::morphologyEx(mask, maskProcessed, cv::MORPH_OPEN, kernel);
 
     // Detectar componentes conectados
-    cv::Mat labels, stats, centroids;
-    int numComponents = cv::connectedComponentsWithStats(maskProcessed, labels, stats, centroids, 4); // 4-connectivity más selectiva
+    int numComponents = cv::connectedComponentsWithStats(maskProcessed, comp.labels, comp.stats, comp.centroids, 4); // 4-connectivity más selectiva
 
     // Crear imagen de salida en color
-    cv::Mat output(mask.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+    comp.image = cv::Mat(mask.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 
     // Colores aleatorios para cada componente
     cv::RNG rng(12345);
@@ -136,16 +136,15 @@ cv::Mat ObstacleDetectionModule::divideComponents(const cv::Mat& mask) const {
     }
 
     // Asignar colores según etiqueta
-    for (int y = 0; y < labels.rows; y++) {
-        for (int x = 0; x < labels.cols; x++) {
-            int label = labels.at<int>(y, x);
-            output.at<cv::Vec3b>(y, x) = colors[label];
+    for (int y = 0; y < comp.labels.rows; y++) {
+        for (int x = 0; x < comp.labels.cols; x++) {
+            int label = comp.labels.at<int>(y, x);
+            comp.image.at<cv::Vec3b>(y, x) = colors[label];
         }
     }
 
-    return output;
+    return comp;
 }
-
 
 int main() {
     ImageCaptureModule capturemod;
@@ -186,8 +185,8 @@ int main() {
             cv::cvtColor(solid, solid_bgr, cv::COLOR_GRAY2BGR);
             cv::imshow("Filtered by density", solid_bgr);
 
-            cv::Mat components = detmod.divideComponents(solid);
-            cv::imshow("Componentes Detectados", components);
+            ObstacleDetectionModule::Components components = detmod.divideComponents(solid);
+            cv::imshow("Componentes Detectados", components.image);
             //cv::waitKey(0);
 
         }
