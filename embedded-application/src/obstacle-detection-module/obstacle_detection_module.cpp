@@ -12,7 +12,7 @@ ObstacleDetectionModule::ObstacleDetectionModule():
       upperRed2_(180, 255, 255),
       // Rango 3 - Naranja
       lowerOrange_(11, 0, 0),
-      upperOrange_(25, 255, 255)
+      upperOrange_(13, 255, 255)
 {}
 
 // Método segmentRed: segmenta los rangos de rojo en las imagenes usando una mascara de color
@@ -105,26 +105,37 @@ cv::Mat ObstacleDetectionModule::filterByColorDensity(const cv::Mat& mask, doubl
     return solidMask;
 }
 
-// Método divideComponents para separar y visualizar componentes conectados
-cv::Mat ObstacleDetectionModule::divideComponents(const cv::Mat& mask) const{
-    // Aplicar connected components a la máscara 
-    cv::Mat labels, stats, centroids;
-    int numComponents = cv::connectedComponentsWithStats(binaryMask, labels, stats, centroids);
+// Método divideComponents: Separar y visualizar componentes conectados
+cv::Mat ObstacleDetectionModule::divideComponents(const cv::Mat& mask) const {
+    if (mask.empty()) {
+        std::cerr << "[ERROR] La máscara está vacía" << std::endl;
+        return cv::Mat();
+    }
 
-    // Inicializar imagen de salida en color
-    cv::Mat output(binaryMask.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+    // Aplicar morfología para separar componentes cercanos
+    cv::Mat maskProcessed;
+    int kernelSize = 3; // Ajusta según qué tan cerca estén los objetos
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kernelSize, kernelSize));
+    cv::morphologyEx(mask, maskProcessed, cv::MORPH_OPEN, kernel);
+
+    // Detectar componentes conectados
+    cv::Mat labels, stats, centroids;
+    int numComponents = cv::connectedComponentsWithStats(maskProcessed, labels, stats, centroids, 4); // 4-connectivity más selectiva
+
+    // Crear imagen de salida en color
+    cv::Mat output(mask.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 
     // Colores aleatorios para cada componente
     cv::RNG rng(12345);
     std::vector<cv::Vec3b> colors(numComponents);
-    colors[0] = cv::Vec3b(0, 0, 0); // Fondo = negro
+    colors[0] = cv::Vec3b(0, 0, 0); // Fondo negro
     for (int i = 1; i < numComponents; i++) {
         colors[i] = cv::Vec3b(rng.uniform(0, 255),
                               rng.uniform(0, 255),
                               rng.uniform(0, 255));
     }
 
-    // Asignar color según etiqueta
+    // Asignar colores según etiqueta
     for (int y = 0; y < labels.rows; y++) {
         for (int x = 0; x < labels.cols; x++) {
             int label = labels.at<int>(y, x);
@@ -175,8 +186,8 @@ int main() {
             cv::cvtColor(solid, solid_bgr, cv::COLOR_GRAY2BGR);
             cv::imshow("Filtered by density", solid_bgr);
 
-            cv::Mat componentes = detmod.divideComponents(solid);
-            cv::imshow("Componentes Detectados", componentes);
+            cv::Mat components = detmod.divideComponents(solid);
+            cv::imshow("Componentes Detectados", components);
             //cv::waitKey(0);
 
         }
