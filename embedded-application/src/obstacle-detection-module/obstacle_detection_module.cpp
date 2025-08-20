@@ -156,8 +156,18 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
         const cv::Mat& depthMap,
         double areaWeight) const 
 {
+
+    double distMax = std::sqrt(labels.cols*labels.cols/4.0 + labels.rows*labels.rows/4.0); //maximo valor de diatancia del centro
+    double depthMin = 0.2;  // mínimo valor esperado del sensor en metros
+    double depthMax = 5.0;  // máximo valor esperado del sensor en metros
+    int areaMax = 20000;
+
     Obstacle mainObstacle{0, 0, 0, -1.0, cv::Point(-1, -1)};
     int numComponents = stats.rows;
+
+    cv::Point imageCenter(labels.cols / 2, labels.rows / 2);
+    double alpha = 5000.0; // peso para cercanía al centro
+    double beta  = 2000.0; // peso para cercanía en profundidad
 
     for (int i = 1; i < numComponents; i++) { // 0 = fondo
         int area = stats.at<int>(i, cv::CC_STAT_AREA);
@@ -187,8 +197,22 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
         
         double meanDepth = sumDepth / count;
         
-        // aplicar criterio: area^peso + promedio
-        double score = std::pow(area, areaWeight) + meanDepth;
+        // centroide
+        cv::Point centroid(
+            static_cast<int>(centroids.at<double>(i,0)),
+            static_cast<int>(centroids.at<double>(i,1))
+        );
+
+        // distancia al centro
+        double distToCenter = cv::norm(centroid - imageCenter);
+
+        // Normalización 0..1
+        double normArea   = std::min(1.0, area / static_cast<double>(areaMax));
+        double normDist   = 1.0 - std::min(1.0, distToCenter / distMax);
+        double normDepth  = 1.0 - std::min(1.0, (meanDepth - depthMin) / (depthMax - depthMin));
+
+        // calcular score
+        double score = 0.4*normArea + 0.3*normDist + 0.3*normDepth;
 
         if (score > mainObstacle.score) {
             mainObstacle.id = i;
