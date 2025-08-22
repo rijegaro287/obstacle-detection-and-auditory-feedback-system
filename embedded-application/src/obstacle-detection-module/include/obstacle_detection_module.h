@@ -17,7 +17,7 @@ public:
     };
 
     struct Obstacle {
-        int id;             // etiqueta del componente
+        int label;          // etiqueta del componente 
         double area;        // área en píxeles
         double meanDepth;   // promedio de profundidad
         double score;       // criterio de selección

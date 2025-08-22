@@ -195,7 +195,7 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
         }
         if (count == 0) continue;
         
-        double meanDepth = sumDepth / count;
+        double meanDepth = (sumDepth / count)/ 1000.0;
         
         // centroide
         cv::Point centroid(
@@ -212,10 +212,10 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
         double normDepth  = 1.0 - std::min(1.0, (meanDepth - depthMin) / (depthMax - depthMin));
 
         // calcular score
-        double score = 0.4*normArea + 0.3*normDist + 0.3*normDepth;
+        double score = 0.3*normArea + 0.3*normDist + 0.4*normDepth;
 
         if (score > mainObstacle.score) {
-            mainObstacle.id = i;
+            mainObstacle.label = i;
             mainObstacle.area = area;
             mainObstacle.meanDepth = meanDepth;
             mainObstacle.score = score;
@@ -227,11 +227,11 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
     }
     
     // dibujar mascara del obstaculo seleccionado como main
-    if (mainObstacle.id > 0) {  // si se selecciona un obstaculo valido
+    if (mainObstacle.label > 0) {  // si se selecciona un obstaculo valido
         mainObstacle.image = cv::Mat::zeros(labels.size(), CV_8UC1); // mascara vacia
         for (int y = 0; y < labels.rows; y++) {
             for (int x = 0; x < labels.cols; x++) {
-                if (labels.at<int>(y,x) == mainObstacle.id) {
+                if (labels.at<int>(y,x) == mainObstacle.label) {
                     mainObstacle.image.at<uchar>(y,x) = 255; // pixeles del obstaculo
                 }
             }
@@ -240,7 +240,6 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
 
     return mainObstacle;
 }
-
 
 
 int main() {
@@ -287,7 +286,21 @@ int main() {
             //cv::waitKey(0);
             
             ObstacleDetectionModule::Obstacle obs = detmod.selectObstacle(components.labels, components.stats, components.centroids, depth_og);
-            cv::imshow("Obstaculo seleccionado", obs.image);
+            cv::Mat colorObs;
+            cv::cvtColor(obs.image, colorObs, cv::COLOR_GRAY2BGR);
+
+            // Dibujar la profundidad promedio 
+            cv::putText(
+                colorObs,
+                std::to_string(obs.meanDepth) + " m", // texto
+                cv::Point(10, 30),                    // posición
+                cv::FONT_HERSHEY_SIMPLEX,             // fuente
+                0.8,                                  // escala
+                cv::Scalar(255, 0, 255),                // color (verde)
+                2                                     // grosor
+            );
+
+            cv::imshow("Obstaculo seleccionado", colorObs);
             
 
         }
