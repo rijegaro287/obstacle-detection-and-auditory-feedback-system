@@ -150,19 +150,30 @@ ObstacleDetectionModule::Components ObstacleDetectionModule::divideComponents(co
 
 // Metodo selectObstacle: selecciona el obstaculo mas importante bajo un criterio matematico 
 ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
-        const cv::Mat& labels,
-        const cv::Mat& stats,
-        const cv::Mat& centroids,
-        const cv::Mat& depthMap,
-        double areaWeight) const 
+        ObstacleDetectionModule::Components& components,
+        const cv::Mat& depthMap) const 
 {
+
+    cv::Mat labels = components.labels;
+    cv::Mat stats = components.stats;
+    cv::Mat centroids = components.centroids;
 
     double distMax = std::sqrt(labels.cols*labels.cols/4.0 + labels.rows*labels.rows/4.0); //maximo valor de diatancia del centro
     double depthMin = 0.2;  // mínimo valor esperado del sensor en metros
     double depthMax = 5.0;  // máximo valor esperado del sensor en metros
     int areaMax = 20000;
 
-    Obstacle mainObstacle{0, 0, 0, -1.0, cv::Point(-1, -1)};
+    Obstacle mainObstacle{
+        0,                          // label
+        0.0,                        // area
+        0.0,                        // meanDepth
+        -1.0,                       // score
+        0.0,                        // azimuth
+        0.0,                        // elevation
+        cv::Point(-1, -1),          // centroid
+        cv::Mat()                   // image (vacía)
+    };
+
     int numComponents = stats.rows;
 
     cv::Point imageCenter(labels.cols / 2, labels.rows / 2);
@@ -241,6 +252,31 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
     return mainObstacle;
 }
 
+// Método calculateAngles: calcular el angulo azimuth (horizontal) y la elevacion (vertical)
+ObstacleDetectionModule::Obstacle ObstacleDetectionModule::calculateAngles(ObstacleDetectionModule::Obstacle& obstacle) {
+    // Dimensiones de las imagenes de la camara
+    double frameWidth = 240;
+    double frameHeight = 180;
+
+    // Centro de la imagen completa
+    const double cx_img = frameWidth  / 2.0;   // 120 en 240x180
+    const double cy_img = frameHeight / 2.0;   // 90  en 240x180
+
+    // Desplazamiento del centroide respecto al centro (en píxeles)
+    const double dx = obstacle.centroid.x - cx_img;    
+    const double dy = cy_img - obstacle.centroid.y;    
+
+    // Normalización a [-1,1] aprox
+    const double relX = dx / (frameWidth  / 2.0);
+    const double relY = dy / (frameHeight / 2.0);
+
+    // Ángulos en grados 
+    obstacle.azimuth   = relX * (FOV_X_DEG / 2.0);  
+    obstacle.elevation = relY * (FOV_Y_DEG / 2.0);  
+
+    return obstacle;
+}
+
 
 int main() {
     ImageCaptureModule capturemod;
@@ -285,24 +321,43 @@ int main() {
             cv::imshow("Componentes Detectados", components.image);
             //cv::waitKey(0);
             
-            ObstacleDetectionModule::Obstacle obs = detmod.selectObstacle(components.labels, components.stats, components.centroids, depth_og);
-            cv::Mat colorObs;
-            cv::cvtColor(obs.image, colorObs, cv::COLOR_GRAY2BGR);
+            ObstacleDetectionModule::Obstacle obs = detmod.selectObstacle(components, depth_og);
+            obs = detmod.calculateAngles(obs);
+
+            // Convertir la máscara a BGR para dibujar colores
+            cv::Mat display;
+            cv::cvtColor(obs.image, display, cv::COLOR_GRAY2BGR);
 
             // Dibujar la profundidad promedio 
             cv::putText(
-                colorObs,
-                std::to_string(obs.meanDepth) + " m", // texto
-                cv::Point(10, 30),                    // posición
-                cv::FONT_HERSHEY_SIMPLEX,             // fuente
-                0.8,                                  // escala
-                cv::Scalar(255, 0, 255),                // color (verde)
-                2                                     // grosor
+                display,
+                std::to_string(obs.meanDepth) + " m",
+                cv::Point(10, 30),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.8,
+                cv::Scalar(255, 255, 0), // celeste
+                2
             );
 
-            cv::imshow("Obstaculo seleccionado", colorObs);
-            
+            // Centro de la imagen
+            cv::Point center(display.cols/2, display.rows/2);
 
+            // FOV de la cámara
+            const double FOV_X_DEG = 62.8;
+            const double FOV_Y_DEG = 37.9;
+
+            // Calcular posición del punto que indica la dirección del obstáculo
+            cv::Point tip(
+                center.x + static_cast<int>(obs.azimuth   / (FOV_X_DEG/2.0) * center.x),
+                center.y - static_cast<int>(obs.elevation / (FOV_Y_DEG/2.0) * center.y)
+            );
+
+            // Dibujar un punto morado en la dirección del obstáculo
+            cv::circle(display, tip, 5, cv::Scalar(255,0,255), cv::FILLED); // morado
+
+            cv::imshow("Distancia y Angulo del obstaculo seleccionado", display);
+            cv::waitKey(0);
+                    
         }
 
         int key = cv::waitKey(1);
