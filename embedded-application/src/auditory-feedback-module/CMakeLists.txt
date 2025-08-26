@@ -7,6 +7,8 @@ project(AuditoryFeedbackModule)
 configure_file(./tap_alert.npy ./tap_alert.npy COPYONLY)
 configure_file(./dataset/hrirs.npy ./dataset/hrirs.npy COPYONLY)
 configure_file(./dataset/positions.npy ./dataset/positions.npy COPYONLY)
+configure_file(./dataset/verbal_feedback_signals.npy ./dataset/verbal_feedback_signals.npy COPYONLY)
+
 
 include(FetchContent)
 
