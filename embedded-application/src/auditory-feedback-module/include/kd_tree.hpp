@@ -25,7 +25,7 @@ private:
   double calculate_distance(Node* node, const array<double, K>& target);
 
   Node* insert_recursive(Node* node, uint64_t idx, const array<double, K>& point, uint64_t depth);
-  Node* find_nearest_recursive(Node* node, Node*& best, const array<double, K>& target, uint64_t depth);
+  Node* find_nearest_recursive(Node* node, Node*& best, double& best_dist, const array<double, K>& target, uint64_t depth);
   void delete_recursive(Node* node);
 public:
   kd_tree() : root(nullptr) {}

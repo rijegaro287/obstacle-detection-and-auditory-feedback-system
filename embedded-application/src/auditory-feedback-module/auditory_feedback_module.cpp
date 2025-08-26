@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "auditory_feedback_module.h"
+#include "auditory_feedback_module.hpp"
 
 auditory_feedback_module& auditory_feedback_module::get_instance() {
 	static auditory_feedback_module instance;
@@ -48,11 +48,6 @@ univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univector(uin
 		hrir[i] = this->hrir_tensor(sample, i, channel);
 	}
 	return hrir;
-}
-
-uint64_t auditory_feedback_module::find_hrir_sample(float azimuth, float elevation, float distance) {
-
-	return 0;
 }
 
 void auditory_feedback_module::generate_feedback(uint64_t sample_idx) {

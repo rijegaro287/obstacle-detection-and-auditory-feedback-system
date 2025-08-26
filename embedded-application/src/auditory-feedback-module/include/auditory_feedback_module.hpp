@@ -5,7 +5,7 @@
 #include "kfr/all.hpp"
 #include "npy.hpp"
 
-#include "kd_tree.h"
+#include "kd_tree.hpp"
 
 #define TAP_SIGNAL_PATH "./tap_alert.npy"
 #define HRIR_PATH "./dataset/hrirs.npy"
@@ -54,7 +54,5 @@ private:
   void init_hrir_tensor();
   void init_position_tree();
   univector<double, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
-  
-  uint64_t find_hrir_sample(float azimuth, float elevation, float distance);
   void generate_feedback(uint64_t sample_idx);
 };

@@ -1,4 +1,4 @@
-#include "kd_tree.h"
+#include "kd_tree.hpp"
 
 template <uint8_t K>
 double kd_tree<K>::calculate_distance(Node* node, const array<double, K>& target) {
@@ -25,31 +25,33 @@ typename kd_tree<K>::Node* kd_tree<K>::insert_recursive(Node* node, uint64_t idx
 }
 
 template<uint8_t K>
-typename kd_tree<K>::Node* kd_tree<K>::find_nearest_recursive(Node* node, Node*& best, const array<double, K>& target, uint64_t depth) {
+typename kd_tree<K>::Node* kd_tree<K>::find_nearest_recursive(Node* node, Node*& best, double& best_dist, const array<double, K>& target, uint64_t depth) {
   if (node == nullptr) return nullptr;
 
   double dist = calculate_distance(node, target);
   if (dist == 0) {
     best = node;
+    best_dist = 0;
     return node;
   }
 
-  double best_dist = (best == nullptr) ? INFINITY : calculate_distance(best, target);
+  best_dist = (best == nullptr) ? INFINITY : calculate_distance(best, target);
   if (dist < best_dist) {
     best = node;
+    best_dist = dist;
   }
 
   uint8_t cd = depth % K;
   Node* next_node = (node->point[cd] > target[cd]) ? node->left : node->right;
   Node* other_node = (next_node == node->left) ? node->right : node->left;
 
-  find_nearest_recursive(next_node, best, target, depth + 1);
+  find_nearest_recursive(next_node, best, best_dist, target, depth + 1);
 
   if (fabs(node->point[cd] - target[cd]) < best_dist) {
-    find_nearest_recursive(other_node, best, target, depth + 1);
+    find_nearest_recursive(other_node, best, best_dist, target, depth + 1);
   }
 
-  printf("Best match found at index: %llu\n", best->idx);
+  printf("Best match found at index: %lu\n", best->idx);
   printf("Best match coordinates: (%f, %f, %f)\n", best->point[0], best->point[1], best->point[2]);
 
   return best;
@@ -63,7 +65,8 @@ void kd_tree<K>::insert(uint64_t idx, const array<double, K>& point) {
 template <uint8_t K>
 uint64_t kd_tree<K>::find_nearest(const array<double, K>& target) {
   Node* best = nullptr;
-  find_nearest_recursive(root, best, target, 0);
+  double best_dist;
+  find_nearest_recursive(root, best, best_dist, target, 0);
   return (best != nullptr) ? best->idx : UINT64_MAX;
 }
 
