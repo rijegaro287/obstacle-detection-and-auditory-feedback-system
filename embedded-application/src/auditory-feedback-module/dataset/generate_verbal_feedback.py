@@ -26,11 +26,11 @@ for signal in signals:
 signal_audio_data = []
 max_length = 0
 for signal in signals:
-    audio_data, sample_rate = sf.read(f'./{signal}.wav')
+    audio_data, sample_rate = sf.read(f'./{signal}.wav', dtype='float64')
     signal_audio_data.append(audio_data)
     max_length = max(max_length, len(audio_data))
 
-signal_audio_data_padded = np.zeros((len(signals), max_length))
+signal_audio_data_padded = np.zeros((len(signals), max_length), dtype=np.float64)
 for i, audio_data in enumerate(signal_audio_data):
     signal_audio_data_padded[i, :len(audio_data)] = audio_data
 

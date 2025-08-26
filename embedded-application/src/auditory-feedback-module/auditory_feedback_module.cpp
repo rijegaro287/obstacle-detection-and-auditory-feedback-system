@@ -11,6 +11,7 @@ auditory_feedback_module::auditory_feedback_module() {
 	this->init_tap_signal();
 	this->init_hrir_tensor();
 	this->init_position_tree();
+	this->init_verbal_feedback_tensor();
 }
 
 void auditory_feedback_module::init_tap_signal() {
@@ -19,12 +20,16 @@ void auditory_feedback_module::init_tap_signal() {
 }
 
 void auditory_feedback_module::init_hrir_tensor() {
-	this->hrir_tensor = tensor<double, 3>({HRIR_N_SAMPLES, HRIR_N_TAPS, HRIR_N_CHANNELS});
 	npy_data hrirs = read_npy<double>(HRIR_PATH);
-	for (size_t i = 0; i < HRIR_N_SAMPLES; i++) {
-		for (size_t j = 0; j < HRIR_N_TAPS; j++) {
-			for (size_t k = 0; k < HRIR_N_CHANNELS; k++) {
-				hrir_tensor(i, j, k) = hrirs.data[i * (HRIR_N_CHANNELS * HRIR_N_TAPS) + (j * HRIR_N_CHANNELS) + k];
+	uint64_t n_samples = hrirs.shape[0];
+	uint64_t n_taps = hrirs.shape[1];
+	uint64_t n_channels = hrirs.shape[2];
+
+	this->hrir_tensor = tensor<double, 3>({n_samples, n_taps, n_channels});
+	for (uint64_t i = 0; i < n_samples; i++) {
+		for (uint64_t j = 0; j < n_taps; j++) {
+			for (uint64_t k = 0; k < n_channels; k++) {
+				hrir_tensor(i, j, k) = hrirs.data[i * (n_channels * n_taps) + (j * n_channels) + k];
 			}
 		}
 	}
@@ -32,19 +37,34 @@ void auditory_feedback_module::init_hrir_tensor() {
 
 void auditory_feedback_module::init_position_tree() {
 	npy_data positions = read_npy<double>(POSITION_PATH);
-	for (size_t i = 0; i < HRIR_N_SAMPLES; i++) {
-		uint64_t sample_addr = i * POSITION_N_CHANNELS;
+	uint64_t n_samples = positions.shape[0];
+	uint64_t n_channels = positions.shape[1];
+
+	for (uint64_t i = 0; i < n_samples; i++) {
+		uint64_t sample_addr = i * n_channels;
 		float azimuth = positions.data[sample_addr + AZIMUTH_POSITION];
 		float elevation = positions.data[sample_addr + ELEVATION_POSITION];
 		float distance = positions.data[sample_addr + DISTANCE_POSITION];
-
 		this->position_tree.insert(i, {azimuth, elevation, distance});
+	}
+}
+
+void auditory_feedback_module::init_verbal_feedback_tensor() {
+	npy_data verbal_feedback = read_npy<double>(VERBAL_FEEDBACK_PATH);
+	uint64_t n_positions = verbal_feedback.shape[0];
+	uint64_t n_samples = verbal_feedback.shape[1];
+
+	this->verbal_feedback_tensor = tensor<double, 2>({n_positions, n_samples});
+	for (uint64_t i = 0; i < n_positions; i++) {
+		for (uint64_t j = 0; j < n_samples; j++) {
+			this->verbal_feedback_tensor(i, j) = verbal_feedback.data[(i * n_samples) + j];
+		}
 	}
 }
 
 univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univector(uint64_t sample, uint64_t channel) {
 	univector<double, HRIR_N_TAPS> hrir;
-	for (size_t i = 0; i < HRIR_N_TAPS; i++) {
+	for (uint64_t i = 0; i < HRIR_N_TAPS; i++) {
 		hrir[i] = this->hrir_tensor(sample, i, channel);
 	}
 	return hrir;
@@ -68,7 +88,7 @@ void auditory_feedback_module::generate_feedback(uint64_t sample_idx) {
 	
 	vector<double> rend_l(this->tap_signal.size());
 	vector<double> rend_r(this->tap_signal.size());
-	for (size_t i = 0; i < this->tap_signal.size(); i++) {
+	for (uint64_t i = 0; i < this->tap_signal.size(); i++) {
 		rend_l[i] = output_l[i];
 		rend_r[i] = output_r[i];
 	}
@@ -84,7 +104,7 @@ void auditory_feedback_module::generate_feedback(uint64_t sample_idx) {
 }
 
 void auditory_feedback_module::start() {
-	float azimuth = 0.0f;
+	float azimuth = 332.0f;
 	float elevation = 10.0f;
 	float distance = 0.5f;
 
