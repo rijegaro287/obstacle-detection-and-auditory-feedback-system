@@ -8,6 +8,7 @@ auditory_feedback_module& auditory_feedback_module::get_instance() {
 }
 
 auditory_feedback_module::auditory_feedback_module() {
+  this->feedback_mode = NON_VERBAL_MODE;
 	this->init_tap_signal();
 	this->init_hrir_tensor();
 	this->init_position_tree();
@@ -62,6 +63,10 @@ void auditory_feedback_module::init_verbal_feedback_tensor() {
 	}
 }
 
+void auditory_feedback_module::set_feedback_mode(FEEDBACK_MODES mode) {
+	this->feedback_mode = mode;
+}
+
 univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univector(uint64_t sample, uint64_t channel) {
 	univector<double, HRIR_N_TAPS> hrir;
 	for (uint64_t i = 0; i < HRIR_N_TAPS; i++) {
@@ -70,7 +75,47 @@ univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univector(uin
 	return hrir;
 }
 
-void auditory_feedback_module::generate_feedback(uint64_t sample_idx) {
+uint8_t auditory_feedback_module::calculate_verbal_position(float azimuth, float elevation, float distance) {
+	uint8_t position = 0;
+
+	if (azimuth < (360 - VERBAL_AZIMUTH_THRESHOLD/2) && azimuth >= (360 - TOF_AZ_FOV/2)) {
+		printf("Verbal feedback: Object is to the right\n");
+		position |= RIGHT_MASK;
+	}
+	else if (azimuth > VERBAL_AZIMUTH_THRESHOLD/2 && azimuth <= TOF_AZ_FOV/2) {
+		printf("Verbal feedback: Object is to the left\n");
+		position |= LEFT_MASK;
+	}
+	else if (azimuth <= VERBAL_AZIMUTH_THRESHOLD/2 || azimuth >= (360 - VERBAL_AZIMUTH_THRESHOLD/2)) {
+		printf("Verbal feedback: Object is horizontally centered\n");
+		position |= HORIZONTAL_CENTERED_MASK;
+	}
+	else {
+		printf("Verbal feedback: Azimuth angle out of range\n");
+	}
+
+	if (elevation > VERBAL_ELEVATION_THRESHOLD/2 && elevation <= TOF_EL_FOV/2) {
+		printf("Verbal feedback: Object is above\n");
+		position |= ABOVE_MASK;
+	}
+	else if (elevation < -VERBAL_ELEVATION_THRESHOLD/2 && elevation >= -TOF_EL_FOV/2) {
+		printf("Verbal feedback: Object is below\n");
+		position |= BELOW_MASK;
+	}
+	else if (elevation <= VERBAL_ELEVATION_THRESHOLD/2 && elevation >= -VERBAL_ELEVATION_THRESHOLD/2) {
+		printf("Verbal feedback: Object is vertically centered\n");
+		position |= VERTICALLY_CENTERED_MASK;
+	}
+	else {
+		printf("Verbal feedback: Elevation angle out of range\n");
+	}
+
+	return position;
+}
+
+void auditory_feedback_module::generate_non_verbal_feedback(float azimuth, float elevation, float distance) {
+	uint64_t sample_idx = this->position_tree.find_nearest({azimuth, elevation, distance});
+
 	univector<double> output_l(this->tap_signal.size());
 	univector<double> output_r(this->tap_signal.size());
 
@@ -99,23 +144,114 @@ void auditory_feedback_module::generate_feedback(uint64_t sample_idx) {
 	output_l_npy.shape = {this->tap_signal.size()};
 	output_r_npy.shape = {this->tap_signal.size()};
 
-	write_npy("./output_l.npy", output_l_npy);
-	write_npy("./output_r.npy", output_r_npy);
+	write_npy("./output_non_verbal_l.npy", output_l_npy);
+	write_npy("./output_non_verbal_r.npy", output_r_npy);
+}
+
+void auditory_feedback_module::generate_verbal_feedback(float azimuth, float elevation, float distance) {
+	uint8_t position_idx;
+
+	uint8_t position = this->calculate_verbal_position(azimuth, elevation, distance);
+	switch (position) {
+	case HORIZONTAL_CENTERED_MASK | VERTICALLY_CENTERED_MASK:
+		printf("Verbal feedback: Position is FRONT\n");
+		position_idx = FRONT;
+		break;
+	case ABOVE_MASK | HORIZONTAL_CENTERED_MASK:
+		printf("Verbal feedback: Position is ABOVE\n");
+		position_idx = ABOVE;
+		break;
+	case BELOW_MASK | HORIZONTAL_CENTERED_MASK:
+		printf("Verbal feedback: Position is BELOW\n");
+		position_idx = BELOW;
+		break;
+	case RIGHT_MASK | VERTICALLY_CENTERED_MASK:
+		printf("Verbal feedback: Position is RIGHT\n");
+		position_idx = RIGHT;
+		break;
+	case LEFT_MASK | VERTICALLY_CENTERED_MASK:
+		printf("Verbal feedback: Position is LEFT\n");
+		position_idx = LEFT;
+		break;
+	case ABOVE_MASK | RIGHT_MASK:
+		printf("Verbal feedback: Position is ABOVE RIGHT\n");
+		position_idx = ABOVE_RIGHT;
+		break;
+	case ABOVE_MASK | LEFT_MASK:
+		printf("Verbal feedback: Position is ABOVE LEFT\n");
+		position_idx = ABOVE_LEFT;
+		break;
+	case BELOW_MASK | RIGHT_MASK:
+		printf("Verbal feedback: Position is BELOW RIGHT\n");
+		position_idx = BELOW_RIGHT;
+		break;
+	case BELOW_MASK | LEFT_MASK:
+		printf("Verbal feedback: Position is BELOW LEFT\n");
+		position_idx = BELOW_LEFT;
+		break;
+	default:
+		printf("Verbal feedback: Position is UNKNOWN\n");
+		return;
+	}
+
+	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
+	npy_data<double> output_npy;
+	vector<double> output(n_samples);
+	for (uint64_t i = 0; i < n_samples; i++) {
+		output[i] = this->verbal_feedback_tensor(position_idx, i);
+	}
+	output_npy.data = output;
+	output_npy.shape = {n_samples};
+
+	write_npy("./output_verbal.npy", output_npy);
+}
+
+
+void auditory_feedback_module::generate_feedback(float azimuth, float elevation, float distance) {
+	if (this->feedback_mode == NON_VERBAL_MODE) {
+		printf("Generating non-verbal feedback...\n");
+		this->generate_non_verbal_feedback(azimuth, elevation, distance);
+	} 
+	else if (this->feedback_mode == VERBAL_MODE) {
+		printf("Generating verbal feedback...\n");
+		this->generate_verbal_feedback(azimuth, elevation, distance);
+	}
+	else {
+		printf("Invalid feedback mode\n");
+	}
 }
 
 void auditory_feedback_module::start() {
-	float azimuth = 332.0f;
-	float elevation = 10.0f;
-	float distance = 0.5f;
+	vector<vector<float>> test_positions = {
+		// {  0.0f,   0.0f, 0.5f}, // FRONT
+		// {  0.0f,  10.0f, 0.5f}, // ABOVE
+		// {  0.0f, -10.0f, 0.5f}, // BELOW
+		// {340.0f, 	 0.0f, 0.5f}, // RIGHT
+		// { 25.0f,   0.0f, 0.5f}, // LEFT
+		// {340.0f,  10.0f, 0.5f}, // ABOVE RIGHT
+		// { 25.0f,  10.0f, 0.5f}, // ABOVE LEFT
+		{340.0f, -10.0f, 0.5f}, // BELOW RIGHT
+		// { 25.0f, -10.0f, 0.5f}, // BELOW LEFT
+	};
 
-	printf("Azimuth: %f, Elevation: %f, Distance: %f\n", azimuth, elevation, distance);
+	for (uint64_t idx = 0; idx < test_positions.size(); ++idx) {
+		float azimuth = test_positions[idx][0];
+		float elevation = test_positions[idx][1];
+		float distance = test_positions[idx][2];
 
-	uint64_t sample_idx = this->position_tree.find_nearest({azimuth, elevation, distance});
-	this->generate_feedback(sample_idx);
+		printf("===========================================================\n");
+		printf("Test position: (%f, %f, %f)\n", azimuth, elevation, distance);
+		this->generate_feedback(azimuth, elevation, distance);
+		printf("===========================================================\n");
+	}
 }
 
 int main() {
 	auditory_feedback_module& feedback_module = auditory_feedback_module::get_instance();
+	feedback_module.set_feedback_mode(VERBAL_MODE);
+	feedback_module.start();
+
+	feedback_module.set_feedback_mode(NON_VERBAL_MODE);
 	feedback_module.start();
 
 	// kd_tree<3> kd_tree;
