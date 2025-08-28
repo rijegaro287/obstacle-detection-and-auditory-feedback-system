@@ -1,5 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <gio/gio.h>
+#include <chrono>
+#include <thread>
 
+#include "bluetooth_controller.h"

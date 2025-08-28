@@ -15,7 +15,10 @@ pkg_check_modules(GIO REQUIRED gio-2.0)
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Define the module executable
-add_executable(transmission_module transmission_module.cpp)
+add_executable(transmission_module 
+  transmission_module.cpp
+  bluetooth_controller.c
+)
 target_include_directories(transmission_module PRIVATE 
   include
   ${GLIB_INCLUDE_DIRS}
@@ -27,11 +30,18 @@ target_link_libraries(transmission_module
 )
 
 # Define the test executable
-add_executable(test_transmission_module test/test_transmission_module.cpp)
+add_executable(test_transmission_module 
+  test/test_transmission_module.cpp
+  bluetooth_controller.c
+)
 target_include_directories(test_transmission_module PRIVATE
   include
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
+)
+target_link_libraries(test_transmission_module 
+  ${GLIB_LIBRARIES}
+  ${GIO_LIBRARIES}
 )
 
 # Enable testing for this module
