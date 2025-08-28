@@ -14,14 +14,14 @@ extern "C" {
 #define DEVICE_INTERFACE "org.bluez.Device1"
 
 #define MAX_DEVICES 8
-#define DEVICE_BUFFER_L 256
-#define DEVICE_BUFFER_S 32
+#define BLUEZ_DEVICE_BUFFER_L 256
+#define BLUEZ_DEVICE_BUFFER_S 32
 
 #define A2DP_SINK_UUID "0000110b-0000-1000-8000-00805F9B34FB"
 
 typedef struct BlueZDevice_ {
-	char name[DEVICE_BUFFER_L];
-	char address[DEVICE_BUFFER_S];
+	char name[BLUEZ_DEVICE_BUFFER_L];
+	char address[BLUEZ_DEVICE_BUFFER_S];
 } BlueZDevice;
 
 void print_devices(BlueZDevice *devices, uint64_t device_count);

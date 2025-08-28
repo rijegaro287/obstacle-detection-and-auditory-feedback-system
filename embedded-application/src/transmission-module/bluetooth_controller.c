@@ -49,13 +49,13 @@ GDBusProxy* create_object_manager_proxy() {
 GDBusProxy* create_device_proxy(BlueZDevice device) {
 	GError* error = NULL;
 
-	char device_path[DEVICE_BUFFER_L] = {0};
-	char device_addr[DEVICE_BUFFER_S] = {0};
+	char device_path[BLUEZ_DEVICE_BUFFER_L] = {0};
+	char device_addr[BLUEZ_DEVICE_BUFFER_S] = {0};
 
-	addr_to_path(device.address, device_addr, DEVICE_BUFFER_S);
+	addr_to_path(device.address, device_addr, BLUEZ_DEVICE_BUFFER_S);
 
-	snprintf(device_path, DEVICE_BUFFER_L, "%s/dev_%s", ADAPTER_PATH, device_addr);
-	device_path[DEVICE_BUFFER_L - 1] = '\0';
+	snprintf(device_path, BLUEZ_DEVICE_BUFFER_L, "%s/dev_%s", ADAPTER_PATH, device_addr);
+	device_path[BLUEZ_DEVICE_BUFFER_L - 1] = '\0';
 
 	printf("Creating device proxy for %s\n", device_path);
 
@@ -235,11 +235,11 @@ int64_t parse_devices(GVariant *devices_variant, BlueZDevice *dest, uint64_t max
 			const char *name = g_variant_get_string(name_variant, NULL);
 			const char *address = g_variant_get_string(addr_variant, NULL);
 
-			strncpy(dest[device_count + device_idx].name, name, DEVICE_BUFFER_L - 1);
-			dest[device_count + device_idx].name[DEVICE_BUFFER_L - 1] = '\0';
+			strncpy(dest[device_count + device_idx].name, name, BLUEZ_DEVICE_BUFFER_L - 1);
+			dest[device_count + device_idx].name[BLUEZ_DEVICE_BUFFER_L - 1] = '\0';
 
-			strncpy(dest[device_count + device_idx].address, address, DEVICE_BUFFER_S - 1);
-			dest[device_count + device_idx].address[DEVICE_BUFFER_S - 1] = '\0';
+			strncpy(dest[device_count + device_idx].address, address, BLUEZ_DEVICE_BUFFER_S - 1);
+			dest[device_count + device_idx].address[BLUEZ_DEVICE_BUFFER_S - 1] = '\0';
 
 			device_idx++;
 

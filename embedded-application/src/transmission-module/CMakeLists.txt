@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 11)
 project(TransmissionModule)
 
 find_package(PkgConfig REQUIRED)
+find_package(ALSA REQUIRED)
 
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(GIO REQUIRED gio-2.0)
@@ -21,10 +22,12 @@ add_executable(transmission_module
 )
 target_include_directories(transmission_module PRIVATE 
   include
+  ${ALSA_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
 )
 target_link_libraries(transmission_module 
+  ${ALSA_LIBRARIES}
   ${GLIB_LIBRARIES}
   ${GIO_LIBRARIES}
 )
@@ -36,10 +39,12 @@ add_executable(test_transmission_module
 )
 target_include_directories(test_transmission_module PRIVATE
   include
+  ${ALSA_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
 )
 target_link_libraries(test_transmission_module 
+  ${ALSA_LIBRARIES}
   ${GLIB_LIBRARIES}
   ${GIO_LIBRARIES}
 )
