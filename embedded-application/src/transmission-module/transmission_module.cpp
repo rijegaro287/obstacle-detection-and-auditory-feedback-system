@@ -10,14 +10,14 @@
 #define DEVICE_INTERFACE "org.bluez.Device1"
 
 #define MAX_DEVICES 8
-#define DEVICE_NAME_MAX_LENGTH 256
-#define DEVICE_ADDRESS_LENGTH 18
+#define DEVICE_BUFFER_L 256
+#define DEVICE_BUFFER_S 24
 
 using namespace std;
 
 typedef struct BlueZDevice_ {
-	char name[DEVICE_NAME_MAX_LENGTH];
-	char address[DEVICE_ADDRESS_LENGTH];
+	char name[DEVICE_BUFFER_L];
+	char address[DEVICE_BUFFER_S];
 } BlueZDevice;
 
 void print_devices(BlueZDevice *devices, uint64_t device_count) {
@@ -25,6 +25,156 @@ void print_devices(BlueZDevice *devices, uint64_t device_count) {
 		BlueZDevice device = devices[i];
 		printf("- Found device: %s (%s)\n", device.name, device.address);
 	}
+}
+
+void clear_devices(BlueZDevice *devices) {
+	if (devices == NULL) return;
+	for (int i = 0; i < MAX_DEVICES; i++) {
+		memset(&devices[i], 0, sizeof(BlueZDevice));
+	}
+}
+
+void addr_to_path(char *addr, char *dest, uint64_t dest_size) {
+	for (uint64_t idx = 0; idx < dest_size - 1 && addr[idx] != '\0'; idx++) {
+		char src_char = addr[idx];
+		if (src_char == ':') src_char = '_';
+		dest[idx] = src_char;
+	}
+	dest[dest_size - 1] = '\0';
+}
+
+GDBusProxy* create_object_manager_proxy() {
+	GError* error = NULL;
+
+	GDBusProxy *object_manager_proxy = g_dbus_proxy_new_for_bus_sync(
+		G_BUS_TYPE_SYSTEM,
+		G_DBUS_PROXY_FLAGS_NONE,
+		NULL,
+		"org.bluez",
+		"/",
+		"org.freedesktop.DBus.ObjectManager",
+		NULL,
+		&error
+	);
+
+	if (error) {
+		printf("Error creating object_manager_proxy: %s\n", error->message);
+		g_error_free(error);
+		return NULL;
+	}
+
+	return object_manager_proxy;
+}
+
+GDBusProxy* create_device_proxy(BlueZDevice device) {
+	GError* error = NULL;
+
+	char device_path[DEVICE_BUFFER_L] = {0};
+	char device_addr[DEVICE_BUFFER_S] = {0};
+
+	addr_to_path(device.address, device_addr, DEVICE_BUFFER_S);
+
+	snprintf(device_path, DEVICE_BUFFER_L, "%s/dev_%s", ADAPTER_PATH, device_addr);
+	device_path[DEVICE_BUFFER_L - 1] = '\0';
+
+	printf("Creating device proxy for %s\n", device_path);
+
+	GDBusProxy *device_proxy = g_dbus_proxy_new_for_bus_sync(
+		G_BUS_TYPE_SYSTEM,
+		G_DBUS_PROXY_FLAGS_NONE,
+		NULL,
+		BLUEZ_SERVICE,
+		device_path,
+		DEVICE_INTERFACE,
+		NULL,
+		&error
+	);
+
+	if (error) {
+		printf("Error creating device proxy: %s\n", error->message);
+		g_error_free(error);
+		return NULL;
+	}
+
+	return device_proxy;
+}
+
+GVariant* get_managed_objects(GDBusProxy *proxy) {
+	GError* error = NULL;
+
+	GVariant* result = g_dbus_proxy_call_sync(
+		proxy,
+		"GetManagedObjects",
+		NULL,
+		G_DBUS_CALL_FLAGS_NONE,
+		-1,
+		NULL,
+		&error
+	);
+
+	if (error) {
+		printf("Error getting managed objects: %s\n", error->message);
+		g_error_free(error);
+		return NULL;
+	}
+
+	return result;
+}
+
+GVariant* get_device_property(GDBusProxy *proxy, const char *property) {
+	if (proxy == NULL || property == NULL) return NULL;
+
+	GError* error = NULL;
+
+	GVariant *result = g_dbus_proxy_call_sync(
+		proxy,
+		"org.freedesktop.DBus.Properties.Get",
+		g_variant_new("(ss)", DEVICE_INTERFACE, property),
+		G_DBUS_CALL_FLAGS_NONE,
+		-1,
+		NULL,
+		&error
+	);
+
+	if (error) {
+		printf("Error getting device property %s: %s\n", property, error->message);
+		g_error_free(error);
+		return NULL;
+	}
+
+	return result;
+}
+
+bool is_paired(GDBusProxy *proxy) {
+	if (proxy == NULL) return false;
+
+	GVariant *result = get_device_property(proxy, "Paired");
+	if (result == NULL) return false;
+
+	GVariant *value = NULL;
+	g_variant_get(result, "(v)", &value);
+ 	gboolean paired = g_variant_get_boolean(value);
+
+	g_variant_unref(value);
+	g_variant_unref(result);
+
+	return paired;
+}
+
+bool is_connected(GDBusProxy *proxy) { 
+	if (proxy == NULL) return false;
+
+	GVariant *result = get_device_property(proxy, "Connected");
+	if (result == NULL) return false;
+
+	GVariant *value = NULL;
+	g_variant_get(result, "(v)", &value);
+ 	gboolean connected = g_variant_get_boolean(value);
+
+	g_variant_unref(value);
+	g_variant_unref(result);
+
+	return connected;
 }
 
 int64_t start_discovery(GDBusProxy *proxy) {
@@ -75,51 +225,6 @@ int64_t stop_discovery(GDBusProxy *proxy) {
 	return 0;
 }
 
-GDBusProxy* create_object_manager_proxy() {
-	GError* error = NULL;
-
-	GDBusProxy *object_manager_proxy = g_dbus_proxy_new_for_bus_sync(
-		G_BUS_TYPE_SYSTEM,
-		G_DBUS_PROXY_FLAGS_NONE,
-		NULL,
-		"org.bluez",
-		"/",
-		"org.freedesktop.DBus.ObjectManager",
-		NULL,
-		&error
-	);
-
-	if (error) {
-		printf("Error creating object_manager_proxy: %s\n", error->message);
-		g_error_free(error);
-		return NULL;
-	}
-
-	return object_manager_proxy;
-}
-
-GVariant* get_managed_objects(GDBusProxy *proxy) {
-	GError* error = NULL;
-
-	GVariant* result = g_dbus_proxy_call_sync(
-		proxy,
-		"GetManagedObjects",
-		NULL,
-		G_DBUS_CALL_FLAGS_NONE,
-		-1,
-		NULL,
-		&error
-	);
-
-	if (error) {
-		printf("Error getting managed objects: %s\n", error->message);
-		g_error_free(error);
-		return NULL;
-	}
-
-	return result;
-}
-
 int64_t parse_devices(GVariant *devices_variant, BlueZDevice *dest, uint64_t max_devices) {
 	int64_t device_count = 0;
 	if (strcmp(g_variant_get_type_string(devices_variant), "a{oa{sa{sv}}}") != 0) return -1;
@@ -150,11 +255,11 @@ int64_t parse_devices(GVariant *devices_variant, BlueZDevice *dest, uint64_t max
 			const char *name = g_variant_get_string(name_variant, NULL);
 			const char *address = g_variant_get_string(addr_variant, NULL);
 
-			strncpy(dest[device_count + device_idx].name, name, DEVICE_NAME_MAX_LENGTH - 1);
-			dest[device_count + device_idx].name[DEVICE_NAME_MAX_LENGTH - 1] = '\0';
+			strncpy(dest[device_count + device_idx].name, name, DEVICE_BUFFER_L - 1);
+			dest[device_count + device_idx].name[DEVICE_BUFFER_L - 1] = '\0';
 
-			strncpy(dest[device_count + device_idx].address, address, DEVICE_ADDRESS_LENGTH - 1);
-			dest[device_count + device_idx].address[DEVICE_ADDRESS_LENGTH - 1] = '\0';
+			strncpy(dest[device_count + device_idx].address, address, DEVICE_BUFFER_S - 1);
+			dest[device_count + device_idx].address[DEVICE_BUFFER_S - 1] = '\0';
 
 			device_idx++;
 
@@ -201,11 +306,53 @@ int64_t scan_devices(BlueZDevice *dest, uint64_t max_devices) {
 	return device_count;
 }
 
-int64_t clear_devices(BlueZDevice *devices) {
-	if (devices == NULL) return -1;
-	for (int i = 0; i < MAX_DEVICES; i++) {
-		memset(&devices[i], 0, sizeof(BlueZDevice));
+int64_t pair_device(GDBusProxy *proxy) {
+	if (proxy == NULL) return -1;
+	GError* error = NULL;
+
+	GVariant *result = g_dbus_proxy_call_sync(
+		proxy,
+		"Pair",
+		NULL,
+		G_DBUS_CALL_FLAGS_NONE,
+		-1,
+		NULL,
+		&error
+	);
+
+	if (error) {
+		printf("Error pairing to device: %s\n", error->message);
+		g_error_free(error);
+		return -1;
 	}
+
+	if (result) g_variant_unref(result);
+
+	return 0;
+}
+
+int64_t connect_to_device(GDBusProxy *proxy) {
+	if (proxy == NULL) return -1;
+	GError* error = NULL;
+
+	GVariant *result = g_dbus_proxy_call_sync(
+		proxy,
+		"Connect",
+		NULL,
+		G_DBUS_CALL_FLAGS_NONE,
+		-1,
+		NULL,
+		&error
+	);
+
+	if (error) {
+		printf("Error connecting to device: %s\n", error->message);
+		g_error_free(error);
+		return -1;
+	}
+
+	if (result) g_variant_unref(result);
+
 	return 0;
 }
 
@@ -259,6 +406,42 @@ int main() {
 
 		print_devices(devices, device_count);
 
+		GDBusProxy *device_proxy = NULL;
+		for (uint64_t idx = 0; idx < device_count; idx++) {
+			BlueZDevice device = devices[idx];
+			if (strcmp(device.name, "QCY H3") == 0) {
+				printf("Connecting to device: %s (%s)\n", device.name, device.address);
+
+				device_proxy = create_device_proxy(device);
+				if (device_proxy == NULL) {
+					printf("Failed to create device proxy\n");
+					status = -1;
+					break;
+				}
+
+				if (!is_paired(device_proxy)) {
+					printf("Device not paired, pairing...\n");
+					if (pair_device(device_proxy) < 0) {
+						printf("Failed to pair to device\n");
+						status = -1;
+						break;
+					}
+				}
+				printf("Device paired, connecting...\n");
+				
+				if (!is_connected(device_proxy)) {
+					printf("Device not connected, connecting...\n");
+					if (connect_to_device(device_proxy) < 0) {
+						printf("Failed to connect to device\n");
+						status = -1;
+						break;
+					}
+				}
+				printf("Device connected successfully!\n");
+			}
+		}
+
+		if (device_proxy) g_object_unref(device_proxy);
 		clear_devices(devices);
 		printf("=======================================\n");
 		this_thread::sleep_for(std::chrono::seconds(1));
