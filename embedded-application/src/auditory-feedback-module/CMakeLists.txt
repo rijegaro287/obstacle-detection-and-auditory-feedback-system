@@ -22,14 +22,25 @@ FetchContent_MakeAvailable(kfr)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-# Define the test executable
-add_executable(test_auditory_feedback_module 
-  test/test_auditory_feedback_module.cpp
-  auditory_feedback_module.cpp
-  kd_tree.cpp
+file(GLOB AUDITORY_FEEDBACK_MODULE_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 )
-target_include_directories(test_auditory_feedback_module PRIVATE include)
-target_link_libraries(test_auditory_feedback_module PRIVATE kfr kfr_dsp)
+
+
+# Define the library
+add_library(auditory_feedback_module STATIC
+  ${AUDITORY_FEEDBACK_MODULE_SOURCES}
+)
+target_include_directories(auditory_feedback_module PUBLIC include)
+target_link_libraries(auditory_feedback_module PUBLIC kfr kfr_dsp)
+
+
+# Define the test executable using the library
+add_executable(test_auditory_feedback_module
+  test/test_auditory_feedback_module.cpp
+)
+target_link_libraries(test_auditory_feedback_module PRIVATE auditory_feedback_module)
+
 
 # Enable testing for this module
 enable_testing()

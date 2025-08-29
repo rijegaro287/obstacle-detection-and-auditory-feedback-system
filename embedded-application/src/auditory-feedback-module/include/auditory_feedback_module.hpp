@@ -63,7 +63,6 @@ enum VERBAL_FEEDBACK_IDX {
 };
 
 using namespace std;
-using namespace kfr;
 using namespace npy;
 
 class auditory_feedback_module {
@@ -77,10 +76,10 @@ public:
   void start();
 private:
   FEEDBACK_MODES feedback_mode;
-  univector<double, TAP_N_SAMPLES> tap_signal;
-  tensor<double, 3> hrir_tensor;
+  kfr::univector<double, TAP_N_SAMPLES> tap_signal;
+  kfr::tensor<double, 3> hrir_tensor;
   kd_tree<3> position_tree;
-  tensor<double, 2> verbal_feedback_tensor;
+  kfr::tensor<double, 2> verbal_feedback_tensor;
 
   auditory_feedback_module();
   ~auditory_feedback_module() = default;
@@ -89,7 +88,7 @@ private:
   void init_hrir_tensor();
   void init_position_tree();
   void init_verbal_feedback_tensor();
-  univector<double, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
+  kfr::univector<double, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
   uint8_t calculate_verbal_position(float azimuth, float elevation, float distance);
   void generate_non_verbal_feedback(float azimuth, float elevation, float distance);
   void generate_verbal_feedback(float azimuth, float elevation, float distance);

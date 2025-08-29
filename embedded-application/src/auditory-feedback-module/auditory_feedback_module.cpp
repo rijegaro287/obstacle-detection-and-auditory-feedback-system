@@ -15,7 +15,7 @@ auditory_feedback_module::auditory_feedback_module() {
 
 void auditory_feedback_module::init_tap_signal() {
 	npy_data tap = read_npy<double>(TAP_SIGNAL_PATH);
-	this->tap_signal = make_univector(tap.data);
+	this->tap_signal = kfr::make_univector(tap.data);
 }
 
 void auditory_feedback_module::init_hrir_tensor() {
@@ -24,7 +24,7 @@ void auditory_feedback_module::init_hrir_tensor() {
 	uint64_t n_taps = hrirs.shape[1];
 	uint64_t n_channels = hrirs.shape[2];
 
-	this->hrir_tensor = tensor<double, 3>({n_samples, n_taps, n_channels});
+	this->hrir_tensor = kfr::tensor<double, 3>({n_samples, n_taps, n_channels});
 	for (uint64_t i = 0; i < n_samples; i++) {
 		for (uint64_t j = 0; j < n_taps; j++) {
 			for (uint64_t k = 0; k < n_channels; k++) {
@@ -53,7 +53,7 @@ void auditory_feedback_module::init_verbal_feedback_tensor() {
 	uint64_t n_positions = verbal_feedback.shape[0];
 	uint64_t n_samples = verbal_feedback.shape[1];
 
-	this->verbal_feedback_tensor = tensor<double, 2>({n_positions, n_samples});
+	this->verbal_feedback_tensor = kfr::tensor<double, 2>({n_positions, n_samples});
 	for (uint64_t i = 0; i < n_positions; i++) {
 		for (uint64_t j = 0; j < n_samples; j++) {
 			this->verbal_feedback_tensor(i, j) = verbal_feedback.data[(i * n_samples) + j];
@@ -65,8 +65,8 @@ void auditory_feedback_module::set_feedback_mode(FEEDBACK_MODES mode) {
 	this->feedback_mode = mode;
 }
 
-univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univector(uint64_t sample, uint64_t channel) {
-	univector<double, HRIR_N_TAPS> hrir;
+kfr::univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univector(uint64_t sample, uint64_t channel) {
+	kfr::univector<double, HRIR_N_TAPS> hrir;
 	for (uint64_t i = 0; i < HRIR_N_TAPS; i++) {
 		hrir[i] = this->hrir_tensor(sample, i, channel);
 	}
@@ -114,14 +114,14 @@ uint8_t auditory_feedback_module::calculate_verbal_position(float azimuth, float
 void auditory_feedback_module::generate_non_verbal_feedback(float azimuth, float elevation, float distance) {
 	uint64_t sample_idx = this->position_tree.find_nearest({azimuth, elevation, distance});
 
-	univector<double> output_l(this->tap_signal.size());
-	univector<double> output_r(this->tap_signal.size());
+	kfr::univector<double> output_l(this->tap_signal.size());
+	kfr::univector<double> output_r(this->tap_signal.size());
 
-	univector<double, HRIR_N_TAPS> hrir_l = this->make_hrir_univector(sample_idx, LEFT_CHANNEL);
-	univector<double, HRIR_N_TAPS> hrir_r = this->make_hrir_univector(sample_idx, RIGHT_CHANNEL);
+	kfr::univector<double, HRIR_N_TAPS> hrir_l = this->make_hrir_univector(sample_idx, LEFT_CHANNEL);
+	kfr::univector<double, HRIR_N_TAPS> hrir_r = this->make_hrir_univector(sample_idx, RIGHT_CHANNEL);
 	
-	filter_fir<double> filter_l(hrir_l);
-	filter_fir<double> filter_r(hrir_r);
+	kfr::filter_fir<double> filter_l(hrir_l);
+	kfr::filter_fir<double> filter_r(hrir_r);
 
 	filter_l.apply(output_l, this->tap_signal);
 	filter_r.apply(output_r, this->tap_signal);

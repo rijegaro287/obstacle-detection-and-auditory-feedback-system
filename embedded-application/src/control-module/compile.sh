@@ -7,4 +7,4 @@ make
 # ctest --output-on-failure -V
 
 cd ..
-./build/control_module
+./build/test_control_module

@@ -17,11 +17,30 @@ pkg_check_modules(GIO REQUIRED gio-2.0)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-# Define the test executable
+file(GLOB TRANSMISSION_MODULE_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+)
+
+# Define the library
+add_library(transmission_module STATIC
+  ${TRANSMISSION_MODULE_SOURCES}
+)
+target_include_directories(transmission_module PUBLIC
+  include
+  ${ALSA_INCLUDE_DIRS}
+  ${GLIB_INCLUDE_DIRS}
+  ${GIO_INCLUDE_DIRS}
+)
+target_link_libraries(transmission_module 
+  ${ALSA_LIBRARIES}
+  ${GLIB_LIBRARIES}
+  ${GIO_LIBRARIES}
+)
+
+
+# Define the test executable using the library
 add_executable(test_transmission_module 
   test/test_transmission_module.cpp
-  transmission_module.cpp
-  bluetooth_controller.c
 )
 target_include_directories(test_transmission_module PRIVATE
   include
@@ -29,11 +48,8 @@ target_include_directories(test_transmission_module PRIVATE
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
 )
-target_link_libraries(test_transmission_module 
-  ${ALSA_LIBRARIES}
-  ${GLIB_LIBRARIES}
-  ${GIO_LIBRARIES}
-)
+target_link_libraries(test_transmission_module transmission_module)
+
 
 # Enable testing for this module
 enable_testing()

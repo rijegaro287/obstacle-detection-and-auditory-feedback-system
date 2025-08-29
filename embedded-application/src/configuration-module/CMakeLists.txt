@@ -8,6 +8,8 @@ project(ConfigurationModule)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
+
+
 # Define the module executable
 add_executable(configuration_module configuration_module.cpp)
 target_include_directories(configuration_module PRIVATE include)
