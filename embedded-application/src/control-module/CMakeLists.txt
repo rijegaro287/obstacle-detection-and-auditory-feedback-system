@@ -8,25 +8,33 @@ project(ControlModule)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-add_subdirectory(../auditory-feedback-module ${CMAKE_CURRENT_BINARY_DIR}/auditory-feedback-module)
+add_subdirectory(../feedback-module ${CMAKE_CURRENT_BINARY_DIR}/feedback-module)
 add_subdirectory(../transmission-module ${CMAKE_CURRENT_BINARY_DIR}/transmission-module)
 
-file(GLOB CONTROL_MODULE_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+# Control module library
+add_library(control_module STATIC
+    control_module.cpp
+)
+target_include_directories(control_module PUBLIC include)
+target_link_libraries(control_module PRIVATE
+    feedback_iface
+    transmission_iface
 )
 
+add_library(control_iface STATIC
+    control_iface.cpp
+)
+target_include_directories(control_iface PUBLIC include)
+target_link_libraries(control_iface PRIVATE control_module)
 
 # Define the test executable
 add_executable(test_control_module 
     test/test_control_module.cpp
-    ${CONTROL_MODULE_SOURCES}
 )
-target_include_directories(test_control_module PRIVATE 
-    include
-)
-target_link_libraries(test_control_module PRIVATE
-    auditory_feedback_module
-    transmission_module
+target_link_libraries(test_control_module PRIVATE 
+    control_module
+    feedback_iface
+    transmission_iface
 )
 
 # Enable testing for this module

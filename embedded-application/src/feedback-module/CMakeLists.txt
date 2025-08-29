@@ -22,30 +22,33 @@ FetchContent_MakeAvailable(kfr)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-file(GLOB AUDITORY_FEEDBACK_MODULE_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-)
-
+# add_subdirectory(../control-module ${CMAKE_CURRENT_BINARY_DIR}/control-module)
 
 # Define the library
-add_library(auditory_feedback_module STATIC
-  ${AUDITORY_FEEDBACK_MODULE_SOURCES}
+add_library(feedback_module STATIC
+  feedback_module.cpp
+  kd_tree.cpp
 )
-target_include_directories(auditory_feedback_module PUBLIC include)
-target_link_libraries(auditory_feedback_module PUBLIC kfr kfr_dsp)
+target_include_directories(feedback_module PUBLIC include)
+target_link_libraries(feedback_module PUBLIC kfr kfr_dsp)
 
+add_library(feedback_iface STATIC 
+  feedback_iface.cpp
+)
+target_include_directories(feedback_iface PUBLIC include)
+target_link_libraries(feedback_iface PRIVATE feedback_module)
 
 # Define the test executable using the library
-add_executable(test_auditory_feedback_module
-  test/test_auditory_feedback_module.cpp
+add_executable(test_feedback_module
+  test/test_feedback_module.cpp
 )
-target_link_libraries(test_auditory_feedback_module PRIVATE auditory_feedback_module)
+target_link_libraries(test_feedback_module PRIVATE feedback_module)
 
 
 # Enable testing for this module
 enable_testing()
 
 # Add the test
-add_test(NAME test_auditory_feedback_module 
-         COMMAND test_auditory_feedback_module
+add_test(NAME test_feedback_module 
+         COMMAND test_feedback_module
          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

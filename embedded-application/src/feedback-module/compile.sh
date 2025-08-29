@@ -7,4 +7,4 @@ make
 # ctest --output-on-failure -V
 
 cd ..
-./build/test_auditory_feedback_module
+./build/test_feedback_module

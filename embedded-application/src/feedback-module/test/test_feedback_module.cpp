@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "auditory_feedback_module.hpp"
+#include "feedback_module.hpp"
 
 int main() {
-	auditory_feedback_module& feedback_module = auditory_feedback_module::get_instance();
+	feedback_module& feedback_module = feedback_module::get_instance();
 	feedback_module.set_feedback_mode(VERBAL_MODE);
 	feedback_module.start();
 

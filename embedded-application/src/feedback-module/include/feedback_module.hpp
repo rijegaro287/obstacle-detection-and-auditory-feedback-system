@@ -1,8 +1,6 @@
 #pragma once
 
-#include <iostream>
 #include <cstdint>
-
 #include "kfr/all.hpp"
 #include "npy.hpp"
 
@@ -65,13 +63,15 @@ enum VERBAL_FEEDBACK_IDX {
 using namespace std;
 using namespace npy;
 
-class auditory_feedback_module {
+class feedback_module {
 public:
-  static auditory_feedback_module& get_instance();
-  auditory_feedback_module(const auditory_feedback_module&) = delete;
-  auditory_feedback_module& operator=(const auditory_feedback_module&) = delete;
-  auditory_feedback_module(auditory_feedback_module&&) = delete;
-  auditory_feedback_module& operator=(auditory_feedback_module&&) = delete;
+  feedback_module(const feedback_module&) = delete;
+  feedback_module& operator=(const feedback_module&) = delete;
+  feedback_module(feedback_module&&) = delete;
+  feedback_module& operator=(feedback_module&&) = delete;
+
+  static feedback_module& get_instance();
+
   void set_feedback_mode(FEEDBACK_MODES mode);
   void start();
 private:
@@ -81,8 +81,8 @@ private:
   kd_tree<3> position_tree;
   kfr::tensor<double, 2> verbal_feedback_tensor;
 
-  auditory_feedback_module();
-  ~auditory_feedback_module() = default;
+  feedback_module();
+  ~feedback_module() = default;
 
   void init_tap_signal();
   void init_hrir_tensor();

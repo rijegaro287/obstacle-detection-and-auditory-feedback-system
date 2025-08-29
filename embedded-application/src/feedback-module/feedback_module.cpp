@@ -1,11 +1,15 @@
-#include "auditory_feedback_module.hpp"
+#include "feedback_module.hpp"
 
-auditory_feedback_module& auditory_feedback_module::get_instance() {
-	static auditory_feedback_module instance;
+#include <iostream>
+
+// #include "control_module.hpp"
+
+feedback_module& feedback_module::get_instance() {
+	static feedback_module instance;
 	return instance;
 }
 
-auditory_feedback_module::auditory_feedback_module() {
+feedback_module::feedback_module() {
   this->feedback_mode = NON_VERBAL_MODE;
 	this->init_tap_signal();
 	this->init_hrir_tensor();
@@ -13,12 +17,12 @@ auditory_feedback_module::auditory_feedback_module() {
 	this->init_verbal_feedback_tensor();
 }
 
-void auditory_feedback_module::init_tap_signal() {
+void feedback_module::init_tap_signal() {
 	npy_data tap = read_npy<double>(TAP_SIGNAL_PATH);
 	this->tap_signal = kfr::make_univector(tap.data);
 }
 
-void auditory_feedback_module::init_hrir_tensor() {
+void feedback_module::init_hrir_tensor() {
 	npy_data hrirs = read_npy<double>(HRIR_PATH);
 	uint64_t n_samples = hrirs.shape[0];
 	uint64_t n_taps = hrirs.shape[1];
@@ -34,7 +38,7 @@ void auditory_feedback_module::init_hrir_tensor() {
 	}
 }
 
-void auditory_feedback_module::init_position_tree() {
+void feedback_module::init_position_tree() {
 	npy_data positions = read_npy<double>(POSITION_PATH);
 	uint64_t n_samples = positions.shape[0];
 	uint64_t n_channels = positions.shape[1];
@@ -48,7 +52,7 @@ void auditory_feedback_module::init_position_tree() {
 	}
 }
 
-void auditory_feedback_module::init_verbal_feedback_tensor() {
+void feedback_module::init_verbal_feedback_tensor() {
 	npy_data verbal_feedback = read_npy<double>(VERBAL_FEEDBACK_PATH);
 	uint64_t n_positions = verbal_feedback.shape[0];
 	uint64_t n_samples = verbal_feedback.shape[1];
@@ -61,11 +65,11 @@ void auditory_feedback_module::init_verbal_feedback_tensor() {
 	}
 }
 
-void auditory_feedback_module::set_feedback_mode(FEEDBACK_MODES mode) {
+void feedback_module::set_feedback_mode(FEEDBACK_MODES mode) {
 	this->feedback_mode = mode;
 }
 
-kfr::univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univector(uint64_t sample, uint64_t channel) {
+kfr::univector<double, HRIR_N_TAPS> feedback_module::make_hrir_univector(uint64_t sample, uint64_t channel) {
 	kfr::univector<double, HRIR_N_TAPS> hrir;
 	for (uint64_t i = 0; i < HRIR_N_TAPS; i++) {
 		hrir[i] = this->hrir_tensor(sample, i, channel);
@@ -73,7 +77,7 @@ kfr::univector<double, HRIR_N_TAPS> auditory_feedback_module::make_hrir_univecto
 	return hrir;
 }
 
-uint8_t auditory_feedback_module::calculate_verbal_position(float azimuth, float elevation, float distance) {
+uint8_t feedback_module::calculate_verbal_position(float azimuth, float elevation, float distance) {
 	uint8_t position = 0;
 
 	if (azimuth < (360 - VERBAL_AZIMUTH_THRESHOLD/2) && azimuth >= (360 - TOF_AZ_FOV/2)) {
@@ -111,7 +115,7 @@ uint8_t auditory_feedback_module::calculate_verbal_position(float azimuth, float
 	return position;
 }
 
-void auditory_feedback_module::generate_non_verbal_feedback(float azimuth, float elevation, float distance) {
+void feedback_module::generate_non_verbal_feedback(float azimuth, float elevation, float distance) {
 	uint64_t sample_idx = this->position_tree.find_nearest({azimuth, elevation, distance});
 
 	kfr::univector<double> output_l(this->tap_signal.size());
@@ -146,7 +150,7 @@ void auditory_feedback_module::generate_non_verbal_feedback(float azimuth, float
 	write_npy("./output_non_verbal_r.npy", output_r_npy);
 }
 
-void auditory_feedback_module::generate_verbal_feedback(float azimuth, float elevation, float distance) {
+void feedback_module::generate_verbal_feedback(float azimuth, float elevation, float distance) {
 	uint8_t position_idx;
 
 	uint8_t position = this->calculate_verbal_position(azimuth, elevation, distance);
@@ -205,7 +209,7 @@ void auditory_feedback_module::generate_verbal_feedback(float azimuth, float ele
 }
 
 
-void auditory_feedback_module::generate_feedback(float azimuth, float elevation, float distance) {
+void feedback_module::generate_feedback(float azimuth, float elevation, float distance) {
 	if (this->feedback_mode == NON_VERBAL_MODE) {
 		printf("Generating non-verbal feedback...\n");
 		this->generate_non_verbal_feedback(azimuth, elevation, distance);
@@ -219,27 +223,28 @@ void auditory_feedback_module::generate_feedback(float azimuth, float elevation,
 	}
 }
 
-void auditory_feedback_module::start() {
-	vector<vector<float>> test_positions = {
-		// {  0.0f,   0.0f, 0.5f}, // FRONT
-		// {  0.0f,  10.0f, 0.5f}, // ABOVE
-		// {  0.0f, -10.0f, 0.5f}, // BELOW
-		// {340.0f, 	 0.0f, 0.5f}, // RIGHT
-		// { 25.0f,   0.0f, 0.5f}, // LEFT
-		// {340.0f,  10.0f, 0.5f}, // ABOVE RIGHT
-		// { 25.0f,  10.0f, 0.5f}, // ABOVE LEFT
-		{340.0f, -10.0f, 0.5f}, // BELOW RIGHT
-		// { 25.0f, -10.0f, 0.5f}, // BELOW LEFT
-	};
+void feedback_module::start() {
+	// control_module& ctrl_module = control_module::get_instance();
+	// vector<vector<float>> test_positions = {
+	// 	// {  0.0f,   0.0f, 0.5f}, // FRONT
+	// 	// {  0.0f,  10.0f, 0.5f}, // ABOVE
+	// 	// {  0.0f, -10.0f, 0.5f}, // BELOW
+	// 	// {340.0f, 	 0.0f, 0.5f}, // RIGHT
+	// 	// { 25.0f,   0.0f, 0.5f}, // LEFT
+	// 	// {340.0f,  10.0f, 0.5f}, // ABOVE RIGHT
+	// 	// { 25.0f,  10.0f, 0.5f}, // ABOVE LEFT
+	// 	{340.0f, -10.0f, 0.5f}, // BELOW RIGHT
+	// 	// { 25.0f, -10.0f, 0.5f}, // BELOW LEFT
+	// };
 
-	for (uint64_t idx = 0; idx < test_positions.size(); ++idx) {
-		float azimuth = test_positions[idx][0];
-		float elevation = test_positions[idx][1];
-		float distance = test_positions[idx][2];
+	// for (uint64_t idx = 0; idx < test_positions.size(); ++idx) {
+	// 	float azimuth = test_positions[idx][0];
+	// 	float elevation = test_positions[idx][1];
+	// 	float distance = test_positions[idx][2];
 
-		printf("===========================================================\n");
-		printf("Test position: (%f, %f, %f)\n", azimuth, elevation, distance);
-		this->generate_feedback(azimuth, elevation, distance);
-		printf("===========================================================\n");
-	}
+	// 	printf("===========================================================\n");
+	// 	printf("Test position: (%f, %f, %f)\n", azimuth, elevation, distance);
+	// 	this->generate_feedback(azimuth, elevation, distance);
+	// 	printf("===========================================================\n");
+	// }
 }
