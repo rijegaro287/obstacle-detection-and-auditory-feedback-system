@@ -22,8 +22,6 @@ FetchContent_MakeAvailable(kfr)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-# add_subdirectory(../control-module ${CMAKE_CURRENT_BINARY_DIR}/control-module)
-
 # Define the library
 add_library(feedback_module STATIC
   feedback_module.cpp

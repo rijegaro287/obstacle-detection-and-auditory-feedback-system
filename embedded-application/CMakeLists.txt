@@ -15,7 +15,7 @@ project(ObstacleDetectionAndAuditoryFeedbackSystem)
 add_subdirectory(src/control-module)
 add_subdirectory(src/feedback-module)
 add_subdirectory(src/transmission-module)
-# add_subdirectory(src/configuration-module)
+add_subdirectory(src/configuration-module)
 
 # Create main executable that includes all modules
 # Uncomment the following lines if you want to create a main application that uses all modules.
@@ -26,6 +26,7 @@ add_executable(main_application
 )
 target_link_libraries(main_application PRIVATE
   control_module
+  configuration_module
   feedback_module
   transmission_module
 )
