@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 
 project(TransmissionModule)
 
-configure_file(./verbal_feedback_signals.npy ./verbal_feedback_signals.npy COPYONLY)
+configure_file(verbal_feedback_signals.npy verbal_feedback_signals.npy COPYONLY)
 
 find_package(PkgConfig REQUIRED)
 find_package(ALSA REQUIRED)
@@ -17,26 +17,10 @@ pkg_check_modules(GIO REQUIRED gio-2.0)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-# Define the module executable
-add_executable(transmission_module 
-  transmission_module.cpp
-  bluetooth_controller.c
-)
-target_include_directories(transmission_module PRIVATE 
-  include
-  ${ALSA_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
-  ${GIO_INCLUDE_DIRS}
-)
-target_link_libraries(transmission_module 
-  ${ALSA_LIBRARIES}
-  ${GLIB_LIBRARIES}
-  ${GIO_LIBRARIES}
-)
-
 # Define the test executable
 add_executable(test_transmission_module 
   test/test_transmission_module.cpp
+  transmission_module.cpp
   bluetooth_controller.c
 )
 target_include_directories(test_transmission_module PRIVATE

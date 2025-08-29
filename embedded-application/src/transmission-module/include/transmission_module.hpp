@@ -1,10 +1,21 @@
 #pragma once
 
+#include <iostream>
+#include <vector>
 #include <chrono>
 #include <thread>
+#include <math.h>
+
+#include <alsa/asoundlib.h>
+#include "npy.hpp"
 
 #include "bluetooth_controller.h"
 
+using namespace npy;
+using namespace std;
+
+void convert_to_pcm(const vector<double>& interleaved, vector<int16_t>& pcm, double max_value);
+void interleave_audio(const vector<double>& left_channel, const vector<double>& right_channel, vector<double>& interleaved);
 
 	// GError *error = NULL;
 

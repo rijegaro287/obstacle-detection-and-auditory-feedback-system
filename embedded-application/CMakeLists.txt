@@ -9,12 +9,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-point
 set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Add all modules as subdirectories
-add_subdirectory(src/image-capture-module)
-add_subdirectory(src/obstacle-detection-module)
+# add_subdirectory(src/image-capture-module)
+# add_subdirectory(src/obstacle-detection-module)
 add_subdirectory(src/auditory-feedback-module)
 add_subdirectory(src/transmission-module)
-add_subdirectory(src/configuration-module)
-add_subdirectory(src/control-module)
+# add_subdirectory(src/configuration-module)
+# add_subdirectory(src/control-module)
 
 # Create main executable that includes all modules
 # Uncomment the following lines if you want to create a main application that uses all modules.

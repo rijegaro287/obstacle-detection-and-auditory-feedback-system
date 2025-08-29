@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "control_module.h"
+#include "control_module.hpp"
 
 int main() {
   return 0;
