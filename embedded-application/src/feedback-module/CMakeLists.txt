@@ -4,10 +4,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(AuditoryFeedbackModule)
 
-configure_file(./tap_alert.npy ./tap_alert.npy COPYONLY)
-configure_file(./dataset/hrirs.npy ./dataset/hrirs.npy COPYONLY)
-configure_file(./dataset/positions.npy ./dataset/positions.npy COPYONLY)
-configure_file(./dataset/verbal_feedback_signals.npy ./dataset/verbal_feedback_signals.npy COPYONLY)
+# configure_file(./tap_alert.npy ./tap_alert.npy COPYONLY)
+# configure_file(./dataset/hrirs.npy ./dataset/hrirs.npy COPYONLY)
+# configure_file(./dataset/positions.npy ./dataset/positions.npy COPYONLY)
+# configure_file(./dataset/verbal_feedback_signals.npy ./dataset/verbal_feedback_signals.npy COPYONLY)
 
 include(FetchContent)
 
@@ -30,7 +30,9 @@ add_library(feedback_module STATIC
   kd_tree.cpp
 )
 target_include_directories(feedback_module PUBLIC include)
+target_include_directories(feedback_module PRIVATE ../control-module/include)
 target_link_libraries(feedback_module PUBLIC kfr kfr_dsp)
+target_link_libraries(feedback_module PRIVATE control_iface)
 
 add_library(feedback_iface STATIC 
   feedback_iface.cpp

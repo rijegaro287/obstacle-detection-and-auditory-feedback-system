@@ -7,14 +7,14 @@
 
 using namespace std;
 
-class control_module {
+class ControlModule {
 public:
-  control_module(const control_module&) = delete;
-  control_module& operator=(const control_module&) = delete;
-  control_module(control_module&&) = delete;
-  control_module& operator=(control_module&&) = delete;
+  ControlModule(const ControlModule&) = delete;
+  ControlModule& operator=(const ControlModule&) = delete;
+  ControlModule(ControlModule&&) = delete;
+  ControlModule& operator=(ControlModule&&) = delete;
 
-  static control_module& get_instance();
+  static ControlModule& get_instance();
   void set_obstacle_position(obstacle_position_t position);
   void set_audio_data(audio_data_t data);  
 
@@ -29,6 +29,6 @@ private:
   mutex obstacle_mtx;
   mutex audio_mtx;
 
-  control_module();
-  ~control_module();
+  ControlModule();
+  ~ControlModule();
 };

@@ -28,6 +28,7 @@ target_include_directories(transmission_module PUBLIC
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
 )
+target_include_directories(transmission_module PRIVATE ../control-module/include)
 target_link_libraries(transmission_module 
   ${ALSA_LIBRARIES}
   ${GLIB_LIBRARIES}

@@ -8,14 +8,15 @@ project(ControlModule)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-add_subdirectory(../feedback-module ${CMAKE_CURRENT_BINARY_DIR}/feedback-module)
-add_subdirectory(../transmission-module ${CMAKE_CURRENT_BINARY_DIR}/transmission-module)
-
 # Control module library
 add_library(control_module STATIC
     control_module.cpp
 )
 target_include_directories(control_module PUBLIC include)
+target_include_directories(control_module PRIVATE 
+    ../feedback-module/include
+    ../transmission-module/include
+)
 target_link_libraries(control_module PRIVATE
     feedback_iface
     transmission_iface

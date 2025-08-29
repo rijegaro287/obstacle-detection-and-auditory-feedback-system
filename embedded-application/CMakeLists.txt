@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(ObstacleDetectionAndAuditoryFeedbackSystem)
 
@@ -11,10 +12,10 @@ project(ObstacleDetectionAndAuditoryFeedbackSystem)
 # Add all modules as subdirectories
 # add_subdirectory(src/image-capture-module)
 # add_subdirectory(src/obstacle-detection-module)
+add_subdirectory(src/control-module)
 add_subdirectory(src/feedback-module)
 add_subdirectory(src/transmission-module)
 # add_subdirectory(src/configuration-module)
-# add_subdirectory(src/control-module)
 
 # Create main executable that includes all modules
 # Uncomment the following lines if you want to create a main application that uses all modules.
@@ -22,23 +23,12 @@ add_subdirectory(src/transmission-module)
 
 add_executable(main_application
   src/main.cpp
-#   src/image-capture-module/image_capture_module.cpp
-#   src/obstacle-detection-module/obstacle_detection_module.cpp
-  src/feedback-module/feedback_module.cpp
-  src/transmission-module/transmission_module.cpp
-#   src/configuration-module/configuration_module.cpp
-  # src/control-module/control_module.cpp
 )
-
-# Include directories for all modules
-target_include_directories(main_application PRIVATE 
-#   src/image-capture-module/include
-#   src/obstacle-detection-module/include
-  src/feedback-module/include
-  src/transmission-module/include
-#   src/configuration-module/include
-  # src/control-module/include
+target_link_libraries(main_application PRIVATE
+  control_module
+  feedback_module
+  transmission_module
 )
 
 # Enable testing at the top level
-# enable_testing()
+enable_testing()

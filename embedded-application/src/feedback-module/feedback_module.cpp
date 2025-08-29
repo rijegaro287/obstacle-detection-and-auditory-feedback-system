@@ -1,4 +1,5 @@
 #include "feedback_module.hpp"
+#include "control_iface.hpp"
 
 #include <iostream>
 
@@ -224,7 +225,7 @@ void feedback_module::generate_feedback(float azimuth, float elevation, float di
 }
 
 void feedback_module::start() {
-	// control_module& ctrl_module = control_module::get_instance();
+
 	// vector<vector<float>> test_positions = {
 	// 	// {  0.0f,   0.0f, 0.5f}, // FRONT
 	// 	// {  0.0f,  10.0f, 0.5f}, // ABOVE
