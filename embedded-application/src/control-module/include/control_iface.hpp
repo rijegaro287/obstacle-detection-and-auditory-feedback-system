@@ -11,6 +11,7 @@ typedef struct obstacle_position_t_ {
 typedef struct audio_data_t_ {
   std::vector<double> left_signal;
   std::vector<double> right_signal;
+  uint64_t sample_rate;
 } audio_data_t;
 
 class IControl{

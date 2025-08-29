@@ -2,15 +2,15 @@
 #include "control_iface.hpp"
 
 #include <iostream>
+#include <thread>
+#include <chrono>
 
-// #include "control_module.hpp"
-
-feedback_module& feedback_module::get_instance() {
-	static feedback_module instance;
+FeedbackModule& FeedbackModule::get_instance() {
+	static FeedbackModule instance;
 	return instance;
 }
 
-feedback_module::feedback_module() {
+FeedbackModule::FeedbackModule() {
   this->feedback_mode = NON_VERBAL_MODE;
 	this->init_tap_signal();
 	this->init_hrir_tensor();
@@ -18,12 +18,12 @@ feedback_module::feedback_module() {
 	this->init_verbal_feedback_tensor();
 }
 
-void feedback_module::init_tap_signal() {
+void FeedbackModule::init_tap_signal() {
 	npy_data tap = read_npy<double>(TAP_SIGNAL_PATH);
 	this->tap_signal = kfr::make_univector(tap.data);
 }
 
-void feedback_module::init_hrir_tensor() {
+void FeedbackModule::init_hrir_tensor() {
 	npy_data hrirs = read_npy<double>(HRIR_PATH);
 	uint64_t n_samples = hrirs.shape[0];
 	uint64_t n_taps = hrirs.shape[1];
@@ -39,7 +39,7 @@ void feedback_module::init_hrir_tensor() {
 	}
 }
 
-void feedback_module::init_position_tree() {
+void FeedbackModule::init_position_tree() {
 	npy_data positions = read_npy<double>(POSITION_PATH);
 	uint64_t n_samples = positions.shape[0];
 	uint64_t n_channels = positions.shape[1];
@@ -53,7 +53,7 @@ void feedback_module::init_position_tree() {
 	}
 }
 
-void feedback_module::init_verbal_feedback_tensor() {
+void FeedbackModule::init_verbal_feedback_tensor() {
 	npy_data verbal_feedback = read_npy<double>(VERBAL_FEEDBACK_PATH);
 	uint64_t n_positions = verbal_feedback.shape[0];
 	uint64_t n_samples = verbal_feedback.shape[1];
@@ -66,11 +66,11 @@ void feedback_module::init_verbal_feedback_tensor() {
 	}
 }
 
-void feedback_module::set_feedback_mode(FEEDBACK_MODES mode) {
+void FeedbackModule::set_feedback_mode(FEEDBACK_MODES mode) {
 	this->feedback_mode = mode;
 }
 
-kfr::univector<double, HRIR_N_TAPS> feedback_module::make_hrir_univector(uint64_t sample, uint64_t channel) {
+kfr::univector<double, HRIR_N_TAPS> FeedbackModule::make_hrir_univector(uint64_t sample, uint64_t channel) {
 	kfr::univector<double, HRIR_N_TAPS> hrir;
 	for (uint64_t i = 0; i < HRIR_N_TAPS; i++) {
 		hrir[i] = this->hrir_tensor(sample, i, channel);
@@ -78,7 +78,7 @@ kfr::univector<double, HRIR_N_TAPS> feedback_module::make_hrir_univector(uint64_
 	return hrir;
 }
 
-uint8_t feedback_module::calculate_verbal_position(float azimuth, float elevation, float distance) {
+uint8_t FeedbackModule::calculate_verbal_position(float azimuth, float elevation, float distance) {
 	uint8_t position = 0;
 
 	if (azimuth < (360 - VERBAL_AZIMUTH_THRESHOLD/2) && azimuth >= (360 - TOF_AZ_FOV/2)) {
@@ -116,7 +116,12 @@ uint8_t feedback_module::calculate_verbal_position(float azimuth, float elevatio
 	return position;
 }
 
-void feedback_module::generate_non_verbal_feedback(float azimuth, float elevation, float distance) {
+void FeedbackModule::generate_non_verbal_feedback(float azimuth, float elevation, float distance) {
+	audio_data_t signal;
+	signal.left_signal = vector<double>(this->tap_signal.size());
+	signal.right_signal = vector<double>(this->tap_signal.size());
+	signal.sample_rate = NON_VERBAL_SAMPLE_RATE;
+
 	uint64_t sample_idx = this->position_tree.find_nearest({azimuth, elevation, distance});
 
 	kfr::univector<double> output_l(this->tap_signal.size());
@@ -131,27 +136,37 @@ void feedback_module::generate_non_verbal_feedback(float azimuth, float elevatio
 	filter_l.apply(output_l, this->tap_signal);
 	filter_r.apply(output_r, this->tap_signal);
 
-	npy_data<double> output_l_npy;
-	npy_data<double> output_r_npy;
-	
-	vector<double> rend_l(this->tap_signal.size());
-	vector<double> rend_r(this->tap_signal.size());
 	for (uint64_t i = 0; i < this->tap_signal.size(); i++) {
-		rend_l[i] = output_l[i];
-		rend_r[i] = output_r[i];
+		signal.left_signal[i] = output_l[i];
+		signal.right_signal[i] = output_r[i];
 	}
 
-	output_l_npy.data = rend_l;
-	output_r_npy.data = rend_r;
-	
-	output_l_npy.shape = {this->tap_signal.size()};
-	output_r_npy.shape = {this->tap_signal.size()};
+	printf("Non-verbal feedback generated\n");
 
-	write_npy("./output_non_verbal_l.npy", output_l_npy);
-	write_npy("./output_non_verbal_r.npy", output_r_npy);
+	// npy_data<double> output_l_npy;
+	// npy_data<double> output_r_npy;
+	
+	// vector<double> rend_l(this->tap_signal.size());
+	// vector<double> rend_r(this->tap_signal.size());
+
+	// output_l_npy.data = rend_l;
+	// output_r_npy.data = rend_r;
+	
+	// output_l_npy.shape = {this->tap_signal.size()};
+	// output_r_npy.shape = {this->tap_signal.size()};
+
+	// write_npy("./output_non_verbal_l.npy", output_l_npy);
+	// write_npy("./output_non_verbal_r.npy", output_r_npy);
 }
 
-void feedback_module::generate_verbal_feedback(float azimuth, float elevation, float distance) {
+void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, float distance) {
+	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
+
+	audio_data_t signal;
+	signal.left_signal = vector<double>(n_samples);
+	signal.right_signal = vector<double>(n_samples);
+	signal.sample_rate = VERBAL_SAMPLE_RATE;
+
 	uint8_t position_idx;
 
 	uint8_t position = this->calculate_verbal_position(azimuth, elevation, distance);
@@ -197,20 +212,22 @@ void feedback_module::generate_verbal_feedback(float azimuth, float elevation, f
 		return;
 	}
 
-	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
-	npy_data<double> output_npy;
-	vector<double> output(n_samples);
 	for (uint64_t i = 0; i < n_samples; i++) {
-		output[i] = this->verbal_feedback_tensor(position_idx, i);
+		signal.left_signal[i] = this->verbal_feedback_tensor(position_idx, i);
+		signal.right_signal[i] = this->verbal_feedback_tensor(position_idx, i);
 	}
-	output_npy.data = output;
-	output_npy.shape = {n_samples};
 
-	write_npy("./output_verbal.npy", output_npy);
+	printf("Verbal feedback generated\n");
+
+	// npy_data<double> output_npy;
+	// output_npy.data = signal.left_signal;
+	// output_npy.shape = {n_samples};
+
+	// write_npy("./output_verbal.npy", output_npy);
 }
 
 
-void feedback_module::generate_feedback(float azimuth, float elevation, float distance) {
+void FeedbackModule::generate_feedback(float azimuth, float elevation, float distance) {
 	if (this->feedback_mode == NON_VERBAL_MODE) {
 		printf("Generating non-verbal feedback...\n");
 		this->generate_non_verbal_feedback(azimuth, elevation, distance);
@@ -224,7 +241,20 @@ void feedback_module::generate_feedback(float azimuth, float elevation, float di
 	}
 }
 
-void feedback_module::start() {
+void FeedbackModule::start() {
+	printf("Feedback Module started\n");
+
+	while (true) {
+		obstacle_position_t position = IControl::get_obstacle_position();
+		printf("====================================================\n");
+
+		printf("Obstacle Position - Azimuth: %.2f, Elevation: %.2f, Distance: %.2f\n", 
+			position.azimuth, position.elevation, position.distance);
+			this->generate_feedback(position.azimuth, position.elevation, position.distance);
+			
+		printf("====================================================\n");
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}	
 
 	// vector<vector<float>> test_positions = {
 	// 	// {  0.0f,   0.0f, 0.5f}, // FRONT

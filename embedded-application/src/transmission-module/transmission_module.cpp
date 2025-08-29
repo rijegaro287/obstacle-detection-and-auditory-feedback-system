@@ -1,6 +1,12 @@
 #include "transmission_module.hpp"
 #include "control_iface.hpp"
 
+#include <chrono>
+#include <thread>
+#include <math.h>
+
+#include "bluetooth_controller.h"
+
 void interleave_audio(const vector<double>& left_channel, const vector<double>& right_channel, vector<double>& interleaved) {
 	if (left_channel.size() != right_channel.size()) {
 		printf("Error: Left and right channel sizes do not match.\n");

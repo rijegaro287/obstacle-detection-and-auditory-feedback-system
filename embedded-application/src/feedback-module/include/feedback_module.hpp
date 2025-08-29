@@ -6,10 +6,10 @@
 
 #include "kd_tree.hpp"
 
-#define TAP_SIGNAL_PATH "./tap_alert.npy"
-#define HRIR_PATH "./dataset/hrirs.npy"
-#define POSITION_PATH "./dataset/positions.npy"
-#define VERBAL_FEEDBACK_PATH "./dataset/verbal_feedback_signals.npy"
+#define TAP_SIGNAL_PATH "./src/feedback-module/tap_alert.npy"
+#define HRIR_PATH "./src/feedback-module/dataset/hrirs.npy"
+#define POSITION_PATH "./src/feedback-module/dataset/positions.npy"
+#define VERBAL_FEEDBACK_PATH "./src/feedback-module/dataset/verbal_feedback_signals.npy"
 
 #define NON_VERBAL_SAMPLE_RATE 48000
 #define VERBAL_SAMPLE_RATE 22050
@@ -63,14 +63,14 @@ enum VERBAL_FEEDBACK_IDX {
 using namespace std;
 using namespace npy;
 
-class feedback_module {
+class FeedbackModule {
 public:
-  feedback_module(const feedback_module&) = delete;
-  feedback_module& operator=(const feedback_module&) = delete;
-  feedback_module(feedback_module&&) = delete;
-  feedback_module& operator=(feedback_module&&) = delete;
+  FeedbackModule(const FeedbackModule&) = delete;
+  FeedbackModule& operator=(const FeedbackModule&) = delete;
+  FeedbackModule(FeedbackModule&&) = delete;
+  FeedbackModule& operator=(FeedbackModule&&) = delete;
 
-  static feedback_module& get_instance();
+  static FeedbackModule& get_instance();
 
   void set_feedback_mode(FEEDBACK_MODES mode);
   void start();
@@ -81,8 +81,8 @@ private:
   kd_tree<3> position_tree;
   kfr::tensor<double, 2> verbal_feedback_tensor;
 
-  feedback_module();
-  ~feedback_module() = default;
+  FeedbackModule();
+  ~FeedbackModule() = default;
 
   void init_tap_signal();
   void init_hrir_tensor();

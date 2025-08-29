@@ -2,14 +2,9 @@
 
 #include <iostream>
 #include <vector>
-#include <chrono>
-#include <thread>
-#include <math.h>
 
 #include <alsa/asoundlib.h>
 #include "npy.hpp"
-
-#include "bluetooth_controller.h"
 
 using namespace npy;
 using namespace std;

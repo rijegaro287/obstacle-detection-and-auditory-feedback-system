@@ -64,12 +64,6 @@ uint64_t kd_tree<K>::find_nearest(const array<double, K>& target) {
   Node* best = nullptr;
   double best_dist;
   find_nearest_recursive(root, best, best_dist, target, 0);
-
-  printf("Best match found at index: %lu\n", best->idx);
-  printf("Best match coordinates: (%f, %f, %f)\n", best->point[0], best->point[1], best->point[2]);
-  printf("Distance to target: %f\n", best_dist);
-
-
   return (best != nullptr) ? best->idx : UINT64_MAX;
 }
 
