@@ -137,6 +137,8 @@ void FeedbackModule::generate_non_verbal_feedback(float azimuth, float elevation
 
 	printf("Non-verbal feedback generated\n");
 
+	IControl::set_audio_data(signal);
+
 	// npy_data<double> output_l_npy;
 	// npy_data<double> output_r_npy;
 	
@@ -200,9 +202,9 @@ void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, fl
 		signal.left_signal[i] = this->verbal_feedback_tensor(position_idx, i);
 		signal.right_signal[i] = this->verbal_feedback_tensor(position_idx, i);
 	}
-
 	printf("Verbal feedback generated\n");
 
+	IControl::set_audio_data(signal);
 	// npy_data<double> output_npy;
 	// output_npy.data = signal.left_signal;
 	// output_npy.shape = {n_samples};
@@ -225,7 +227,7 @@ void FeedbackModule::generate_feedback(float azimuth, float elevation, float dis
 }
 
 void FeedbackModule::start() {
-	printf("Feedback Module started\n");
+	printf("Starting Feedback Module...\n");
 
 	while (true) {
 		obstacle_position_t position = IControl::get_obstacle_position();

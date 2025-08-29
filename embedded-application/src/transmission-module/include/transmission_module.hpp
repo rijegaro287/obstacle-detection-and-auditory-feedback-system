@@ -106,3 +106,18 @@ void interleave_audio(const vector<double>& left_channel, const vector<double>& 
 	// g_object_unref(adapter_proxy);
 
 	// return status;
+
+class TransmissionModule {
+public:
+  TransmissionModule(const TransmissionModule&) = delete;
+  TransmissionModule& operator=(const TransmissionModule&) = delete;
+  TransmissionModule(TransmissionModule&&) = delete;
+  TransmissionModule& operator=(TransmissionModule&&) = delete;
+
+  static TransmissionModule& get_instance();
+
+	void start();
+private:
+  TransmissionModule();
+  ~TransmissionModule() = default;
+};

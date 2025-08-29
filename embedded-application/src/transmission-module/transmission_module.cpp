@@ -42,3 +42,32 @@ void convert_to_pcm(const vector<double>& interleaved, vector<int16_t>& pcm, dou
 		if (pcm[i] < INT16_MIN) pcm[i] = INT16_MIN;
 	}
 }
+
+TransmissionModule& TransmissionModule::get_instance() {
+	static TransmissionModule instance;
+	return instance;
+}
+
+TransmissionModule::TransmissionModule() {
+
+}
+
+void TransmissionModule::start() {
+	printf("Starting Transmission Module...\n");
+
+	while (true) {
+		audio_data_t signal = IControl::get_audio_data()	;
+		printf("----------------------------------------------\n");
+		if (signal.left_signal.size() == 0 ||
+				signal.right_signal.size() == 0 ||
+				signal.sample_rate == 0) {
+			printf("Error: Audio signal is not available.\n");
+			continue;
+		}
+		printf("* Sample rate: %lu\n", signal.sample_rate);
+		printf("\t- Left channel: %f\tRight channel:%f\n",
+					 signal.left_signal[0], signal.right_signal[0]);
+		printf("\n----------------------------------------------\n");
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}	
+}

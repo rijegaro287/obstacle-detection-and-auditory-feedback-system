@@ -15,6 +15,9 @@ ControlModule::ControlModule() {
   this->obstacle_position = new obstacle_position_t;
   this->audio_data = new audio_data_t;
 
+  this->audio_data->left_signal = vector<double>();
+  this->audio_data->right_signal = vector<double>();
+
   this->obstacle_mtx.lock();
   this->audio_mtx.lock();
 }
@@ -49,8 +52,9 @@ audio_data_t ControlModule::get_audio_data() {
 }
 
 void ControlModule::start() {
-  printf("Control Module started\n");
+  printf("Starting Control Module...\n");
   this->obstacle_mtx.unlock();
+  this->audio_mtx.unlock();
 
   while (true) {
     std::this_thread::sleep_for(std::chrono::seconds(3));
