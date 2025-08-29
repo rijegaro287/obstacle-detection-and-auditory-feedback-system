@@ -9,10 +9,6 @@ int main() {
   FeedbackModule& feedback_module = FeedbackModule::get_instance();
 
   printf("Starting Control and Feedback Modules...\n");
-
-  // control_module.start();
-  // feedback_module.start();
-
   std::thread control_thread(&ControlModule::start, &control_module);
   std::thread feedback_thread(&FeedbackModule::start, &feedback_module);
 

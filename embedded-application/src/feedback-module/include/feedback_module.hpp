@@ -6,6 +6,8 @@
 
 #include "kd_tree.hpp"
 
+#include "feedback_iface.hpp"
+
 #define TAP_SIGNAL_PATH "./src/feedback-module/tap_alert.npy"
 #define HRIR_PATH "./src/feedback-module/dataset/hrirs.npy"
 #define POSITION_PATH "./src/feedback-module/dataset/positions.npy"
@@ -22,11 +24,6 @@
 
 #define VERBAL_AZIMUTH_THRESHOLD TOF_AZ_FOV/3
 #define VERBAL_ELEVATION_THRESHOLD TOF_EL_FOV/3
-
-enum FEEDBACK_MODES {
-  NON_VERBAL_MODE,
-  VERBAL_MODE
-};
 
 enum HRIR_CHANNELS {
 	LEFT_CHANNEL,

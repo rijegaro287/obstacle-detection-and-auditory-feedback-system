@@ -61,7 +61,14 @@ void ControlModule::start() {
     IControl::set_obstacle_position({0.0, 0.0, 0.0});
     printf("Obstacle changed!!!!!\n");
 
-    // IFeedback::
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    IFeedback::set_feedback_mode(VERBAL_MODE);
+    printf("Feedback mode changed!!!!!\n");
+
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    IFeedback::set_feedback_mode(NON_VERBAL_MODE);
+    printf("Feedback mode changed!!!!!\n");
+
   }
   
 }

@@ -82,15 +82,12 @@ uint8_t FeedbackModule::calculate_verbal_position(float azimuth, float elevation
 	uint8_t position = 0;
 
 	if (azimuth < (360 - VERBAL_AZIMUTH_THRESHOLD/2) && azimuth >= (360 - TOF_AZ_FOV/2)) {
-		printf("Verbal feedback: Object is to the right\n");
 		position |= RIGHT_MASK;
 	}
 	else if (azimuth > VERBAL_AZIMUTH_THRESHOLD/2 && azimuth <= TOF_AZ_FOV/2) {
-		printf("Verbal feedback: Object is to the left\n");
 		position |= LEFT_MASK;
 	}
 	else if (azimuth <= VERBAL_AZIMUTH_THRESHOLD/2 || azimuth >= (360 - VERBAL_AZIMUTH_THRESHOLD/2)) {
-		printf("Verbal feedback: Object is horizontally centered\n");
 		position |= HORIZONTAL_CENTERED_MASK;
 	}
 	else {
@@ -98,15 +95,12 @@ uint8_t FeedbackModule::calculate_verbal_position(float azimuth, float elevation
 	}
 
 	if (elevation > VERBAL_ELEVATION_THRESHOLD/2 && elevation <= TOF_EL_FOV/2) {
-		printf("Verbal feedback: Object is above\n");
 		position |= ABOVE_MASK;
 	}
 	else if (elevation < -VERBAL_ELEVATION_THRESHOLD/2 && elevation >= -TOF_EL_FOV/2) {
-		printf("Verbal feedback: Object is below\n");
 		position |= BELOW_MASK;
 	}
 	else if (elevation <= VERBAL_ELEVATION_THRESHOLD/2 && elevation >= -VERBAL_ELEVATION_THRESHOLD/2) {
-		printf("Verbal feedback: Object is vertically centered\n");
 		position |= VERTICALLY_CENTERED_MASK;
 	}
 	else {
@@ -172,43 +166,33 @@ void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, fl
 	uint8_t position = this->calculate_verbal_position(azimuth, elevation, distance);
 	switch (position) {
 	case HORIZONTAL_CENTERED_MASK | VERTICALLY_CENTERED_MASK:
-		printf("Verbal feedback: Position is FRONT\n");
 		position_idx = FRONT;
 		break;
 	case ABOVE_MASK | HORIZONTAL_CENTERED_MASK:
-		printf("Verbal feedback: Position is ABOVE\n");
 		position_idx = ABOVE;
 		break;
 	case BELOW_MASK | HORIZONTAL_CENTERED_MASK:
-		printf("Verbal feedback: Position is BELOW\n");
 		position_idx = BELOW;
 		break;
 	case RIGHT_MASK | VERTICALLY_CENTERED_MASK:
-		printf("Verbal feedback: Position is RIGHT\n");
 		position_idx = RIGHT;
 		break;
 	case LEFT_MASK | VERTICALLY_CENTERED_MASK:
-		printf("Verbal feedback: Position is LEFT\n");
 		position_idx = LEFT;
 		break;
 	case ABOVE_MASK | RIGHT_MASK:
-		printf("Verbal feedback: Position is ABOVE RIGHT\n");
 		position_idx = ABOVE_RIGHT;
 		break;
 	case ABOVE_MASK | LEFT_MASK:
-		printf("Verbal feedback: Position is ABOVE LEFT\n");
 		position_idx = ABOVE_LEFT;
 		break;
 	case BELOW_MASK | RIGHT_MASK:
-		printf("Verbal feedback: Position is BELOW RIGHT\n");
 		position_idx = BELOW_RIGHT;
 		break;
 	case BELOW_MASK | LEFT_MASK:
-		printf("Verbal feedback: Position is BELOW LEFT\n");
 		position_idx = BELOW_LEFT;
 		break;
 	default:
-		printf("Verbal feedback: Position is UNKNOWN\n");
 		return;
 	}
 
@@ -225,7 +209,6 @@ void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, fl
 
 	// write_npy("./output_verbal.npy", output_npy);
 }
-
 
 void FeedbackModule::generate_feedback(float azimuth, float elevation, float distance) {
 	if (this->feedback_mode == NON_VERBAL_MODE) {

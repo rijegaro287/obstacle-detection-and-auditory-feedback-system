@@ -1,6 +1,12 @@
 #pragma once
 
-typedef struct test_t_{
-  int a;
-  float b;
-} test_t;
+enum FEEDBACK_MODES {
+  NON_VERBAL_MODE,
+  VERBAL_MODE
+};
+
+class IFeedback{
+private:
+public:
+  static void set_feedback_mode(FEEDBACK_MODES mode);
+};
