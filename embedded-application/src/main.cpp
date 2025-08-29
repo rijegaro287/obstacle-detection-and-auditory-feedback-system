@@ -3,6 +3,7 @@
 #include "transmission_module.hpp"
 
 #include <thread>
+#include <pthread.h>
 
 int main() {
   ControlModule& control_module = ControlModule::get_instance();
@@ -13,6 +14,10 @@ int main() {
   std::thread control_thread(&ControlModule::start, &control_module);
   std::thread feedback_thread(&FeedbackModule::start, &feedback_module);
   std::thread transmission_thread(&TransmissionModule::start, &transmission_module);
+
+  pthread_setschedprio(control_thread.native_handle(), 20);
+  pthread_setschedprio(feedback_thread.native_handle(), 99);
+  pthread_setschedprio(transmission_thread.native_handle(), 20);
 
   control_thread.join();
   feedback_thread.join();

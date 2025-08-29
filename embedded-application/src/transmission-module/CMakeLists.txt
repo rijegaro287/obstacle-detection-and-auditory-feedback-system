@@ -24,11 +24,11 @@ add_library(transmission_module STATIC
 )
 target_include_directories(transmission_module PUBLIC
   include
+  ../control-module/include
   ${ALSA_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
 )
-target_include_directories(transmission_module PRIVATE ../control-module/include)
 target_link_libraries(transmission_module 
   ${ALSA_LIBRARIES}
   ${GLIB_LIBRARIES}

@@ -29,8 +29,10 @@ add_library(feedback_module STATIC
   feedback_module.cpp
   kd_tree.cpp
 )
-target_include_directories(feedback_module PUBLIC include)
-target_include_directories(feedback_module PRIVATE ../control-module/include)
+target_include_directories(feedback_module PUBLIC 
+  include
+  ../control-module/include
+)
 target_link_libraries(feedback_module PUBLIC kfr kfr_dsp)
 target_link_libraries(feedback_module PRIVATE control_iface)
 

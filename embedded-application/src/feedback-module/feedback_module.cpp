@@ -135,8 +135,6 @@ void FeedbackModule::generate_non_verbal_feedback(float azimuth, float elevation
 		signal.right_signal[i] = output_r[i];
 	}
 
-	printf("Non-verbal feedback generated\n");
-
 	IControl::set_audio_data(signal);
 
 	// npy_data<double> output_l_npy;
@@ -227,40 +225,17 @@ void FeedbackModule::generate_feedback(float azimuth, float elevation, float dis
 }
 
 void FeedbackModule::start() {
-	printf("Starting Feedback Module...\n");
-
 	while (true) {
 		obstacle_position_t position = IControl::get_obstacle_position();
-		printf("====================================================\n");
-
+		if (position.distance == 0) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			continue;
+		}
 		printf("Obstacle Position - Azimuth: %.2f, Elevation: %.2f, Distance: %.2f\n", 
-			position.azimuth, position.elevation, position.distance);
-			this->generate_feedback(position.azimuth, position.elevation, position.distance);
-			
-		printf("====================================================\n");
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	}	
+					 position.azimuth, position.elevation, position.distance);
 
-	// vector<vector<float>> test_positions = {
-	// 	// {  0.0f,   0.0f, 0.5f}, // FRONT
-	// 	// {  0.0f,  10.0f, 0.5f}, // ABOVE
-	// 	// {  0.0f, -10.0f, 0.5f}, // BELOW
-	// 	// {340.0f, 	 0.0f, 0.5f}, // RIGHT
-	// 	// { 25.0f,   0.0f, 0.5f}, // LEFT
-	// 	// {340.0f,  10.0f, 0.5f}, // ABOVE RIGHT
-	// 	// { 25.0f,  10.0f, 0.5f}, // ABOVE LEFT
-	// 	{340.0f, -10.0f, 0.5f}, // BELOW RIGHT
-	// 	// { 25.0f, -10.0f, 0.5f}, // BELOW LEFT
-	// };
+		this->generate_feedback(position.azimuth, position.elevation, position.distance);
 
-	// for (uint64_t idx = 0; idx < test_positions.size(); ++idx) {
-	// 	float azimuth = test_positions[idx][0];
-	// 	float elevation = test_positions[idx][1];
-	// 	float distance = test_positions[idx][2];
-
-	// 	printf("===========================================================\n");
-	// 	printf("Test position: (%f, %f, %f)\n", azimuth, elevation, distance);
-	// 	this->generate_feedback(azimuth, elevation, distance);
-	// 	printf("===========================================================\n");
-	// }
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	}
 }

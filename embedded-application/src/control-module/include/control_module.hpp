@@ -15,11 +15,12 @@ public:
   ControlModule& operator=(ControlModule&&) = delete;
 
   static ControlModule& get_instance();
-  void set_obstacle_position(obstacle_position_t position);
-  void set_audio_data(audio_data_t data);  
-
   obstacle_position_t get_obstacle_position();
   audio_data_t get_audio_data();
+  void set_obstacle_position(obstacle_position_t position);
+  void set_audio_data(audio_data_t data);
+  void clear_obstacle_position();
+  void clear_audio_data();
 
   void start();
 private:
