@@ -44,7 +44,7 @@ private:
 	// 	NULL,
 	// 	BLUEZ_SERVICE,
 	// 	ADAPTER_PATH,
-	// 	ADAPTER_INTERFACE,
+	// 	BLUEZ_ADAPTER_IFACE,
 	// 	NULL,
 	// 	&error
 	// );
@@ -55,7 +55,7 @@ private:
 	// 	return -1;
 	// }
 
-	// BlueZDevice devices[MAX_DEVICES] = {0};
+	// bluez_device_t devices[MAX_DEVICES] = {0};
 	// int64_t status = 0;
 	// while (true) {
 	// 	printf("=======================================\n");
@@ -86,7 +86,7 @@ private:
 
 	// 	GDBusProxy *device_proxy = NULL;
 	// 	for (uint64_t idx = 0; idx < device_count; idx++) {
-	// 		BlueZDevice device = devices[idx];
+	// 		bluez_device_t device = devices[idx];
 	// 		if (strcmp(device.name, "QCY H3") == 0) {
 	// 			printf("Connecting to device: %s (%s)\n", device.name, device.address);
 

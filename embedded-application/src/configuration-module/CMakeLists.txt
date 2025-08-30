@@ -15,7 +15,7 @@ pkg_check_modules(GIO REQUIRED gio-2.0)
 
 add_library(configuration_module STATIC
   configuration_module.cpp
-  bluetooth_controller.c
+  bluetooth_controller.cpp
 )
 target_include_directories(configuration_module PUBLIC
   include

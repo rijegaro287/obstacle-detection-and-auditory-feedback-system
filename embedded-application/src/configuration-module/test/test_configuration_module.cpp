@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "configuration_module.h"
+#include "configuration_module.hpp"
 
 int main() {
   return 0;
