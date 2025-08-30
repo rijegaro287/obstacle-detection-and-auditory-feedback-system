@@ -4,8 +4,6 @@
 #include <thread>
 #include <math.h>
 
-#include "bluetooth_controller.h"
-
 #define AUDIO_CHUNK_N_SAMPLES 1024
 #define OUTPUT_CHUNK_N_SAMPLES 2*AUDIO_CHUNK_N_SAMPLES
 #define PCM_LATENCY 0

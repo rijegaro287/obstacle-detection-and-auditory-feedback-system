@@ -1,6 +1,8 @@
 #include "configuration_module.hpp"
 #include "configuration_iface.hpp"
 
+#include "bluetooth_controller.h"
+
 #include <iostream>
 
 ConfigModule& ConfigModule::get_instance() {

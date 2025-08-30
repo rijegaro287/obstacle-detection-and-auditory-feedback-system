@@ -7,11 +7,7 @@ project(TransmissionModule)
 
 configure_file(verbal_feedback_signals.npy verbal_feedback_signals.npy COPYONLY)
 
-find_package(PkgConfig REQUIRED)
 find_package(ALSA REQUIRED)
-
-pkg_check_modules(GLIB REQUIRED glib-2.0)
-pkg_check_modules(GIO REQUIRED gio-2.0)
 
 # AddressSanitizer configuration
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
@@ -20,19 +16,14 @@ pkg_check_modules(GIO REQUIRED gio-2.0)
 # Define the library
 add_library(transmission_module STATIC
   transmission_module.cpp
-  bluetooth_controller.c
 )
 target_include_directories(transmission_module PUBLIC
   include
   ../control-module/include
   ${ALSA_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
-  ${GIO_INCLUDE_DIRS}
 )
-target_link_libraries(transmission_module 
+target_link_libraries(transmission_module PRIVATE
   ${ALSA_LIBRARIES}
-  ${GLIB_LIBRARIES}
-  ${GIO_LIBRARIES}
 )
 
 add_library(transmission_iface STATIC
@@ -48,8 +39,6 @@ add_executable(test_transmission_module
 target_include_directories(test_transmission_module PRIVATE
   include
   ${ALSA_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
-  ${GIO_INCLUDE_DIRS}
 )
 target_link_libraries(test_transmission_module transmission_module)
 
