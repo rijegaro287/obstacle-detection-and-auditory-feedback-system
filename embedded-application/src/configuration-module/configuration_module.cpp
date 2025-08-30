@@ -1,11 +1,41 @@
 #include "configuration_module.hpp"
 #include "configuration_iface.hpp"
 
-#include "bluetooth_controller.hpp"
-
 #include <iostream>
 #include <thread>
 #include <chrono>
+
+// Characteristic::Characteristic(GDBusConnection* conn,
+// 															 const string& uuid,
+// 															 const string& path) {
+// 	this->char_uuid = uuid;
+// 	this->object_path = path;
+// 	this->connection = conn;
+// 	this->value = vector<uint8_t>();
+// }
+
+// void Characteristic::set_value(const vector<uint8_t>& value) {
+// 	this->value = value;
+// }
+
+// vector<uint8_t> Characteristic::get_value() {
+// 	return this->value;
+// }
+
+// void Characteristic::notify_value_changed() {
+// 	printf("Characteristic %s changed value\n", this->char_uuid.c_str());
+// }
+
+// Service::Service(GDBusConnection* conn, const string& uuid, const string& path) {
+// 	this->service_uuid = uuid;
+// 	this->object_path = path;
+// 	this->connection = conn;
+// 	this->characteristics = vector<Characteristic*>();
+// }
+
+// void Service::add_characteristic(Characteristic* characteristic) {
+// 	this->characteristics.push_back(characteristic);
+// }
 
 ConfigModule& ConfigModule::get_instance() {
 	static ConfigModule instance;
@@ -16,42 +46,10 @@ ConfigModule::ConfigModule() {
 	// Load configuration settings
 }
 
-Characteristic::Characteristic(GDBusConnection* conn,
-															 const string& uuid,
-															 const string& path) {
-	this->char_uuid = uuid;
-	this->object_path = path;
-	this->connection = conn;
-	this->value = vector<uint8_t>();
-}
-
-void Characteristic::set_value(const vector<uint8_t>& value) {
-	this->value = value;
-}
-
-vector<uint8_t> Characteristic::get_value() {
-	return this->value;
-}
-
-void Characteristic::notify_value_changed() {
-	printf("Characteristic %s changed value\n", this->char_uuid.c_str());
-}
-
-Service::Service(GDBusConnection* conn, const string& uuid, const string& path) {
-	this->service_uuid = uuid;
-	this->object_path = path;
-	this->connection = conn;
-	this->characteristics = vector<Characteristic*>();
-}
-
-void Service::add_characteristic(Characteristic* characteristic) {
-	this->characteristics.push_back(characteristic);
-}
-
 
 void ConfigModule::start() {
 	printf("Starting configuration module...\n");
-	BLEController::start_server();
+	BLEServer::start_server();
 	
 
 	// loop = g_main_loop_new(NULL, FALSE);

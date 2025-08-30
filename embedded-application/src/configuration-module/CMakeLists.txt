@@ -13,20 +13,32 @@ pkg_check_modules(GIO REQUIRED gio-2.0)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
-add_library(configuration_module STATIC
-  configuration_module.cpp
-  bluetooth_controller.cpp
+add_library(bluetooth_controller STATIC
+  bt-controller/bt_controller.cpp
+  bt-controller/ble_server.cpp
+  bt-controller/bt_audio.cpp
 )
-target_include_directories(configuration_module PUBLIC
-  include
-  ../control-module/include
+target_include_directories(bluetooth_controller PUBLIC
+  include/bt-controller
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
 )
-target_link_libraries(configuration_module PRIVATE 
-  control_iface
+target_link_libraries(bluetooth_controller PUBLIC
   ${GLIB_LIBRARIES}
   ${GIO_LIBRARIES}
+)
+
+add_library(configuration_module STATIC
+  configuration_module.cpp
+)
+target_include_directories(configuration_module PUBLIC
+  include
+  include/bt-controller
+  ../control-module/include
+)
+target_link_libraries(configuration_module PUBLIC
+  bluetooth_controller
+  control_iface
 )
 
 add_library(configuration_iface STATIC

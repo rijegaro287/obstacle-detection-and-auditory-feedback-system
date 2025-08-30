@@ -26,9 +26,9 @@ add_executable(main_application
 )
 target_link_libraries(main_application PRIVATE
   control_module
-  configuration_module
   feedback_module
   transmission_module
+  configuration_module
 )
 
 # Enable testing at the top level
