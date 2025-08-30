@@ -33,6 +33,7 @@ public:
     Components divideComponents(const cv::Mat& mask) const;
     Obstacle selectObstacle(Components& components, const cv::Mat& depthMap) const;
     Obstacle calculateAngles(Obstacle& obstacle);
+    double mapAzimuth(double azimuth);
 
 private:
     // Rangos HSV de colores para deteccion 
@@ -42,6 +43,7 @@ private:
     cv::Scalar upperRed2_;
     cv::Scalar lowerOrange_;
     cv::Scalar upperOrange_;
+    
     // Valores de FOV de la camara
     static constexpr double FOV_X_DEG = 62.8; // Horizontal
     static constexpr double FOV_Y_DEG = 37.9; // Vertical

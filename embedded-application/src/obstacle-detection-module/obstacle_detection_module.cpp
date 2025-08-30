@@ -277,6 +277,15 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::calculateAngles(Obsta
     return obstacle;
 }
 
+double ObstacleDetectionModule::mapAzimuth(double azimuth) {
+    if (azimuth < 0) {
+        // cuadrante izquierdo 
+        return (azimuth + FOV_X_DEG/2.0);  // 0° en el borde derecho, FOV_X/2° en el borde izquierdo
+    } else {
+        // cuadrante derecho 
+        return 360.0 - (azimuth + FOV_X_DEG/2.0);
+    }
+}
 
 int main() {
     ImageCaptureModule capturemod;
@@ -319,7 +328,6 @@ int main() {
 
             ObstacleDetectionModule::Components components = detmod.divideComponents(solid);
             cv::imshow("Componentes Detectados", components.image);
-            //cv::waitKey(0);
             
             ObstacleDetectionModule::Obstacle obs = detmod.selectObstacle(components, depth_og);
             obs = detmod.calculateAngles(obs);
@@ -328,13 +336,21 @@ int main() {
             cv::Mat display;
             cv::cvtColor(obs.image, display, cv::COLOR_GRAY2BGR);
 
+            std::ostringstream oss;
+            oss << std::fixed << std::setprecision(2)
+                << obs.meanDepth << " m | "
+                << "Az: " << detmod.mapAzimuth(obs.azimuth) << "\xB0 | "
+                << "El: " << obs.elevation << "\xB0";
+
+            std::string infoText = oss.str();
+
             // Dibujar la profundidad promedio 
             cv::putText(
                 display,
-                std::to_string(obs.meanDepth) + " m",
+                infoText,
                 cv::Point(10, 30),
                 cv::FONT_HERSHEY_SIMPLEX,
-                0.8,
+                0.4,
                 cv::Scalar(255, 255, 0), // celeste
                 2
             );
@@ -356,7 +372,6 @@ int main() {
             cv::circle(display, tip, 5, cv::Scalar(255,0,255), cv::FILLED); // morado
 
             cv::imshow("Distancia y Angulo del obstaculo seleccionado", display);
-            cv::waitKey(0);
                     
         }
 
