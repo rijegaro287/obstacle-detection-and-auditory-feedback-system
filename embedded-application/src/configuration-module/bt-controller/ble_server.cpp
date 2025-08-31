@@ -341,7 +341,9 @@ void BLEServer::start_server() {
 		}
 
 		printf("BLE GATT server running...\n");
-		g_main_loop_run(BLEServer::main_loop);
+		if (BLEServer::main_loop) {
+			g_main_loop_run(BLEServer::main_loop);
+		}
 	}
 }
 
