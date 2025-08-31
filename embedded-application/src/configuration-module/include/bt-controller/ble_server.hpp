@@ -2,6 +2,21 @@
 
 #include "bt_controller.hpp"
 
+#define GATT_MANAGER_IFACE "org.bluez.GattManager1"
+#define GATT_APPLICATION_IFACE "org.bluez.GattApplication1"
+#define GATT_SERVICE_IFACE "org.bluez.GattService1"
+#define GATT_CHARACTERISTIC_IFACE "org.bluez.GattCharacteristic1"
+#define LE_ADVERTISING_MANAGER_IFACE "org.bluez.LEAdvertisingManager1"
+
+#define APP_PATH "/com/example/app"
+#define SERVICE_PATH "/com/example/app/service"
+#define CHARACTERISTIC_PATH "/com/example/app/service/char"
+#define ADVERTISING_PATH "/com/example/app/advertising"
+
+#define SERVICE_NAME "com.example.service"
+#define SERVICE_UUID "12345678-9abc-def1-2345-6789abcdef00"
+#define CHARACTERISTIC_UUID "12345678-9abc-def1-2345-6789abcdef01"
+
 static const char *APP_XML =
 "<node>"
 "  <interface name='org.freedesktop.DBus.ObjectManager'>"
