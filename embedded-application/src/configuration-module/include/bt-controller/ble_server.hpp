@@ -50,7 +50,7 @@ static const char* ADV_XML =
 "  </interface>"
 "</node>";
 
-class BLEServer { 
+class BLEServer : public BTController {
 public:
 	static void start_server();
 	static void cleanup();

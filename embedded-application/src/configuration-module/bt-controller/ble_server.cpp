@@ -287,7 +287,7 @@ int64_t BLEServer::init() {
     return -1;
   }
 
-  BLEServer::connection = create_system_bus_connection();
+  BLEServer::connection =  BLEServer::create_system_bus_connection();
 	if (BLEServer::connection == nullptr) {
 		printf("Failed to create D-Bus connection\n");
 		g_error_free(error);
@@ -340,6 +340,7 @@ void BLEServer::start_server() {
 			continue;
 		}
 
+		printf("BLE GATT server running...\n");
 		g_main_loop_run(BLEServer::main_loop);
 	}
 }

@@ -1,8 +1,5 @@
 #pragma once
 
-#include "ble_server.hpp"
-#include "bt_audio.hpp"
-
 class ConfigModule {
 public:
   ConfigModule(const ConfigModule&) = delete;
