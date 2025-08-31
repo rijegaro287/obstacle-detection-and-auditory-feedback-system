@@ -19,6 +19,6 @@ ConfigModule::ConfigModule() {
 
 void ConfigModule::start() {
 	printf("Starting configuration module...\n");
-	// BLEServer::start_server();
-	BTAudioController::start();
+	BLEServer::start_server();
+	// BTAudioController::start();
 }

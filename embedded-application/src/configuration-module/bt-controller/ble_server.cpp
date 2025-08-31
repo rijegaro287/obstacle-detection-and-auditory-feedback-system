@@ -189,7 +189,7 @@ int64_t BLEServer::register_application() {
 	);
 
 	if (error) {
-		g_printerr("Error registering app object: %s\n", error->message);
+		printf("Error registering app object: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
@@ -205,7 +205,7 @@ int64_t BLEServer::register_application() {
 	);
 
 	if (error) {
-		g_printerr("Error registering char object: %s\n", error->message);
+		printf("Error registering char object: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
@@ -221,7 +221,7 @@ int64_t BLEServer::register_application() {
 	);
 
 	if (error) {
-		g_printerr("Error registering adv object: %s\n", error->message);
+		printf("Error registering adv object: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
@@ -230,8 +230,27 @@ int64_t BLEServer::register_application() {
 }
 
 int64_t BLEServer::advertise_application() {
-	GError *error = nullptr;
-	
+	GDBusProxy *adapter_proxy = BLEServer::create_adapter_proxy();
+	if (adapter_proxy == nullptr) {
+		printf("Error creating adapter proxy\n");
+		return -1;
+	}
+
+	if (BLEServer::set_proxy_property(adapter_proxy,
+																		BLUEZ_ADAPTER_IFACE,
+																		"Powered",
+																		g_variant_new_boolean(TRUE))) return -1;
+
+	if (BLEServer::set_proxy_property(adapter_proxy,
+																		BLUEZ_ADAPTER_IFACE,
+																		"Discoverable",
+																		g_variant_new_boolean(TRUE))) return -1;
+
+	if (BLEServer::set_proxy_property(adapter_proxy,
+																		BLUEZ_ADAPTER_IFACE,
+																		"Pairable",
+																		g_variant_new_boolean(TRUE))) return -1;
+
 	g_dbus_connection_call(
 		BLEServer::connection,
 		BLUEZ_SERVICE,
@@ -247,12 +266,6 @@ int64_t BLEServer::advertise_application() {
 		nullptr
 	);
 
-	if (error) {
-		g_printerr("Error registering application: %s\n", error->message);
-		g_error_free(error);
-		return -1;
-	}
-
 	g_dbus_connection_call(
 		connection,
 		BLUEZ_SERVICE,
@@ -267,12 +280,6 @@ int64_t BLEServer::advertise_application() {
 		nullptr,
 		nullptr
 	);
-
-	if (error) {
-		g_printerr("Error registering advertisement: %s\n", error->message);
-		g_error_free(error);
-		return -1;
-	}
 
 	return 0;
 }
