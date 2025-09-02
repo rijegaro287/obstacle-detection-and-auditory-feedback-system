@@ -277,6 +277,7 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::calculateAngles(Obsta
     return obstacle;
 }
 
+// Método mapAzimuth: Mapea el ángulo horizontal (azimuth) a un rango de 360 grados 
 double ObstacleDetectionModule::mapAzimuth(double azimuth) {
     if (azimuth < 0) {
         // cuadrante izquierdo 
@@ -285,6 +286,92 @@ double ObstacleDetectionModule::mapAzimuth(double azimuth) {
         // cuadrante derecho 
         return 360.0 - (azimuth + FOV_X_DEG/2.0);
     }
+}
+
+// Método previewDepth: muestra la imagen previo al procesamiento
+void ObstacleDetectionModule::previewDepth(cv::Mat& image){
+    cv::Mat img_bgr;
+    cv::cvtColor(image, img_bgr, cv::COLOR_HSV2BGR);
+    cv::imshow("Preprocessed Depth Preview", img_bgr);
+}
+
+// Método viewDetection: muestra el resultado de la deteccion de obstáculos
+void ObstacleDetectionModule::viewDetection(ObstacleDetectionModule::Obstacle obstacle){
+    cv::Mat display;
+    cv::cvtColor(obstacle.image, display, cv::COLOR_GRAY2BGR);
+
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2)
+        << obstacle.meanDepth << " m | "
+        << "Az: " << mapAzimuth(obstacle.azimuth) << " | "
+        << "El: " << obstacle.elevation;
+
+    std::string infoText = oss.str();
+
+    // Dibujar la profundidad promedio 
+    cv::putText(
+        display,
+        infoText,
+        cv::Point(10, 30),
+        cv::FONT_HERSHEY_SIMPLEX,
+        0.4,
+        cv::Scalar(255, 255, 0), // celeste
+        2
+    );
+
+    // Centro de la imagen
+    cv::Point center(display.cols/2, display.rows/2);
+
+    // FOV de la cámara
+    const double FOV_X_DEG = 62.8;
+    const double FOV_Y_DEG = 37.9;
+
+    // Calcular posición del punto que indica la dirección del obstáculo
+    cv::Point tip(
+        center.x + static_cast<int>(obstacle.azimuth   / (FOV_X_DEG/2.0) * center.x),
+        center.y - static_cast<int>(obstacle.elevation / (FOV_Y_DEG/2.0) * center.y)
+    );
+
+    // Dibujar un punto morado en la dirección del obstáculo
+    cv::circle(display, tip, 5, cv::Scalar(255,0,255), cv::FILLED); // morado
+
+    cv::imshow("Distancia y Angulo del obstaculo seleccionado", display);
+}
+
+// Método startDetection: Realiza el proceso de detectar obstáculos
+ObstacleDetectionModule::Obstacle ObstacleDetectionModule::startDetection(cv::Mat& image, cv::Mat& depthMap){       
+    // Aplicar segmentar rojo
+    cv::Mat seg = segmentRed(image);
+
+    //cv::Mat seg_bgr; 
+    //cv::cvtColor(seg, seg_bgr, cv::COLOR_GRAY2BGR);
+    //cv::imshow("Segmented red mask", seg_bgr);
+
+    // Aplicar filtrado por profundidad
+    cv::Mat depth = filterByDepth(seg, depthMap);
+    //cv::Mat depth_bgr; 
+    //cv::cvtColor(depth, depth_bgr, cv::COLOR_GRAY2BGR);
+    //cv::imshow("Filtered by depth", depth_bgr);
+    
+    // Aplicar filtrado por densidad
+    cv::Mat solid = filterByColorDensity(depth);
+    //cv::Mat solid_bgr; 
+    //cv::cvtColor(solid, solid_bgr, cv::COLOR_GRAY2BGR);
+    //cv::imshow("Filtered by density", solid_bgr);
+
+    // Dividir en componentes
+    ObstacleDetectionModule::Components components = divideComponents(solid);
+
+    // Seleccionar el obstáculo más relevante 
+    ObstacleDetectionModule::Obstacle obs = selectObstacle(components, depthMap);
+
+    // Calcular angulos 
+    obs = calculateAngles(obs);
+
+    // Visualizar resultado
+    viewDetection(obs);
+
+    return obs;
 }
 
 int main() {
@@ -303,76 +390,17 @@ int main() {
             continue;
         }
 
-        auto [depth_og, img] = capturemod.preprocessDepth(); // imagen preprocesada y de profundidad
+        auto [depth, img] = capturemod.preprocessDepth(); // imagen preprocesada y de profundidad
         if (!img.empty()) {
-            cv::Mat img_bgr;
-            cv::cvtColor(img, img_bgr, cv::COLOR_HSV2BGR);
-            cv::imshow("Preprocessed Depth Preview", img_bgr);
+            // Visualizar resultado del preprocesamiento
+            detmod.previewDepth(img);
             
-            // Aplicar segmentar rojo
-            cv::Mat seg = detmod.segmentRed(img);
-            cv::Mat seg_bgr; 
-            cv::cvtColor(seg, seg_bgr, cv::COLOR_GRAY2BGR);
-            //cv::imshow("Segmented red mask", seg_bgr);
-
-            // Aplicar filtrado por profundidad
-            cv::Mat depth = detmod.filterByDepth(seg, depth_og);
-            cv::Mat depth_bgr; 
-            cv::cvtColor(depth, depth_bgr, cv::COLOR_GRAY2BGR);
-            //cv::imshow("Filtered by depth", depth_bgr);
-
-            cv::Mat solid = detmod.filterByColorDensity(depth);
-            cv::Mat solid_bgr; 
-            cv::cvtColor(solid, solid_bgr, cv::COLOR_GRAY2BGR);
-            //cv::imshow("Filtered by density", solid_bgr);
-
-            ObstacleDetectionModule::Components components = detmod.divideComponents(solid);
-            cv::imshow("Componentes Detectados", components.image);
+            // Iniciar deteccion 
+            ObstacleDetectionModule::Obstacle obs;
+            obs = detmod.startDetection(img, depth);  
             
-            ObstacleDetectionModule::Obstacle obs = detmod.selectObstacle(components, depth_og);
-            obs = detmod.calculateAngles(obs);
-
-            // Convertir la máscara a BGR para dibujar colores
-            cv::Mat display;
-            cv::cvtColor(obs.image, display, cv::COLOR_GRAY2BGR);
-
-            std::ostringstream oss;
-            oss << std::fixed << std::setprecision(2)
-                << obs.meanDepth << " m | "
-                << "Az: " << detmod.mapAzimuth(obs.azimuth) << "\xB0 | "
-                << "El: " << obs.elevation << "\xB0";
-
-            std::string infoText = oss.str();
-
-            // Dibujar la profundidad promedio 
-            cv::putText(
-                display,
-                infoText,
-                cv::Point(10, 30),
-                cv::FONT_HERSHEY_SIMPLEX,
-                0.4,
-                cv::Scalar(255, 255, 0), // celeste
-                2
-            );
-
-            // Centro de la imagen
-            cv::Point center(display.cols/2, display.rows/2);
-
-            // FOV de la cámara
-            const double FOV_X_DEG = 62.8;
-            const double FOV_Y_DEG = 37.9;
-
-            // Calcular posición del punto que indica la dirección del obstáculo
-            cv::Point tip(
-                center.x + static_cast<int>(obs.azimuth   / (FOV_X_DEG/2.0) * center.x),
-                center.y - static_cast<int>(obs.elevation / (FOV_Y_DEG/2.0) * center.y)
-            );
-
-            // Dibujar un punto morado en la dirección del obstáculo
-            cv::circle(display, tip, 5, cv::Scalar(255,0,255), cv::FILLED); // morado
-
-            cv::imshow("Distancia y Angulo del obstaculo seleccionado", display);
-                    
+            // Visualizar deteccion
+            detmod.viewDetection(obs);
         }
 
         int key = cv::waitKey(1);
