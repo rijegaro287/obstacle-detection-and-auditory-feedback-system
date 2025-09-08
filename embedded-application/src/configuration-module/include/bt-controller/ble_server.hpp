@@ -26,7 +26,16 @@ static const char *APP_XML =
 "  </interface>"
 "</node>";
 
-static const char* CHAR_XML = 
+static const char *SERVICE_XML = 
+"<node>"
+" <interface name='org.bluez.GattService1'>"
+" 	<property name='UUID' type='s' access='read'/>"
+" 	<property name='Primary' type='b' access='read'/>"
+" </interface>"
+" <interface name='org.freedesktop.DBus.Properties'/>"
+"</node>";
+
+static const char *CHAR_XML = 
 "<node>"
 "  <interface name='org.bluez.GattCharacteristic1'>"
 "    <method name='ReadValue'>"
@@ -40,7 +49,7 @@ static const char* CHAR_XML =
 "  </interface>"
 "</node>";
 
-static const char* ADV_XML =
+static const char *ADV_XML =
 "<node>"
 "  <interface name='org.bluez.LEAdvertisement1'>"
 "    <property name='Type' type='s' access='read'/>"
@@ -52,7 +61,7 @@ static const char* ADV_XML =
 
 class BLEServer : public BTController {
 public:
-	static void start_server();
+	static void start();
 	static void cleanup();
 private:
   static GMainLoop *main_loop;

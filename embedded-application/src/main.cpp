@@ -15,9 +15,9 @@ int main() {
   // TransmissionModule& transmission_module = TransmissionModule::get_instance();
 
   // printf("Starting Control, Feedback, and Transmission Modules...\n");
-  // std::thread control_thread(&ControlModule::start, &control_module);
-  // std::thread feedback_thread(&FeedbackModule::start, &feedback_module);
-  // std::thread transmission_thread(&TransmissionModule::start, &transmission_module);
+  // thread control_thread(&ControlModule::start, &control_module);
+  // thread feedback_thread(&FeedbackModule::start, &feedback_module);
+  // thread transmission_thread(&TransmissionModule::start, &transmission_module);
 
   // pthread_setschedprio(control_thread.native_handle(), 20);
   // pthread_setschedprio(feedback_thread.native_handle(), 99);

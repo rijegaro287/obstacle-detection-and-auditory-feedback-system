@@ -5,6 +5,7 @@
 #include <chrono>
 
 GMainLoop* BTAudioController::main_loop = nullptr;
+BlueZDevice* BTAudioController::connected_device = nullptr;
 
 int64_t BTAudioController::init() {
 	GError *error = nullptr;
@@ -222,7 +223,7 @@ int64_t BTAudioController::connect_to_device_profile(GDBusProxy *proxy, const ch
 	return 0;
 }
 
-int64_t BTAudioController::connect_and_pair_device(BlueZDevice device) {
+int64_t BTAudioController::connect_and_pair_device(BlueZDevice *device) {
 	bool error = false;
 	GDBusProxy *device_proxy = nullptr;
 
@@ -349,15 +350,15 @@ void BTAudioController::start() {
 
 		BTAudioController::print_devices(devices);
 
-		BlueZDevice* device = BTAudioController::find_device(devices, "QCY H3");
-		if (device == nullptr) {
+		BTAudioController::connected_device = BTAudioController::find_device(devices, "QCY H3");
+		if (BTAudioController::connected_device == nullptr) {
 			BTAudioController::cleanup(devices);
 			continue;
 		}
 
-		printf("Connecting to device: %s (%s)\n", device->name, device->address);
+		printf("Connecting to device: %s (%s)\n", BTAudioController::connected_device->name, BTAudioController::connected_device->address);
 
-		if (BTAudioController::connect_and_pair_device(*device) < 0) {
+		if (BTAudioController::connect_and_pair_device(BTAudioController::connected_device) < 0) {
 			printf("Failed to connect and pair to device\n");
 			BTAudioController::cleanup(devices);
 			continue;
@@ -377,5 +378,6 @@ void BTAudioController::cleanup(vector<BlueZDevice>& devices) {
 		g_main_loop_quit(BTAudioController::main_loop);
 		g_main_loop_unref(BTAudioController::main_loop);
 		BTAudioController::main_loop = nullptr;
+		BTAudioController::connected_device = nullptr;
 	}
 }

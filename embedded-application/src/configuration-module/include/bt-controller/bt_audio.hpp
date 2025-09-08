@@ -10,6 +10,7 @@ public:
 	static void cleanup(vector<BlueZDevice>& devices);
 private:
 	static GMainLoop *main_loop;
+	static BlueZDevice *connected_device;
 	
 	static int64_t init();
 	static int64_t start_discovery(GDBusProxy *proxy);
@@ -19,7 +20,7 @@ private:
 	static int64_t pair_device(GDBusProxy *proxy);
 	static int64_t connect_to_device(GDBusProxy *proxy);
 	static int64_t connect_to_device_profile(GDBusProxy *proxy, const char *uuid);
-	static int64_t connect_and_pair_device(BlueZDevice device);
+	static int64_t connect_and_pair_device(BlueZDevice *device);
 	
 	static BlueZDevice* find_device(vector<BlueZDevice>& devices, const char *name);
 	static bool is_paired(GDBusProxy *proxy);
