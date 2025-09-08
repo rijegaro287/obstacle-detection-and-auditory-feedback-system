@@ -12,11 +12,11 @@ audio_data_t IControl::get_audio_data() {
   return audio_data;
 }
 
-void IControl::set_obstacle_position(obstacle_position_t position) {
+void IControl::set_obstacle_position(const obstacle_position_t& position) {
   ControlModule::get_instance().set_obstacle_position(position);
 }
 
-void IControl::set_audio_data(audio_data_t data) {
+void IControl::set_audio_data(const audio_data_t& data) {
   ControlModule::get_instance().set_audio_data(data);
 }
 

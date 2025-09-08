@@ -45,14 +45,14 @@ audio_data_t ControlModule::get_audio_data() {
   return data;
 }
 
-void ControlModule::set_obstacle_position(obstacle_position_t position) {
+void ControlModule::set_obstacle_position(const obstacle_position_t& position) {
   lock_guard<mutex> guard(this->obstacle_mtx);
   this->obstacle_position->azimuth = position.azimuth;
   this->obstacle_position->elevation = position.elevation;
   this->obstacle_position->distance = position.distance;
 }
 
-void ControlModule::set_audio_data(audio_data_t data) {
+void ControlModule::set_audio_data(const audio_data_t& data) {
   lock_guard<mutex> guard(this->audio_mtx);
   this->audio_data->left_signal = data.left_signal;
   this->audio_data->right_signal = data.right_signal;
@@ -92,11 +92,21 @@ void ControlModule::start() {
     { 25.0f, -10.0f, 0.5f}, // BELOW LEFT
   };
 
+  bool mode = false;
+
   while (true) {
+    if (mode) {
+      IFeedback::set_feedback_mode(VERBAL_MODE);
+    } 
+    else {
+      IFeedback::set_feedback_mode(NON_VERBAL_MODE);
+    }
+
     for (const auto& position : test_positions) {
       IControl::set_obstacle_position({position[0], position[1], position[2]});
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+
+    mode = !mode;
   }
-  
 }

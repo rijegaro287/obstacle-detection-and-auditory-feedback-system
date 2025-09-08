@@ -228,7 +228,7 @@ void FeedbackModule::start() {
 	while (true) {
 		obstacle_position_t position = IControl::get_obstacle_position();
 		if (position.distance == 0) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			continue;
 		}
 		printf("Obstacle Position - Azimuth: %.2f, Elevation: %.2f, Distance: %.2f\n", 
@@ -236,6 +236,6 @@ void FeedbackModule::start() {
 
 		this->generate_feedback(position.azimuth, position.elevation, position.distance);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 }

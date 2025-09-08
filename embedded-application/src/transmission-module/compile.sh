@@ -7,5 +7,4 @@ make
 # testing
 # ctest --output-on-failure -V
 
-cd ..
 ./build/test_transmission_module

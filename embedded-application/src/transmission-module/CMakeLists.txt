@@ -5,8 +5,6 @@ set(CMAKE_C_STANDARD 11)
 
 project(TransmissionModule)
 
-configure_file(verbal_feedback_signals.npy verbal_feedback_signals.npy COPYONLY)
-
 find_package(ALSA REQUIRED)
 
 # AddressSanitizer configuration

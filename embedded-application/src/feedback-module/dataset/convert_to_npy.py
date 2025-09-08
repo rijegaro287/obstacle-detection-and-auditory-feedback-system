@@ -1,21 +1,22 @@
 import sofa
 import numpy as np
 
-AZ_FOV = 56
-EL_FOV = 42
+AZ_FOV = 62.8
+EL_FOV = 40
 
-hrir = sofa.Database.open(f'./hrir_dataset.sofa')
+dataset = sofa.Database.open(f'./hrir_dataset.sofa')
 
-fs = hrir.Data.SamplingRate.get_values()[0] # type: ignore
-positions = hrir.Source.Position.get_values(system='spherical') # type: ignore
-dimensions = hrir.Dimensions.N # type: ignore
+fs = dataset.Data.SamplingRate.get_values()[0] # type: ignore
+hrirs = dataset.Data.IR.get_values() # type: ignore
+positions = dataset.Source.Position.get_values(system='spherical') # type: ignore
+dimensions = dataset.Dimensions.N # type: ignore
 
 print('=' * 75)
 print(f'Sampling rate: {fs} Hz')
-print(f'Number of HRIRs: {len(positions)}')
+print(f'Number of HRIRs: {len(hrirs)}')
+print(f'Number of positions: {len(positions)}')
 print(f'HRIR dimensions: {dimensions}')
 print('=' * 75)
-
 
 output_positions = []
 output_hrirs = []
@@ -35,8 +36,8 @@ for idx in range(len(positions)):
     print(f'Processing HRIR {idx + 1}/{len(positions)}')
 
     H = np.zeros((dimensions, 2), dtype=np.float64) # type: ignore
-    H[:, 0] = hrir.Data.IR.get_values(indices={'M':idx, 'R':0, 'E':0}) # type: ignore
-    H[:, 1] = hrir.Data.IR.get_values(indices={'M':idx, 'R':1, 'E':0}) # type: ignore
+    H[:, 0] = hrirs[idx, 0, :]
+    H[:, 1] = hrirs[idx, 1, :]
 
     output_positions.append(np.array([azimuth, elevation, distance], dtype=np.float64))
     output_hrirs.append(H)

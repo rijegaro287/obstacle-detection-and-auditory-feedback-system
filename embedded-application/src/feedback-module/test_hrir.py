@@ -26,16 +26,12 @@ for i in range(n_filters):
     gain = random.random();
     
     print(f'Position {sample_idx}: {position} with gain {gain:.2f}')
-
-    H = np.zeros((hrir.shape[0], 2), dtype=np.float64)
-    H[:, 0] = hrir[:, 0]
-    H[:, 1] = hrir[:, 1]
-
+    
     audio_start = int(i * audio_samples)
     audio_end = int((i + 1) * audio_samples)
 
-    rend_L = signal.fftconvolve(audio, H[:, 0], mode='same').astype(np.float64)
-    rend_R = signal.fftconvolve(audio, H[:, 1], mode='same').astype(np.float64)
+    rend_L = signal.fftconvolve(audio, hrir[:, 0], mode='same').astype(np.float64)
+    rend_R = signal.fftconvolve(audio, hrir[:, 1], mode='same').astype(np.float64)
 
     rend_L /= np.max(np.abs(rend_L))
     rend_R /= np.max(np.abs(rend_R))

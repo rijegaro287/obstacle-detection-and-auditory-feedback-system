@@ -19,8 +19,8 @@ private:
 public:
   static obstacle_position_t get_obstacle_position();
   static audio_data_t get_audio_data();
-  static void set_obstacle_position(obstacle_position_t position);
-  static void set_audio_data(audio_data_t data);
+  static void set_obstacle_position(const obstacle_position_t& position);
+  static void set_audio_data(const audio_data_t& data);
   static void clear_obstacle_position();
   static void clear_audio_data();
 };

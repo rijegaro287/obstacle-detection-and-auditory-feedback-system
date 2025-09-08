@@ -4,11 +4,9 @@
 #include <vector>
 
 #include <alsa/asoundlib.h>
-#include "npy.hpp"
 
 #include "control_iface.hpp"
 
-using namespace npy;
 using namespace std;
 
 class TransmissionModule {

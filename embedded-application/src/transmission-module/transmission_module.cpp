@@ -135,15 +135,18 @@ void TransmissionModule::send_audio(audio_data_t& signal) {
 	uint64_t signal_size = signal.left_signal.size();
 	vector<int16_t> processed(2 * signal_size);
 
-	uint64_t n_chunks = (signal_size + AUDIO_CHUNK_N_SAMPLES - 1) / AUDIO_CHUNK_N_SAMPLES;
-	for (uint64_t chunk_idx = 0; chunk_idx < n_chunks; chunk_idx++) {
-		uint64_t start_idx = chunk_idx * AUDIO_CHUNK_N_SAMPLES;
-		uint64_t end_idx = min(start_idx + AUDIO_CHUNK_N_SAMPLES, signal_size);
+	this->preprocess_audio(signal, processed, max_value, 0, signal_size);
+	this->send_pcm_data(processed, signal.sample_rate);
 
-		vector<int16_t> processed_chunk(2 * (end_idx - start_idx));
-		this->preprocess_audio(signal, processed_chunk, max_value, start_idx, end_idx);
-		this->send_pcm_data(processed_chunk, signal.sample_rate);
-	}
+	// uint64_t n_chunks = (signal_size + AUDIO_CHUNK_N_SAMPLES - 1) / AUDIO_CHUNK_N_SAMPLES;
+	// for (uint64_t chunk_idx = 0; chunk_idx < n_chunks; chunk_idx++) {
+	// 	uint64_t start_idx = chunk_idx * AUDIO_CHUNK_N_SAMPLES;
+	// 	uint64_t end_idx = min(start_idx + AUDIO_CHUNK_N_SAMPLES, signal_size);
+
+	// 	vector<int16_t> processed_chunk(2 * (end_idx - start_idx));
+	// 	this->preprocess_audio(signal, processed_chunk, max_value, start_idx, end_idx);
+	// 	this->send_pcm_data(processed_chunk, signal.sample_rate);
+	// }
 }
 
 void TransmissionModule::start() {
@@ -152,10 +155,10 @@ void TransmissionModule::start() {
 			if (signal.left_signal.empty() ||
 					signal.right_signal.empty() ||
 					signal.sample_rate == 0) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			continue;
 		}
 		send_audio(signal);
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 }
