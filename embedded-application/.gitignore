@@ -1,2 +1,8 @@
 .vscode/
 **/build/
+
+**/*.sofa
+**/*.npy
+**/*.wav
+**/*.onnx
+**/*.onnx.json
