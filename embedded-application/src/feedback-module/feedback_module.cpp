@@ -136,21 +136,6 @@ void FeedbackModule::generate_non_verbal_feedback(float azimuth, float elevation
 	}
 
 	IControl::set_audio_data(signal);
-
-	// npy_data<double> output_l_npy;
-	// npy_data<double> output_r_npy;
-	
-	// vector<double> rend_l(this->tap_signal.size());
-	// vector<double> rend_r(this->tap_signal.size());
-
-	// output_l_npy.data = rend_l;
-	// output_r_npy.data = rend_r;
-	
-	// output_l_npy.shape = {this->tap_signal.size()};
-	// output_r_npy.shape = {this->tap_signal.size()};
-
-	// write_npy("./output_non_verbal_l.npy", output_l_npy);
-	// write_npy("./output_non_verbal_r.npy", output_r_npy);
 }
 
 void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, float distance) {
@@ -203,11 +188,6 @@ void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, fl
 	printf("Verbal feedback generated\n");
 
 	IControl::set_audio_data(signal);
-	// npy_data<double> output_npy;
-	// output_npy.data = signal.left_signal;
-	// output_npy.shape = {n_samples};
-
-	// write_npy("./output_verbal.npy", output_npy);
 }
 
 void FeedbackModule::generate_feedback(float azimuth, float elevation, float distance) {

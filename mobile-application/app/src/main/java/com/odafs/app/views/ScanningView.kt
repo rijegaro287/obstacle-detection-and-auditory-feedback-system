@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.odafs.app.components.CommandButton
 import com.odafs.app.components.DeviceCard
 import com.odafs.app.components.TopBar
 
@@ -39,7 +40,7 @@ val deviceList = listOf(
 )
 
 @Composable
-fun ScanningView(navigateToControls: () -> Unit) {
+fun ScanningView(navigateToControls: (String) -> Unit) {
     Scaffold(
         topBar = { TopBar(title = "Conéctate a un dispositivo") }
     ) { innerPadding ->
@@ -59,7 +60,6 @@ fun ScanningView(navigateToControls: () -> Unit) {
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.CenterStart)
-
                     )
 
                     IconButton(
@@ -84,29 +84,15 @@ fun ScanningView(navigateToControls: () -> Unit) {
 
                 LazyColumn {
                     items(deviceList) { device ->
-                        DeviceCard(device.name) {}
+                        DeviceCard(device.name) {
+                            navigateToControls(device.name)
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
 
-            IconButton(
-                onClick = {},
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape
-                    )
-                    .size(120.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = "Botón para ingresar un comando de voz",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(100.dp)
-                )
-            }
+            CommandButton(modifier = Modifier.align(Alignment.BottomCenter))
         }
     }
 }

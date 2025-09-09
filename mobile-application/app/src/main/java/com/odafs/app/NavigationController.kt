@@ -1,18 +1,17 @@
 package com.odafs.app
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
 import com.odafs.app.views.ConnectingView
+import com.odafs.app.views.ControlsView
 import com.odafs.app.views.ScanningView
 
 @Serializable
@@ -22,23 +21,11 @@ data object Connecting
 data object Scanning
 
 @Serializable
-data object Controls
-
-@Composable
-fun ControlsView(navigateToScanning: () -> Unit) {
-    Column {
-        Text(text = "Controls")
-
-        Button(onClick = { navigateToScanning() }) {
-            Text(text = "Go to Scanning")
-        }
-    }
-}
+data class Controls(val deviceName: String)
 
 @Composable
 fun NavigationController() {
     val navController = rememberNavController()
-
     Scaffold { innerPadding ->
         NavHost(
             navController = navController,
@@ -52,12 +39,15 @@ fun NavigationController() {
 
             composable<Scanning> {
                 BackHandler (enabled = true) {  }
-                ScanningView { navController.navigate(Controls) }
+                ScanningView { deviceName ->
+                    navController.navigate(Controls(deviceName = deviceName))
+                }
             }
 
-            composable<Controls> {
-                BackHandler (enabled = true) {  }
-                ControlsView {
+            composable<Controls> { backStackEntry ->
+                val controls = backStackEntry.toRoute<Controls>()
+                // BackHandler (enabled = true) {  }
+                ControlsView (deviceName = controls.deviceName) {
                     navController.navigate(Scanning) {
                         popUpTo(Connecting) { inclusive = true }
                     }
