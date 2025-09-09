@@ -14,6 +14,7 @@ public:
     bool initialize();
     bool captureFrame();
     cv::Mat preprocessDepth();
+    void start();
 
 private:
     Arducam::ArducamTOFCamera tof_;

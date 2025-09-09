@@ -118,22 +118,20 @@ cv::Mat ImageCaptureModule::preprocessDepth() {
     return result_frame_;
 }
 
-int main() {
-    ImageCaptureModule capturemod;
-
+void ImageCaptureModule::start(){
     // Inicializar ToF camera
-    if (!capturemod.initialize()) {
-        return -1;
+    if (!initialize()) {
+        return;
     }
 
-    // Capturar frames
+    // Capturar frames (loop)
     while (true) {
         // si la captura NO fue exitosa vuelve a intentarlo en la siguiente iteracion/captura
-        if (!capturemod.captureFrame()) {
+        if (!captureFrame()) {
             continue;
         }
 
-        cv::Mat img = capturemod.preprocessDepth(); // imagen preprocesada
+        cv::Mat img = preprocessDepth(); // imagen preprocesada
         if (!img.empty()) {
             cv::imshow("Preprocessed Depth Preview", img);
         }
@@ -141,8 +139,6 @@ int main() {
         int key = cv::waitKey(1);
         if (key == 27 || key == 'q') break;
     }
-
-    return 0;
 }
 
 

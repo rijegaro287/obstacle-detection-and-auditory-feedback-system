@@ -15,10 +15,11 @@ if ! cmake -B "$builddir" -S "$workpath"; then
 fi
 
 # Construir ambos targets
-if cmake --build "$builddir" --config Release --target preview_depth --target image_capture_module -j4; then
+if cmake --build "$builddir" --config Release --target preview_depth --target image_capture_module --target test_image_capture_module -j4; then
     echo "== Build success"
     echo "== Run $builddir/preview_depth"
     echo "== Run $builddir/image_capture_module"
+    echo "== Run $builddir/test_image_capture_module"
 else
     echo "== Build failed"
     exit 1
