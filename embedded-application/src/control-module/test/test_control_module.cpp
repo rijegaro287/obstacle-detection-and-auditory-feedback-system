@@ -1,7 +1,11 @@
-#include <iostream>
 
-#include "control_module.h"
+#include <thread>
+#include <mutex>
+
+#include "control_module.hpp"
+
+using namespace std;
 
 int main() {
-  return 0;
+
 }

@@ -1,19 +1,33 @@
+#include "configuration_module.hpp"
+#include "configuration_iface.hpp"
+
 #include <iostream>
+#include <thread>
+#include <chrono>
 
-#include "configuration_module.h"
+#include "ble_server.hpp"
+#include "bt_audio.hpp"
 
-int main() {
-    std::cout << "Configuration Module - Starting..." << std::endl;
-    
-    // Load system configuration
-    std::cout << "Loading system configuration..." << std::endl;
-    
-    // Initialize configuration parameters
-    std::cout << "Setting up detection parameters..." << std::endl;
-    std::cout << "Setting up audio parameters..." << std::endl;
-    std::cout << "Setting up camera parameters..." << std::endl;
-    
-    std::cout << "Configuration module initialized successfully." << std::endl;
-    
-    return 0;
+ConfigModule& ConfigModule::get_instance() {
+	static ConfigModule instance;
+	return instance;
+}
+
+ConfigModule::ConfigModule() {
+	// Load configuration settings
+}
+
+void ConfigModule::start() {
+	printf("Starting configuration module...\n");
+
+	thread ble_server_thread(&BLEServer::start);
+	thread bt_audio_thread(&BTAudioController::start);
+
+	while (true) {
+		printf("Configuration module running...\n");
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+	}
+
+	ble_server_thread.join();
+	bt_audio_thread.join();
 }
