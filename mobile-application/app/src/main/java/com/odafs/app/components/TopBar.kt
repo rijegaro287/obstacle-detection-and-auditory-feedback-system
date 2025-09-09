@@ -24,23 +24,24 @@ fun TopBar (title: String) {
     Surface (shadowElevation = 1.dp) {
         Box (modifier = Modifier
             .fillMaxWidth()
-            .padding(all = 12.dp)
+            .padding(all = 15.dp)
         ) {
             IconButton(
                 onClick = {},
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .size(25.dp)
+                    .size(45.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Default.Logout,
                     contentDescription = "Botón para cerrar la aplicación",
+                    modifier = Modifier.size(30.dp)
                 )
             }
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 modifier = Modifier.align(Alignment.Center)
@@ -50,11 +51,12 @@ fun TopBar (title: String) {
                 onClick = {},
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .size(25.dp)
+                    .size(45.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Default.Help,
                     contentDescription = "Botón para obtener ayuda sobre el uso de la aplicación",
+                    modifier = Modifier.size(30.dp)
                 )
             }
         }

@@ -31,10 +31,11 @@ import com.odafs.app.components.TopBar
 
 data class Device(val name: String, val address: String)
 
-val deviceList = listOf<Device>(
+val deviceList = listOf(
     Device(name = "device 1", address = "address 1"),
     Device(name = "device 2", address = "address 2"),
-    Device(name = "device 3", address = "address 3")
+    Device(name = "device 3", address = "address 3"),
+    Device(name = "device 4", address = "address 4")
 )
 
 @Composable
@@ -52,8 +53,6 @@ fun ScanningView(navigateToControls: () -> Unit) {
             )
         ) {
             Column(modifier = Modifier.align(Alignment.TopCenter)) {
-                Spacer(modifier = Modifier.height(15.dp))
-
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Dispositivos disponibles:",
@@ -81,12 +80,12 @@ fun ScanningView(navigateToControls: () -> Unit) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 LazyColumn {
                     items(deviceList) { device ->
                         DeviceCard(device.name) {}
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
@@ -99,13 +98,13 @@ fun ScanningView(navigateToControls: () -> Unit) {
                         color = MaterialTheme.colorScheme.primaryContainer,
                         shape = CircleShape
                     )
-                    .size(110.dp)
+                    .size(120.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Mic,
                     contentDescription = "Botón para ingresar un comando de voz",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(85.dp)
+                    modifier = Modifier.size(100.dp)
                 )
             }
         }
