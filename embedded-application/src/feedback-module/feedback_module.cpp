@@ -88,7 +88,7 @@ uint8_t FeedbackModule::calculate_verbal_position(float azimuth, float elevation
 		position |= LEFT_MASK;
 	}
 	else if (azimuth <= VERBAL_AZIMUTH_THRESHOLD/2 || azimuth >= (360 - VERBAL_AZIMUTH_THRESHOLD/2)) {
-		position |= HORIZONTAL_CENTERED_MASK;
+		position |= HORIZONTALLY_CENTERED_MASK;
 	}
 	else {
 		printf("Verbal feedback: Azimuth angle out of range\n");
@@ -165,13 +165,13 @@ void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, fl
 
 	uint8_t position = this->calculate_verbal_position(azimuth, elevation, distance);
 	switch (position) {
-	case HORIZONTAL_CENTERED_MASK | VERTICALLY_CENTERED_MASK:
+	case HORIZONTALLY_CENTERED_MASK | VERTICALLY_CENTERED_MASK:
 		position_idx = FRONT;
 		break;
-	case ABOVE_MASK | HORIZONTAL_CENTERED_MASK:
+	case ABOVE_MASK | HORIZONTALLY_CENTERED_MASK:
 		position_idx = ABOVE;
 		break;
-	case BELOW_MASK | HORIZONTAL_CENTERED_MASK:
+	case BELOW_MASK | HORIZONTALLY_CENTERED_MASK:
 		position_idx = BELOW;
 		break;
 	case RIGHT_MASK | VERTICALLY_CENTERED_MASK:
