@@ -17,9 +17,9 @@ int main() {
             continue;
         }
 
-        cv::Mat depth = IImageCapture::preprocessDepth();
-        if (!depth.empty()) {
-            cv::imshow("Preprocessed Depth Preview", depth);
+        auto [depth, img] = IImageCapture::preprocessDepth();
+        if (!img.empty()) {
+            cv::imshow("Preprocessed Depth Preview", img);
         }
 
         int key = cv::waitKey(1);

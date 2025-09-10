@@ -69,10 +69,10 @@ bool ImageCaptureModule::captureFrame() {
 }
 
 // Metodo preprocessDepth: preprocesamiento de la imagen
-cv::Mat ImageCaptureModule::preprocessDepth() {
+std::pair<cv::Mat, cv::Mat> ImageCaptureModule::preprocessDepth() {
     if (depth_frame_.empty()) {
         std::cerr << "[WARNING] La imagen de profundidad está vacía, no se puede preprocesar" << std::endl;
-        return cv::Mat();
+        return {cv::Mat(), cv::Mat()};
     }
 
     // Clonar y limitar valores mayores a MAX_DISTANCE para reducir ruido en zonas lejanas
@@ -115,7 +115,7 @@ cv::Mat ImageCaptureModule::preprocessDepth() {
     cv::merge(hsv_channels, hsv_image);
     cv::cvtColor(hsv_image, result_frame_, cv::COLOR_HSV2BGR);
 
-    return result_frame_;
+    return {depth_frame_, result_frame_};
 }
 
 void ImageCaptureModule::start(){
@@ -131,7 +131,7 @@ void ImageCaptureModule::start(){
             continue;
         }
 
-        cv::Mat img = preprocessDepth(); // imagen preprocesada
+        auto [depth, img] = preprocessDepth(); // imagen preprocesada
         if (!img.empty()) {
             cv::imshow("Preprocessed Depth Preview", img);
         }

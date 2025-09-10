@@ -5,5 +5,5 @@ class IImageCapture {
 public:
     static bool initialize();
     static bool captureFrame();
-    static cv::Mat preprocessDepth();
+    static std::pair<cv::Mat, cv::Mat> preprocessDepth();
 };

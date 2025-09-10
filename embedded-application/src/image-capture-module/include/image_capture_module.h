@@ -13,7 +13,7 @@ public:
 
     bool initialize();
     bool captureFrame();
-    cv::Mat preprocessDepth();
+    std::pair<cv::Mat, cv::Mat> preprocessDepth();
     void start();
 
 private:
