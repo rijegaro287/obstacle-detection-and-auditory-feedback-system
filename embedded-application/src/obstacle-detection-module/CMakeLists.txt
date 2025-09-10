@@ -29,7 +29,8 @@ set(CXXLIBS ArducamDepthCamera::ArducamDepthCamera)
 # Define the test executable
 add_executable(test_obstacle_detection_module test/test_obstacle_detection_module.cpp
                ../image-capture-module/image_capture_module.cpp
-               obstacle_detection_module.cpp)
+               obstacle_detection_module.cpp
+               obstacle_detection_iface.cpp)
 target_include_directories(test_obstacle_detection_module PRIVATE 
                             ${CMAKE_CURRENT_SOURCE_DIR}/include
                             ${CMAKE_CURRENT_SOURCE_DIR}/../image-capture-module/include)

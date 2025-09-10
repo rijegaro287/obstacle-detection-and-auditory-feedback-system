@@ -149,7 +149,7 @@ ObstacleDetectionModule::Components ObstacleDetectionModule::divideComponents(co
 
 
 // Metodo selectObstacle: selecciona el obstaculo mas importante bajo un criterio matematico 
-ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
+Obstacle ObstacleDetectionModule::selectObstacle(
         ObstacleDetectionModule::Components& components,
         const cv::Mat& depthMap) const 
 {
@@ -253,7 +253,7 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::selectObstacle(
 }
 
 // Método calculateAngles: calcular el angulo azimuth (horizontal) y la elevacion (vertical)
-ObstacleDetectionModule::Obstacle ObstacleDetectionModule::calculateAngles(ObstacleDetectionModule::Obstacle& obstacle) {
+Obstacle ObstacleDetectionModule::calculateAngles(Obstacle& obstacle) {
     // Dimensiones de las imagenes de la camara
     double frameWidth = 240;
     double frameHeight = 180;
@@ -290,13 +290,11 @@ double ObstacleDetectionModule::mapAzimuth(double azimuth) {
 
 // Método previewDepth: muestra la imagen previo al procesamiento
 void ObstacleDetectionModule::previewDepth(cv::Mat& image){
-    cv::Mat img_bgr;
-    cv::cvtColor(image, img_bgr, cv::COLOR_HSV2BGR);
-    cv::imshow("Preprocessed Depth Preview", img_bgr);
+    cv::imshow("Preprocessed Depth Preview", image);
 }
 
 // Método viewDetection: muestra el resultado de la deteccion de obstáculos
-void ObstacleDetectionModule::viewDetection(ObstacleDetectionModule::Obstacle obstacle){
+void ObstacleDetectionModule::viewDetection(Obstacle& obstacle){
     cv::Mat display;
     cv::cvtColor(obstacle.image, display, cv::COLOR_GRAY2BGR);
 
@@ -339,9 +337,11 @@ void ObstacleDetectionModule::viewDetection(ObstacleDetectionModule::Obstacle ob
 }
 
 // Método startDetection: Realiza el proceso de detectar obstáculos
-ObstacleDetectionModule::Obstacle ObstacleDetectionModule::startDetection(cv::Mat& image, cv::Mat& depthMap){       
+Obstacle ObstacleDetectionModule::detect(cv::Mat& image, cv::Mat& depthMap){       
     // Aplicar segmentar rojo
-    cv::Mat seg = segmentRed(image);
+    cv::Mat img_hsv;
+    cv::cvtColor(image, img_hsv, cv::COLOR_BGR2HSV);
+    cv::Mat seg = segmentRed(img_hsv);
 
     //cv::Mat seg_bgr; 
     //cv::cvtColor(seg, seg_bgr, cv::COLOR_GRAY2BGR);
@@ -361,9 +361,10 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::startDetection(cv::Ma
 
     // Dividir en componentes
     ObstacleDetectionModule::Components components = divideComponents(solid);
+    cv::imshow("Components", components.image);
 
     // Seleccionar el obstáculo más relevante 
-    ObstacleDetectionModule::Obstacle obs = selectObstacle(components, depthMap);
+    Obstacle obs = selectObstacle(components, depthMap);
 
     // Calcular angulos 
     obs = calculateAngles(obs);
@@ -373,3 +374,24 @@ ObstacleDetectionModule::Obstacle ObstacleDetectionModule::startDetection(cv::Ma
 
     return obs;
 }
+
+/*void ObstacleDetectionModule::start(){ 
+    while (true) {
+        auto [depth, img] = imagen
+        if (!img.empty()) {
+            // Visualizar resultado del preprocesamiento
+            detmod.previewDepth(img);
+            
+            // Iniciar deteccion 
+            ObstacleDetectionModule::Obstacle obs;
+            obs = detmod.startDetection(img, depth);  
+            
+            // Visualizar deteccion
+            detmod.viewDetection(obs);
+        }
+
+        int key = cv::waitKey(1);
+        if (key == 27 || key == 'q') break;
+    }
+
+}*/

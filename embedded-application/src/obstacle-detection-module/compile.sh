@@ -15,7 +15,7 @@ if ! cmake -B "$builddir" -S "$workpath"; then
 fi
 
 # Construir ambos targets
-if cmake --build "$builddir" --config Release --target test_obstacle_detection_module --target obstacle_detection_module -j4; then
+if cmake --build "$builddir" --config Release --target test_obstacle_detection_module -j4; then
     echo "== Build success"
     echo "== Run $builddir/obstacle_detection_module"
     echo "== Run $builddir/test_obstacle_detection_module"

@@ -2,6 +2,7 @@
 
 #include "obstacle_detection_module.h"
 #include "image_capture_module.h"
+#include "obstacle_detection_iface.hpp"
 
 int main() {
     ImageCaptureModule capturemod;
@@ -23,13 +24,16 @@ int main() {
         if (!img.empty()) {
             // Visualizar resultado del preprocesamiento
             detmod.previewDepth(img);
+            //IObstacleDetection::previewDepth(img);
             
             // Iniciar deteccion 
-            ObstacleDetectionModule::Obstacle obs;
-            obs = detmod.startDetection(img, depth);  
+            Obstacle obs;
+            obs = detmod.detect(img, depth);  
+            //obs = IObstacleDetection::detect(img, depth);
             
             // Visualizar deteccion
             detmod.viewDetection(obs);
+            //IObstacleDetection::viewDetection(obs);
         }
 
         int key = cv::waitKey(1);
