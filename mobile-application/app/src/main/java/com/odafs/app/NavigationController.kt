@@ -29,7 +29,7 @@ fun NavigationController() {
     Scaffold { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Scanning,
+            startDestination = Connecting,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable<Connecting> {

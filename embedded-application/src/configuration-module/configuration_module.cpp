@@ -20,14 +20,16 @@ ConfigModule::ConfigModule() {
 void ConfigModule::start() {
 	printf("Starting configuration module...\n");
 
-	thread ble_server_thread(&BLEServer::start);
-	thread bt_audio_thread(&BTAudioController::start);
+	BLEServer::start();
 
-	while (true) {
-		printf("Configuration module running...\n");
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-	}
+	// thread ble_server_thread(&BLEServer::start);
+	// thread bt_audio_thread(&BTAudioController::start);
 
-	ble_server_thread.join();
-	bt_audio_thread.join();
+	// while (true) {
+	// 	printf("Configuration module running...\n");
+	// 	std::this_thread::sleep_for(std::chrono::seconds(1));
+	// }
+
+	// ble_server_thread.join();
+	// bt_audio_thread.join();
 }
