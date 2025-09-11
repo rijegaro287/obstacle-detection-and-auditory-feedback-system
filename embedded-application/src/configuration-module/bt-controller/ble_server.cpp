@@ -1,4 +1,5 @@
 #include "ble_server.hpp"
+#include "ble_introspection_xml.hpp"
 
 #include <iostream>
 #include <thread>
@@ -8,6 +9,7 @@ GMainLoop* BLEServer::main_loop = nullptr;
 GDBusConnection* BLEServer::connection = nullptr;
 
 GDBusNodeInfo* BLEServer::app_info = nullptr;
+GDBusNodeInfo* BLEServer::service_info = nullptr;
 GDBusNodeInfo* BLEServer::char_info = nullptr;
 GDBusNodeInfo* BLEServer::adv_info = nullptr;
 
@@ -174,6 +176,25 @@ GVariant* BLEServer::handle_adv_get_property(GDBusConnection* connection,
 	return nullptr;
 }
 
+GVariant* handle_service_get_property(GDBusConnection *connection,
+																						const gchar *sender,
+																						const gchar *object_path,
+																						const gchar *interface_name,
+																						const gchar *property_name,
+																						GError** error,
+																						gpointer user_data) {
+	if (g_strcmp0(property_name, "UUID") == 0) {
+		return g_variant_new_string(SERVICE_UUID);
+	}
+	else if (g_strcmp0(property_name, "Primary") == 0) {
+		return g_variant_new_boolean(TRUE);
+	}
+	else {
+		g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED, "Unknown property: %s", property_name);
+	}
+	return nullptr;
+}
+
 int64_t BLEServer::register_application() {
 	GError *error = nullptr;
 
@@ -183,11 +204,11 @@ int64_t BLEServer::register_application() {
 		nullptr
 	};
 
-	// static const GDBusInterfaceVTable service_vtable = {
-	// 	nullptr,
-	// 	handle_service_get_property,
-	// 	nullptr
-	// };
+	const GDBusInterfaceVTable service_vtable = {
+		nullptr,
+		handle_service_get_property,
+		nullptr
+	};
 
 	const GDBusInterfaceVTable char_vtable = {
 		BLEServer::handle_char_method_call,
@@ -206,6 +227,16 @@ int64_t BLEServer::register_application() {
 		APP_PATH,
 		BLEServer::app_info->interfaces[0],
 		&app_vtable,
+		nullptr,
+		nullptr,
+		&error
+	);
+
+	g_dbus_connection_register_object(
+		BLEServer::connection,
+		SERVICE_PATH,
+		BLEServer::service_info->interfaces[0],
+		&service_vtable,
 		nullptr,
 		nullptr,
 		&error
@@ -258,6 +289,11 @@ int64_t BLEServer::advertise_application() {
 		printf("Error creating adapter proxy\n");
 		return -1;
 	}
+
+	if (BLEServer::set_proxy_property(adapter_proxy,
+																		BLUEZ_ADAPTER_IFACE,
+																		"Alias",
+																		g_variant_new_string("ODAFS"))) return -1;
 
 	if (BLEServer::set_proxy_property(adapter_proxy,
 																		BLUEZ_ADAPTER_IFACE,
@@ -329,6 +365,13 @@ int64_t BLEServer::init() {
     printf("Failed to parse introspection XML: %s\n", error->message);
     g_error_free(error);
 		return -1;
+  }
+
+  BLEServer::service_info = g_dbus_node_info_new_for_xml(SERVICE_XML, &error);
+  if (error) {
+    printf("Failed to parse service XML: %s\n", error->message);
+    g_error_free(error);
+    return -1;
   }
 
   BLEServer::char_info = g_dbus_node_info_new_for_xml(CHAR_XML, &error);

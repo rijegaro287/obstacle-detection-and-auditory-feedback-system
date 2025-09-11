@@ -34,7 +34,7 @@ fun NavigationController() {
         ) {
             composable<Connecting> {
                 BackHandler (enabled = true) {  }
-                ConnectingView { navController.navigate(Scanning) }
+                ConnectingView ({ navController.navigate(Scanning) })
             }
 
             composable<Scanning> {

@@ -17,48 +17,6 @@
 #define SERVICE_UUID "12345678-9abc-def1-2345-6789abcdef00"
 #define CHARACTERISTIC_UUID "12345678-9abc-def1-2345-6789abcdef01"
 
-static const char *APP_XML =
-"<node>"
-"  <interface name='org.freedesktop.DBus.ObjectManager'>"
-"    <method name='GetManagedObjects'>"
-"      <arg type='a{oa{sa{sv}}}' name='objects' direction='out'/>"
-"    </method>"
-"  </interface>"
-"</node>";
-
-static const char *SERVICE_XML = 
-"<node>"
-" <interface name='org.bluez.GattService1'>"
-" 	<property name='UUID' type='s' access='read'/>"
-" 	<property name='Primary' type='b' access='read'/>"
-" </interface>"
-" <interface name='org.freedesktop.DBus.Properties'/>"
-"</node>";
-
-static const char *CHAR_XML = 
-"<node>"
-"  <interface name='org.bluez.GattCharacteristic1'>"
-"    <method name='ReadValue'>"
-"      <arg type='a{sv}' name='options' direction='in'/>"
-"      <arg type='ay' name='value' direction='out'/>"
-"    </method>"
-"    <method name='WriteValue'>"
-"      <arg type='ay' name='value' direction='in'/>"
-"      <arg type='a{sv}' name='options' direction='in'/>"
-"    </method>"
-"  </interface>"
-"</node>";
-
-static const char *ADV_XML =
-"<node>"
-"  <interface name='org.bluez.LEAdvertisement1'>"
-"    <property name='Type' type='s' access='read'/>"
-"    <property name='ServiceUUIDs' type='as' access='read'/>"
-"    <property name='LocalName' type='s' access='read'/>"
-"    <property name='Includes' type='as' access='read'/>"
-"  </interface>"
-"</node>";
-
 class BLEServer : public BTController {
 public:
 	static void start();
@@ -68,6 +26,7 @@ private:
   static GDBusConnection *connection;
 
   static GDBusNodeInfo *app_info;
+  static GDBusNodeInfo *service_info;
   static GDBusNodeInfo *char_info;
   static GDBusNodeInfo *adv_info;
 
