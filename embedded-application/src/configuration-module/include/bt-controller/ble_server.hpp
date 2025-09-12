@@ -8,14 +8,15 @@
 #define GATT_CHARACTERISTIC_IFACE "org.bluez.GattCharacteristic1"
 #define LE_ADVERTISING_MANAGER_IFACE "org.bluez.LEAdvertisingManager1"
 
-#define APP_PATH "/com/example/app"
-#define SERVICE_PATH "/com/example/app/service"
-#define CHARACTERISTIC_PATH "/com/example/app/service/char"
-#define ADVERTISING_PATH "/com/example/app/advertising"
+#define APP_PATH "/com/odafs/app"
+#define SERVICE_PATH "/com/odafs/app/service"
+#define CHARACTERISTIC_PATH "/com/odafs/app/service/char"
+#define ADVERTISING_PATH "/com/odafs/app/advertising"
 
-#define SERVICE_NAME "com.example.service"
-#define SERVICE_UUID "12345678-9abc-def1-2345-6789abcdef00"
-#define CHARACTERISTIC_UUID "12345678-9abc-def1-2345-6789abcdef01"
+#define DEVICE_NAME "odafs"
+#define SERVICE_NAME "com.odafs.service"
+#define SERVICE_UUID "9b19df40-4042-4479-0000-131cd24590be"
+#define CHARACTERISTIC_UUID "9b19df40-4042-4479-0001-131cd24590be"
 
 class BLEServer : public BTController {
 public:

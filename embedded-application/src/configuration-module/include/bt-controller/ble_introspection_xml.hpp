@@ -9,6 +9,18 @@ static const char *APP_XML =
 "  </interface>"
 "</node>";
 
+static const char *ADV_XML =
+"<node>"
+"  <interface name='org.bluez.LEAdvertisement1'>"
+"    <property name='Type' type='s' access='read'/>"
+"    <property name='LocalName' type='s' access='read'/>"
+"    <property name='Discoverable' type='b' access='read'/>"
+"    <property name='DiscoverableTimeout' type='q' access='read'/>"
+"    <property name='ScanResponseServiceUUIDs' type='as' access='read'/>"
+"  </interface>"
+"</node>";
+
+
 static const char *SERVICE_XML = 
 "<node>"
 " <interface name='org.bluez.GattService1'>"
@@ -29,15 +41,5 @@ static const char *CHAR_XML =
 "      <arg type='ay' name='value' direction='in'/>"
 "      <arg type='a{sv}' name='options' direction='in'/>"
 "    </method>"
-"  </interface>"
-"</node>";
-
-static const char *ADV_XML =
-"<node>"
-"  <interface name='org.bluez.LEAdvertisement1'>"
-"    <property name='Type' type='s' access='read'/>"
-"    <property name='ServiceUUIDs' type='as' access='read'/>"
-"    <property name='LocalName' type='s' access='read'/>"
-"    <property name='Includes' type='as' access='read'/>"
 "  </interface>"
 "</node>";

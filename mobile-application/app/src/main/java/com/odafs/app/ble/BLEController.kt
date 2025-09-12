@@ -112,10 +112,13 @@ class BLEController(application: Application) : AndroidViewModel(application) {
             results?.forEach { device ->
                 device.let {
                     val bleDevice = BLEDevice(
-                        name = it.device?.name ?: "Unknown",
-                        address = it.device?.address ?: "",
-                        serviceUUIDs = it.device?.uuids?.toList()
+                        name = it?.scanRecord?.deviceName ?: "Unknown",
+                        address = it?.device?.address ?: "",
+                        serviceUUIDs = it?.scanRecord?.serviceUuids?.toList()
                     )
+
+                    Log.d(TAG,"===========================================================")
+                    Log.d(TAG,"BLE Device Found: ${bleDevice.name}@${bleDevice.address}")
 
                     if (bleDevice.serviceUUIDs != null) {
                         for (uuid in bleDevice.serviceUUIDs) {
