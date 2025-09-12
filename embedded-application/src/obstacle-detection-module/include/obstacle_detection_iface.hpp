@@ -4,7 +4,7 @@
 #define IOBSTACLE_DETECTION_HPP
 
 #include <opencv2/opencv.hpp>
-#include "obstacle.hpp"
+#include "control_iface.hpp"
 
 class IObstacleDetection {
 public:

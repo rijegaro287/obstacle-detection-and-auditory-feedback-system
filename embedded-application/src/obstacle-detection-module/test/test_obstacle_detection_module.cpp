@@ -23,17 +23,17 @@ int main() {
         auto [depth, img] = capturemod.preprocessDepth(); // imagen preprocesada y de profundidad
         if (!img.empty()) {
             // Visualizar resultado del preprocesamiento
-            detmod.previewDepth(img);
-            //IObstacleDetection::previewDepth(img);
+            //detmod.previewDepth(img);
+            IObstacleDetection::previewDepth(img);
             
             // Iniciar deteccion 
             Obstacle obs;
-            obs = detmod.detect(img, depth);  
-            //obs = IObstacleDetection::detect(img, depth);
+            //obs = detmod.detect(img, depth);  
+            obs = IObstacleDetection::detect(img, depth);
             
             // Visualizar deteccion
-            detmod.viewDetection(obs);
-            //IObstacleDetection::viewDetection(obs);
+            //detmod.viewDetection(obs);
+            IObstacleDetection::viewDetection(obs);
         }
 
         int key = cv::waitKey(1);

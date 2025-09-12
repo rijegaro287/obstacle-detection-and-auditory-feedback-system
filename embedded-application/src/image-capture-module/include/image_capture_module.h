@@ -5,6 +5,7 @@
 
 #include "ArducamTOFCamera.hpp"
 #include <opencv2/core.hpp>
+#include "control_iface.hpp"
 
 class ImageCaptureModule {
 public:
@@ -13,7 +14,7 @@ public:
 
     bool initialize();
     bool captureFrame();
-    std::pair<cv::Mat, cv::Mat> preprocessDepth();
+    Frame preprocessDepth();
     void start();
 
 private:

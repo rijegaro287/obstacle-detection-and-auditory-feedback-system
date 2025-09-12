@@ -1,6 +1,8 @@
 #include "control_module.hpp"
 #include "control_iface.hpp"
-#include "feedback_iface.hpp"
+// #include "feedback_iface.hpp"
+#include "image_capture_iface.hpp"
+#include "obstacle_detection_iface.hpp"
 
 #include <iostream>
 #include <thread>
@@ -18,8 +20,12 @@ ControlModule::ControlModule() {
   this->audio_data->left_signal = vector<double>();
   this->audio_data->right_signal = vector<double>();
 
-  this->obstacle_mtx.lock();
+  this->frame = Frame();
+  this->obstacle = Obstacle();
+
+  //this->obstacle_mtx.lock();
   this->audio_mtx.lock();
+
 }
 
 ControlModule::~ControlModule() {
@@ -27,13 +33,18 @@ ControlModule::~ControlModule() {
   delete this->audio_data;
 }
 
-obstacle_position_t ControlModule::get_obstacle_position() {
+Frame ControlModule::get_frame() {
+  lock_guard<mutex> guard(this->frame_mtx);
+  Frame frame = this->frame;
+  this->frame = Frame();
+  return frame;
+}
+
+Obstacle ControlModule::get_obstacle() {
   lock_guard<mutex> guard(this->obstacle_mtx);
-  obstacle_position_t position = *this->obstacle_position;
-  this->obstacle_position->azimuth = 0;
-  this->obstacle_position->elevation = 0;
-  this->obstacle_position->distance = 0;
-  return position;
+  Obstacle obstacle = this->obstacle;
+  this->obstacle = Obstacle();
+  return obstacle;
 }
 
 audio_data_t ControlModule::get_audio_data() {
@@ -45,11 +56,16 @@ audio_data_t ControlModule::get_audio_data() {
   return data;
 }
 
-void ControlModule::set_obstacle_position(const obstacle_position_t& position) {
+void ControlModule::set_frame(Frame frame) {
+  lock_guard<mutex> guard(this->frame_mtx);
+  this->frame = frame;
+}
+
+void ControlModule::set_obstacle(const Obstacle obstacle) {
   lock_guard<mutex> guard(this->obstacle_mtx);
-  this->obstacle_position->azimuth = position.azimuth;
-  this->obstacle_position->elevation = position.elevation;
-  this->obstacle_position->distance = position.distance;
+  this->obstacle.azimuth = obstacle.azimuth;
+  this->obstacle.elevation = obstacle.elevation;
+  this->obstacle.meanDepth = obstacle.meanDepth;
 }
 
 void ControlModule::set_audio_data(const audio_data_t& data) {
@@ -74,7 +90,7 @@ void ControlModule::clear_audio_data() {
 }
 
 void ControlModule::start() {
-  this->obstacle_mtx.unlock();
+  /**this->obstacle_mtx.unlock();
   this->audio_mtx.unlock();
 
   // IFeedback::set_feedback_mode(VERBAL_MODE);
@@ -103,10 +119,10 @@ void ControlModule::start() {
     }
 
     for (const auto& position : test_positions) {
-      IControl::set_obstacle_position({position[0], position[1], position[2]});
+      IControl::set_obstacle({position[0], position[1], position[2]});
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     mode = !mode;
-  }
+  }**/
 }

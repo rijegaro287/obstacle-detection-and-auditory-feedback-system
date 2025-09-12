@@ -1,10 +1,14 @@
 #include "control_module.hpp"
 #include "control_iface.hpp"
 
-obstacle_position_t IControl::get_obstacle_position() {
-  obstacle_position_t position = ControlModule::get_instance().get_obstacle_position();
-  ControlModule::get_instance().clear_obstacle_position();
-  return position;
+Frame IControl::get_frame() {
+  Frame frame =  ControlModule::get_instance().get_frame();
+  return frame;
+}
+
+Obstacle IControl::get_obstacle() {
+  Obstacle obstacle = ControlModule::get_instance().get_obstacle();
+  return obstacle;
 }
 
 audio_data_t IControl::get_audio_data() {
@@ -12,8 +16,12 @@ audio_data_t IControl::get_audio_data() {
   return audio_data;
 }
 
-void IControl::set_obstacle_position(const obstacle_position_t& position) {
-  ControlModule::get_instance().set_obstacle_position(position);
+void IControl::set_frame(const Frame& frame) {
+  ControlModule::get_instance().set_frame(frame);
+}
+
+void IControl::set_obstacle(const Obstacle& obstacle) {
+  ControlModule::get_instance().set_obstacle(obstacle);
 }
 
 void IControl::set_audio_data(const audio_data_t& data) {

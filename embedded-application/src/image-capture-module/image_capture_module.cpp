@@ -1,11 +1,13 @@
 #include <iostream>
 
 #include "image_capture_module.h"
-//#include "image_capture_module.hpp"
+#include "control_iface.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 using namespace Arducam;
 
@@ -61,7 +63,7 @@ bool ImageCaptureModule::captureFrame() {
         cv::Mat depth_vis;
         depth_frame_.convertTo(depth_vis, CV_8U, 255.0 / 7000);
         cv::applyColorMap(depth_vis, result_frame_, cv::COLORMAP_RAINBOW);
-        cv::imshow("Original Depth Frame", result_frame_);
+        //cv::imshow("Original Depth Frame", result_frame_);
     }
 
     tof_.releaseFrame(frame_); // liberar frame_
@@ -69,7 +71,7 @@ bool ImageCaptureModule::captureFrame() {
 }
 
 // Metodo preprocessDepth: preprocesamiento de la imagen
-std::pair<cv::Mat, cv::Mat> ImageCaptureModule::preprocessDepth() {
+Frame ImageCaptureModule::preprocessDepth() {
     if (depth_frame_.empty()) {
         std::cerr << "[WARNING] La imagen de profundidad está vacía, no se puede preprocesar" << std::endl;
         return {cv::Mat(), cv::Mat()};
@@ -126,14 +128,17 @@ void ImageCaptureModule::start(){
 
     // Capturar frames (loop)
     while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         // si la captura NO fue exitosa vuelve a intentarlo en la siguiente iteracion/captura
         if (!captureFrame()) {
             continue;
         }
 
-        auto [depth, img] = preprocessDepth(); // imagen preprocesada
-        if (!img.empty()) {
-            cv::imshow("Preprocessed Depth Preview", img);
+        Frame frame = preprocessDepth(); // imagen preprocesada
+        if (!frame.image.empty()) {
+            std::cout << "Alto: " << frame.image.rows << ", Ancho: " << frame.image.cols << std::endl;
+            IControl::set_frame(frame);
+            //cv::imshow("Preprocessed Depth Preview", frame.image);
         }
 
         int key = cv::waitKey(1);

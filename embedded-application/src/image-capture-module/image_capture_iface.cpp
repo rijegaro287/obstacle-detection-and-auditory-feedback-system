@@ -12,6 +12,6 @@ bool IImageCapture::captureFrame() {
     return g_imageCapture.captureFrame();
 }
 
-std::pair<cv::Mat, cv::Mat> IImageCapture::preprocessDepth() {
+Frame IImageCapture::preprocessDepth() {
     return g_imageCapture.preprocessDepth();
 }

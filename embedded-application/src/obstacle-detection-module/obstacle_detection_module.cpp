@@ -1,6 +1,7 @@
 #include <iostream>
-#include "image_capture_module.h"
 #include "obstacle_detection_module.h"
+#include <thread>
+#include <chrono>
 
 // Contructor: asigna los rangos de rojo para la detección
 ObstacleDetectionModule::ObstacleDetectionModule():
@@ -361,7 +362,7 @@ Obstacle ObstacleDetectionModule::detect(cv::Mat& image, cv::Mat& depthMap){
 
     // Dividir en componentes
     ObstacleDetectionModule::Components components = divideComponents(solid);
-    cv::imshow("Components", components.image);
+    //cv::imshow("Components", components.image);
 
     // Seleccionar el obstáculo más relevante 
     Obstacle obs = selectObstacle(components, depthMap);
@@ -369,29 +370,39 @@ Obstacle ObstacleDetectionModule::detect(cv::Mat& image, cv::Mat& depthMap){
     // Calcular angulos 
     obs = calculateAngles(obs);
 
-    // Visualizar resultado
-    viewDetection(obs);
-
     return obs;
 }
 
-/*void ObstacleDetectionModule::start(){ 
+void ObstacleDetectionModule::start(){ 
     while (true) {
-        auto [depth, img] = imagen
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        Frame frame = IControl::get_frame();
+        std::cout << "OBS= Alto: " << frame.image.rows << ", Ancho: " << frame.image.cols << std::endl;
+        cv::Mat depth = frame.depthMap;
+        cv::Mat img = frame.image;
+
         if (!img.empty()) {
             // Visualizar resultado del preprocesamiento
-            detmod.previewDepth(img);
+            //previewDepth(img);
             
             // Iniciar deteccion 
-            ObstacleDetectionModule::Obstacle obs;
-            obs = detmod.startDetection(img, depth);  
+            Obstacle obs;
+            obs = detect(img, depth);  
             
             // Visualizar deteccion
-            detmod.viewDetection(obs);
-        }
+            //viewDetection(obs);
 
-        int key = cv::waitKey(1);
-        if (key == 27 || key == 'q') break;
+            // Mapear angulo horizontal
+            double mapped_azimuth = mapAzimuth(obs.azimuth);
+            obs.azimuth = mapped_azimuth;
+            std::cout << "Distancia: " << obs.meanDepth << ", Azimuth: " << obs.azimuth << ", Elevacion: " << obs.elevation << std::endl;
+            //Set obstaculo
+            IControl::set_obstacle(obs);
+        }
+        printf("__________________________");
+
+        /*int key = cv::waitKey(1);
+        if (key == 27 || key == 'q') break;*/
     }
 
-}*/
+}

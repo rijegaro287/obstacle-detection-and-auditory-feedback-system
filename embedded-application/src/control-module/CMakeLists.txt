@@ -8,25 +8,32 @@ project(ControlModule)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 # Control module library
 add_library(control_module STATIC
     control_module.cpp
 )
 target_include_directories(control_module PUBLIC include)
 target_include_directories(control_module PRIVATE 
-    ../feedback-module/include
-    ../transmission-module/include
+    # ../feedback-module/include
+    # ../transmission-module/include
+    ../image-capture-module/include
+    ../obstacle-detection-module/include
 )
 target_link_libraries(control_module PRIVATE
-    feedback_iface
-    transmission_iface
+    #feedback_iface
+    #transmission_iface
+    image_capture_iface
+    obstacle_detection_iface
 )
 
 add_library(control_iface STATIC
     control_iface.cpp
 )
 target_include_directories(control_iface PUBLIC include)
-target_link_libraries(control_iface PRIVATE control_module)
+target_link_libraries(control_iface PRIVATE control_module ${OpenCV_LIBS})
 
 # Define the test executable
 add_executable(test_control_module 
@@ -34,8 +41,11 @@ add_executable(test_control_module
 )
 target_link_libraries(test_control_module PRIVATE 
     control_module
-    feedback_iface
-    transmission_iface
+    #feedback_iface
+    #transmission_iface
+    image_capture_iface
+    obstacle_detection_iface
+    ${OpenCV_LIBS}
 )
 
 # Enable testing for this module
