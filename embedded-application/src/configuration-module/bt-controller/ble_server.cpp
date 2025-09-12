@@ -87,6 +87,9 @@ GVariant* BLEServer::handle_adv_get_property(GDBusConnection* connection,
 	else if (g_strcmp0(property_name, "LocalName") == 0) {
 		return g_variant_new_string(DEVICE_NAME);
 	}
+	else if (g_strcmp0(property_name, "Appearance") == 0) {
+		return g_variant_new_uint16(HID_APPEARANCE_CODE);
+	}
 	else if (g_strcmp0(property_name, "Discoverable") == 0) {
 		return g_variant_new_boolean(TRUE);
 	}

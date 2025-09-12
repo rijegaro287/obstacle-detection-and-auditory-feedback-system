@@ -14,6 +14,8 @@
 #define ADVERTISING_PATH "/com/odafs/app/advertising"
 
 #define DEVICE_NAME "odafs"
+#define HID_APPEARANCE_CODE 0x03C0
+
 #define SERVICE_NAME "com.odafs.service"
 #define SERVICE_UUID "9b19df40-4042-4479-0000-131cd24590be"
 #define CHARACTERISTIC_UUID "9b19df40-4042-4479-0001-131cd24590be"
