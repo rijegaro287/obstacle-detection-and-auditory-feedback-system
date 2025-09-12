@@ -1,12 +1,13 @@
 #pragma once
 
+#include "control_iface.hpp"
+#include "feedback_iface.hpp"
+
 #include <cstdint>
 #include "kfr/all.hpp"
 #include "npy.hpp"
 
 #include "kd_tree.hpp"
-
-#include "feedback_iface.hpp"
 
 #define TAP_SIGNAL_PATH "./src/feedback-module/tap_alert.npy"
 #define HRIR_PATH "./src/feedback-module/dataset/hrirs.npy"

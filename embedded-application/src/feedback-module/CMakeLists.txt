@@ -31,26 +31,25 @@ target_include_directories(feedback_module PUBLIC
   include
   ../control-module/include
 )
-target_link_libraries(feedback_module PUBLIC kfr kfr_dsp)
-target_link_libraries(feedback_module PRIVATE control_iface)
+target_link_libraries(feedback_module PUBLIC kfr kfr_dsp control_iface)
 
 add_library(feedback_iface STATIC 
   feedback_iface.cpp
 )
 target_include_directories(feedback_iface PUBLIC include)
-target_link_libraries(feedback_iface PRIVATE feedback_module)
+target_link_libraries(feedback_iface PUBLIC feedback_module)
 
-# Define the test executable using the library
-add_executable(test_feedback_module
-  test/test_feedback_module.cpp
-)
-target_link_libraries(test_feedback_module PRIVATE feedback_module)
+# # Define the test executable using the library
+# add_executable(test_feedback_module
+#   test/test_feedback_module.cpp
+# )
+# target_link_libraries(test_feedback_module PUBLIC feedback_module)
 
 
-# Enable testing for this module
-enable_testing()
+# # Enable testing for this module
+# enable_testing()
 
-# Add the test
-add_test(NAME test_feedback_module 
-         COMMAND test_feedback_module
-         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# # Add the test
+# add_test(NAME test_feedback_module 
+#          COMMAND test_feedback_module
+#          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,5 +1,4 @@
 #include "feedback_module.hpp"
-#include "control_iface.hpp"
 
 #include <iostream>
 #include <thread>
@@ -146,16 +145,14 @@ void FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
 void FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
 	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
 
-	Audi signal;
+	Audio signal;
 	signal.left_signal = vector<double>(n_samples);
 	signal.right_signal = vector<double>(n_samples);
 	signal.sample_rate = VERBAL_SAMPLE_RATE;
 
 	uint8_t position_idx;
 
-	uint8_t position = this->calculate_verbal_position(obstacle.azimuth, 
-																										 obstacle.elevation,
-																										 obstacle.meanDepth);
+	uint8_t position = this->calculate_verbal_position(obstacle);
 	switch (position) {
 	case HORIZONTAL_CENTERED_MASK | VERTICALLY_CENTERED_MASK:
 		position_idx = FRONT;
@@ -205,15 +202,11 @@ void FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
 void FeedbackModule::generate_feedback(Obstacle obstacle) {
 	if (this->feedback_mode == NON_VERBAL_MODE) {
 		printf("Generating non-verbal feedback...\n");
-		this->generate_non_verbal_feedback(obstacle.azimuth,
-																			 obstacle.elevation,
-																			 obstacle.meanDepth);
+		this->generate_non_verbal_feedback(obstacle);
 	} 
 	else if (this->feedback_mode == VERBAL_MODE) {
 		printf("Generating verbal feedback...\n");
-		this->generate_verbal_feedback(obstacle.azimuth,
-																	 obstacle.elevation,
-																	 obstacle.meanDepth);
+		this->generate_verbal_feedback(obstacle);
 	}
 	else {
 		printf("Invalid feedback mode\n");
@@ -230,7 +223,7 @@ void FeedbackModule::start() {
 		printf("Obstacle Position - Azimuth: %.2f, Elevation: %.2f, Distance: %.2f\n", 
 					 obstacle.azimuth, obstacle.elevation, obstacle.meanDepth);
 
-		this->generate_feedback(obstacle.azimuth, obstacle.elevation, obstacle.meanDepth);
+		this->generate_feedback(obstacle);
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}

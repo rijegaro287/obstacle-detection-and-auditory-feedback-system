@@ -1,8 +1,8 @@
 #include "control_module.hpp"
 #include "control_iface.hpp"
+// #include "image_capture_iface.hpp"
+// #include "obstacle_detection_iface.hpp"
 // #include "feedback_iface.hpp"
-#include "image_capture_iface.hpp"
-#include "obstacle_detection_iface.hpp"
 
 #include <iostream>
 #include <thread>
@@ -24,8 +24,7 @@ ControlModule::ControlModule() {
 }
 
 ControlModule::~ControlModule() {
-  // delete this->obstacle_position;
-  // delete this->audio_data;
+
 }
 
 Frame ControlModule::get_frame() {
@@ -63,29 +62,16 @@ void ControlModule::set_obstacle(const Obstacle obstacle) {
 
 void ControlModule::set_audio_data(const Audio& data) {
   lock_guard<mutex> guard(this->audio_mtx);
-  this->audio_data->left_signal = data.left_signal;
-  this->audio_data->right_signal = data.right_signal;
-  this->audio_data->sample_rate = data.sample_rate;
-}
-
-void ControlModule::clear_obstacle_position() {
-  lock_guard<mutex> guard(this->obstacle_mtx);
-  this->obstacle_position->azimuth = 0;
-  this->obstacle_position->elevation = 0;
-  this->obstacle_position->distance = 0;
-}
-
-void ControlModule::clear_audio_data() {
-  lock_guard<mutex> guard(this->audio_mtx);
-  this->audio_data->left_signal.clear();
-  this->audio_data->right_signal.clear();
-  this->audio_data->sample_rate = 0;
+  this->audio_data.left_signal = data.left_signal;
+  this->audio_data.right_signal = data.right_signal;
+  this->audio_data.sample_rate = data.sample_rate;
 }
 
 void ControlModule::start() {
   this->frame_mtx.unlock();
   this->obstacle_mtx.unlock();
   this->audio_mtx.unlock();
+
   /**this->obstacle_mtx.unlock();
   this->audio_mtx.unlock();
 

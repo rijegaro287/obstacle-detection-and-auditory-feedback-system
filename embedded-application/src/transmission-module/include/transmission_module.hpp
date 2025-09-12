@@ -1,11 +1,11 @@
 #pragma once
 
+#include "control_iface.hpp"
+
 #include <iostream>
 #include <vector>
 
 #include <alsa/asoundlib.h>
-
-#include "control_iface.hpp"
 
 using namespace std;
 
