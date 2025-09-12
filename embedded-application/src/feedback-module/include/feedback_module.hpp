@@ -86,8 +86,8 @@ private:
   void init_position_tree();
   void init_verbal_feedback_tensor();
   kfr::univector<double, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
-  uint8_t calculate_verbal_position(float azimuth, float elevation, float distance);
-  void generate_non_verbal_feedback(float azimuth, float elevation, float distance);
-  void generate_verbal_feedback(float azimuth, float elevation, float distance);
-  void generate_feedback(float azimuth, float elevation, float distance);
+  uint8_t calculate_verbal_position(Obstacle obstacle);
+  void generate_non_verbal_feedback(Obstacle obstacle);
+  void generate_verbal_feedback(Obstacle obstacle);
+  void generate_feedback(Obstacle obstacle);
 };

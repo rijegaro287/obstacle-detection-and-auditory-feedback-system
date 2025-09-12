@@ -77,7 +77,7 @@ double get_max_value(const vector<double>& audio) {
 	return max_value;
 }
 
-void TransmissionModule::preprocess_audio(audio_data_t& signal, 
+void TransmissionModule::preprocess_audio(Audio& signal, 
 																				  vector<int16_t>& pcm, 
 																					double max_value,
 																					uint64_t start_idx,
@@ -122,7 +122,7 @@ void TransmissionModule::send_pcm_data(vector<int16_t>& pcm, uint64_t sample_rat
 	}
 }
 
-void TransmissionModule::send_audio(audio_data_t& signal) {
+void TransmissionModule::send_audio(Audio& signal) {
 	if (signal.left_signal.size() != signal.right_signal.size()) {
 		printf("Error: Left and right channel sizes do not match.\n");
 		return;
@@ -151,7 +151,7 @@ void TransmissionModule::send_audio(audio_data_t& signal) {
 
 void TransmissionModule::start() {
 	while (true) {
-		audio_data_t signal = IControl::get_audio_data();
+		Audio signal = IControl::get_audio_data();
 			if (signal.left_signal.empty() ||
 					signal.right_signal.empty() ||
 					signal.sample_rate == 0) {

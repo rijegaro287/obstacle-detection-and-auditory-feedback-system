@@ -11,8 +11,8 @@ Obstacle IControl::get_obstacle() {
   return obstacle;
 }
 
-audio_data_t IControl::get_audio_data() {
-  audio_data_t audio_data = ControlModule::get_instance().get_audio_data();
+Audio IControl::get_audio_data() {
+  Audio audio_data = ControlModule::get_instance().get_audio_data();
   return audio_data;
 }
 
@@ -24,14 +24,6 @@ void IControl::set_obstacle(const Obstacle& obstacle) {
   ControlModule::get_instance().set_obstacle(obstacle);
 }
 
-void IControl::set_audio_data(const audio_data_t& data) {
+void IControl::set_audio_data(const Audio& data) {
   ControlModule::get_instance().set_audio_data(data);
-}
-
-void IControl::clear_obstacle_position() {
-  ControlModule::get_instance().clear_obstacle_position();
-}
-
-void IControl::clear_audio_data() {
-  ControlModule::get_instance().clear_audio_data();
 }

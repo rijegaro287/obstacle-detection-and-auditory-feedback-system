@@ -14,23 +14,18 @@ ControlModule& ControlModule::get_instance() {
 }
 
 ControlModule::ControlModule() {
-  this->obstacle_position = new obstacle_position_t;
-  this->audio_data = new audio_data_t;
-
-  this->audio_data->left_signal = vector<double>();
-  this->audio_data->right_signal = vector<double>();
+  this->frame_mtx.lock();
+  this->obstacle_mtx.lock();
+  this->audio_mtx.lock();
 
   this->frame = Frame();
   this->obstacle = Obstacle();
-
-  //this->obstacle_mtx.lock();
-  this->audio_mtx.lock();
-
+  this->audio_data = Audio();
 }
 
 ControlModule::~ControlModule() {
-  delete this->obstacle_position;
-  delete this->audio_data;
+  // delete this->obstacle_position;
+  // delete this->audio_data;
 }
 
 Frame ControlModule::get_frame() {
@@ -47,12 +42,10 @@ Obstacle ControlModule::get_obstacle() {
   return obstacle;
 }
 
-audio_data_t ControlModule::get_audio_data() {
+Audio ControlModule::get_audio_data() {
   lock_guard<mutex> guard(this->audio_mtx);
-  audio_data_t data = *this->audio_data;
-  this->audio_data->left_signal.clear();
-  this->audio_data->right_signal.clear();
-  this->audio_data->sample_rate = 0;
+  Audio data = this->audio_data;
+  this->audio_data = Audio();
   return data;
 }
 
@@ -68,7 +61,7 @@ void ControlModule::set_obstacle(const Obstacle obstacle) {
   this->obstacle.meanDepth = obstacle.meanDepth;
 }
 
-void ControlModule::set_audio_data(const audio_data_t& data) {
+void ControlModule::set_audio_data(const Audio& data) {
   lock_guard<mutex> guard(this->audio_mtx);
   this->audio_data->left_signal = data.left_signal;
   this->audio_data->right_signal = data.right_signal;
@@ -90,6 +83,9 @@ void ControlModule::clear_audio_data() {
 }
 
 void ControlModule::start() {
+  this->frame_mtx.unlock();
+  this->obstacle_mtx.unlock();
+  this->audio_mtx.unlock();
   /**this->obstacle_mtx.unlock();
   this->audio_mtx.unlock();
 
