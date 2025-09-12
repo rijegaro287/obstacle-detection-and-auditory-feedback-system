@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.content.ContentValues.TAG
 import android.os.ParcelUuid
 import android.util.Log
 import androidx.compose.foundation.clickable
@@ -53,6 +54,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.odafs.app.ble.BLEController
 import com.odafs.app.ble.BLEDevice
+import com.odafs.app.ble.DEVICE_NAME
+import com.odafs.app.ble.SERVICE_UUID
 import com.odafs.app.components.TopBar
 import kotlinx.coroutines.delay
 
@@ -62,26 +65,26 @@ fun ConnectingView(
     navigateToScanning: () -> Unit,
     bleController: BLEController = viewModel()
 ) {
-    var devices by remember { mutableStateOf(emptyList<BLEDevice>()) }
-    devices = bleController.foundDevices.collectAsState().value
+    var bleDevices by remember { mutableStateOf(emptyList<BLEDevice>()) }
+    bleDevices = bleController.foundDevices.collectAsState().value
 
     var deviceSelected by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (!deviceSelected) {
             bleController.startScan()
-            delay(5000)
+            delay(3000)
             bleController.stopScan()
 
-//            for (device in devices) {
-//                if (device.serviceUuids != null) {
-//                    for (uuid in device.serviceUuids) {
-//                        Log.d("uuid",uuid.toString())
-//                    }
-//                }
-//            }
+            for (bleDevice in bleDevices) {
+                for (uuid in bleDevice.serviceUUIDs) {
+                    if (bleDevice.device.name == DEVICE_NAME && uuid.toString() == SERVICE_UUID) {
+                        bleController.connectToDevice(bleDevice.device)
+                    }
+                }
+            }
 
-            delay(3000)
+            delay(500)
         }
     }
 
@@ -119,11 +122,11 @@ fun ConnectingView(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                LazyColumn {
-                    items(devices) { device ->
-                        Text(text = "${device.name}@${device.address}")
-                    }
-                }
+//                LazyColumn {
+//                    items(bleDevices) { device ->
+//                        Text(text = "${device.device.name}@${device.device.address}")
+//                    }
+//                }
             }
         }
     }

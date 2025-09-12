@@ -3,7 +3,11 @@ package com.odafs.app.ble
 import android.Manifest.permission.BLUETOOTH_SCAN
 import android.annotation.SuppressLint
 import android.app.Application
+import android.app.Service
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
@@ -11,21 +15,33 @@ import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY
+import android.content.ComponentName
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.Binder
+import android.os.Bundle
+import android.os.IBinder
 import android.os.ParcelUuid
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.AndroidViewModel
 import com.google.android.gms.common.zzq
+import com.odafs.app.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.math.log
+
+const val DEVICE_NAME = "odafs"
+const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
+const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
 
 data class BLEDevice(
-    val name: String,
-    val address: String,
-    val serviceUUIDs: List<ParcelUuid>?
+    val device: BluetoothDevice,
+    val serviceUUIDs: List<ParcelUuid>
 )
 
 class BLEController(application: Application) : AndroidViewModel(application) {
@@ -41,6 +57,45 @@ class BLEController(application: Application) : AndroidViewModel(application) {
     private val _foundDevices = MutableStateFlow<List<BLEDevice>>(emptyList())
     val foundDevices: StateFlow<List<BLEDevice>> = _foundDevices.asStateFlow()
     private val seenAddresses = mutableSetOf<String>()
+
+    private val scanCallback = object : ScanCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            result.let {
+                val device = it?.device
+                val serviceUUIDs = it?.scanRecord?.serviceUuids
+
+                if (device != null && serviceUUIDs != null) {
+                    if (seenAddresses.add(device.address)) {
+                        val bleDevice = BLEDevice(device, serviceUUIDs)
+                        _foundDevices.value = _foundDevices.value + bleDevice
+                    }
+                }
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
+            Log.d(TAG, "BLE Batch Scan Results: $results")
+            results?.forEach { device ->
+                device.let {
+                    val device = it.device
+                    val serviceUUIDs = it.scanRecord?.serviceUuids
+
+                    if (device != null && serviceUUIDs != null) {
+                        if (seenAddresses.add(device.address)) {
+                            val bleDevice = BLEDevice(device, serviceUUIDs)
+                            _foundDevices.value = _foundDevices.value + bleDevice
+                        }
+                    }
+                }
+            }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            Log.e("BLE", "Scan failed: $errorCode")
+        }
+    }
 
     @RequiresPermission(BLUETOOTH_SCAN)
     fun startScan() {
@@ -81,60 +136,21 @@ class BLEController(application: Application) : AndroidViewModel(application) {
         bleScanner?.stopScan(scanCallback)
     }
 
-    private val scanCallback = object : ScanCallback() {
-        @SuppressLint("MissingPermission")
-        override fun onScanResult(callbackType: Int, result: ScanResult?) {
-            result.let {
-                val bleDevice = BLEDevice(
-                    name = it?.device?.name ?: "Unknown",
-                    address = it?.device?.address ?: "",
-                    serviceUUIDs = it?.scanRecord?.serviceUuids?.toList()
-                )
+    fun connectToDevice(device: BluetoothDevice) {
+        Log.d(TAG, "BLE Connect Called")
+    }
+}
 
-                Log.d(TAG,"===========================================================")
-                Log.d(TAG,"BLE Device Found: ${bleDevice.name}@${bleDevice.address}")
 
-                if (bleDevice.serviceUUIDs != null) {
-                    for (uuid in bleDevice.serviceUUIDs) {
-                        Log.d(TAG,uuid.toString())
-                    }
-                }
-
-                if (seenAddresses.add(bleDevice.address)) {
-                    _foundDevices.value = _foundDevices.value + bleDevice
-                }
-            }
-        }
-
-        @SuppressLint("MissingPermission")
-        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-            Log.d(TAG, "BLE Batch Scan Results: $results")
-            results?.forEach { device ->
-                device.let {
-                    val bleDevice = BLEDevice(
-                        name = it?.scanRecord?.deviceName ?: "Unknown",
-                        address = it?.device?.address ?: "",
-                        serviceUUIDs = it?.scanRecord?.serviceUuids?.toList()
-                    )
-
-                    Log.d(TAG,"===========================================================")
-                    Log.d(TAG,"BLE Device Found: ${bleDevice.name}@${bleDevice.address}")
-
-                    if (bleDevice.serviceUUIDs != null) {
-                        for (uuid in bleDevice.serviceUUIDs) {
-                            Log.d(TAG,uuid.toString())
-                        }
-                    }
-
-                    if (seenAddresses.add(bleDevice.address)) {
-                        _foundDevices.value = _foundDevices.value + bleDevice
-                    }
-                }
-            }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            Log.e("BLE", "Scan failed: $errorCode")
-        }
+private data class DeviceConnectionState(
+    val gatt: BluetoothGatt?,
+    val connectionState: Int,
+    val mtu: Int,
+    val services: List<BluetoothGattService> = emptyList(),
+    val messageSent: Boolean = false,
+    val messageReceived: String = "",
+) {
+    companion object {
+        val None = DeviceConnectionState(null, -1, -1)
     }
 }

@@ -1,5 +1,4 @@
 #include "ble_server.hpp"
-#include "ble_introspection_xml.hpp"
 
 #include <iostream>
 #include <thread>
@@ -215,6 +214,11 @@ int64_t BLEServer::advertise_application() {
 																		BLUEZ_ADAPTER_IFACE,
 																		"Discoverable",
 																		g_variant_new_boolean(TRUE))) return -1;
+
+	if (BLEServer::set_proxy_property(adapter_proxy,
+																		BLUEZ_ADAPTER_IFACE,
+																		"DiscoverableTimeout",
+																		g_variant_new_uint32(0))) return -1;
 
 	if (BLEServer::set_proxy_property(adapter_proxy,
 																		BLUEZ_ADAPTER_IFACE,
