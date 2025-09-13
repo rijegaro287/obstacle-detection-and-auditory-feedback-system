@@ -6,24 +6,34 @@
 
 class BTAudioController : public BTController {
 public:
-	static void start();
-	static void cleanup(vector<BlueZDevice>& devices);
+  BTAudioController(const BTAudioController&) = delete;
+  BTAudioController& operator=(const BTAudioController&) = delete;
+  BTAudioController(BTAudioController&&) = delete;
+  BTAudioController& operator=(BTAudioController&&) = delete;
+
+  static BTAudioController& get_instance();
+
+	void start();
+	void cleanup(vector<BlueZDevice>& devices);
 private:
-	static GMainLoop *main_loop;
-	static BlueZDevice *connected_device;
+	GMainLoop *main_loop;
+	BlueZDevice *connected_device;
 	
-	static int64_t init();
-	static int64_t start_discovery(GDBusProxy *proxy);
-	static int64_t stop_discovery(GDBusProxy *proxy);
-	static int64_t get_discovered_devices(vector<BlueZDevice>& devices);
-	static int64_t scan_devices(vector<BlueZDevice>& devices, uint64_t timeout_sec);
-	static int64_t pair_device(GDBusProxy *proxy);
-	static int64_t connect_to_device(GDBusProxy *proxy);
-	static int64_t connect_to_device_profile(GDBusProxy *proxy, const char *uuid);
-	static int64_t connect_and_pair_device(BlueZDevice *device);
+	int64_t init();
+	int64_t start_discovery(GDBusProxy *proxy);
+	int64_t stop_discovery(GDBusProxy *proxy);
+	int64_t get_discovered_devices(vector<BlueZDevice>& devices);
+	int64_t scan_devices(vector<BlueZDevice>& devices, uint64_t timeout_sec);
+	int64_t pair_device(GDBusProxy *proxy);
+	int64_t connect_to_device(GDBusProxy *proxy);
+	int64_t connect_to_device_profile(GDBusProxy *proxy, const char *uuid);
+	int64_t connect_and_pair_device(BlueZDevice *device);
 	
-	static BlueZDevice* find_device(vector<BlueZDevice>& devices, const char *name);
-	static bool is_paired(GDBusProxy *proxy);
-	static bool is_connected(GDBusProxy *proxy);
-	static bool get_boolean_value(GVariant *variant);
+	BlueZDevice* find_device(vector<BlueZDevice>& devices, const char *name);
+	bool is_paired(GDBusProxy *proxy);
+	bool is_connected(GDBusProxy *proxy);
+	bool get_boolean_value(GVariant *variant);
+
+	BTAudioController() : main_loop(nullptr), connected_device(nullptr) {}
+	~BTAudioController() = default;
 };
