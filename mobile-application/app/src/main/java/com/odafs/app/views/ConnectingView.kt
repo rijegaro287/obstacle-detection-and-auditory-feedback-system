@@ -2,6 +2,7 @@ package com.odafs.app.views
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -61,31 +62,31 @@ import kotlinx.coroutines.delay
 
 @SuppressLint("MissingPermission")
 @Composable
-fun ConnectingView(
-    navigateToScanning: () -> Unit,
-    bleController: BLEController = viewModel()
-) {
+fun ConnectingView(navigateToScanning: () -> Unit) {
     var bleDevices by remember { mutableStateOf(emptyList<BLEDevice>()) }
-    bleDevices = bleController.foundDevices.collectAsState().value
+    bleDevices = BLEController.foundDevices.collectAsState().value
 
-    var deviceSelected by remember { mutableStateOf(false) }
+    var gattConnection by remember { mutableStateOf<BluetoothGatt?>(null) }
+    gattConnection = BLEController.gattConnection.collectAsState().value
 
     LaunchedEffect(Unit) {
-        while (!deviceSelected) {
-            bleController.startScan()
-            delay(3000)
-            bleController.stopScan()
+        while (gattConnection == null) {
+            BLEController.startScan()
+            delay(5000)
+            BLEController.stopScan()
 
-            for (bleDevice in bleDevices) {
+            bleDevices@ for (bleDevice in bleDevices) {
                 for (uuid in bleDevice.serviceUUIDs) {
                     if (bleDevice.device.name == DEVICE_NAME && uuid.toString() == SERVICE_UUID) {
-                        bleController.connectToDevice(bleDevice.device)
+                        BLEController.connectToDevice(bleDevice.device)
+                        break@bleDevices
                     }
                 }
             }
 
-            delay(500)
+            delay(1000)
         }
+        navigateToScanning()
     }
 
     Scaffold (topBar = { TopBar(title = "Conectando") }) { innerPadding ->

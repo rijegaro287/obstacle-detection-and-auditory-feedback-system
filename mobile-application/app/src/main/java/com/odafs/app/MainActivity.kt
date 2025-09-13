@@ -15,6 +15,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.platform.connectivity.bluetooth.ble.FindBLEDevicesSample
+import com.odafs.app.ble.BLEController
 import com.odafs.app.ui.theme.ODAFSTheme
 
 class MainActivity : ComponentActivity() {
@@ -62,6 +63,8 @@ class MainActivity : ComponentActivity() {
             ACCESS_FINE_LOCATION
         ))
         showEnableBluetoothDialog()
+
+        BLEController.init(applicationContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,7 +74,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             ODAFSTheme {
                 NavigationController()
-                //FindBLEDevicesSample()
             }
         }
     }

@@ -1,12 +1,15 @@
 package com.odafs.app.ble
 
+import android.Manifest
 import android.Manifest.permission.BLUETOOTH_SCAN
 import android.annotation.SuppressLint
 import android.app.Application
 import android.app.Service
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothDevice.TRANSPORT_LE
 import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
@@ -44,19 +47,27 @@ data class BLEDevice(
     val serviceUUIDs: List<ParcelUuid>
 )
 
-class BLEController(application: Application) : AndroidViewModel(application) {
-    private val bluetoothAdapter: BluetoothAdapter? by lazy {
-        val manager = application.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        manager.adapter
-    }
+object BLEController {
+    private var appContext: Application? = null
 
-    private val bleScanner: BluetoothLeScanner? by lazy {
-        bluetoothAdapter?.bluetoothLeScanner
-    }
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var bleScanner: BluetoothLeScanner? = null
 
+    private val seenAddresses = mutableSetOf<String>()
     private val _foundDevices = MutableStateFlow<List<BLEDevice>>(emptyList())
     val foundDevices: StateFlow<List<BLEDevice>> = _foundDevices.asStateFlow()
-    private val seenAddresses = mutableSetOf<String>()
+
+    private val _gattConnection = MutableStateFlow<BluetoothGatt?>(null)
+    val gattConnection: StateFlow<BluetoothGatt?> = _gattConnection.asStateFlow()
+
+    fun init(context: Context) {
+        appContext = context.applicationContext as Application
+
+        val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothAdapter = manager.adapter
+
+        bleScanner = bluetoothAdapter?.bluetoothLeScanner
+    }
 
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
@@ -76,7 +87,7 @@ class BLEController(application: Application) : AndroidViewModel(application) {
 
         @SuppressLint("MissingPermission")
         override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-            Log.d(TAG, "BLE Batch Scan Results: $results")
+            Log.d("BLE Controller", "BLE Batch Scan Results: $results")
             results?.forEach { device ->
                 device.let {
                     val device = it.device
@@ -97,19 +108,45 @@ class BLEController(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private val gattCallback = object : BluetoothGattCallback() {
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            when (newState) {
+                BluetoothGatt.STATE_CONNECTED -> {
+                    _gattConnection.value = gatt
+                }
+                BluetoothGatt.STATE_DISCONNECTED -> {
+                    _gattConnection.value = null
+                }
+                else -> {
+                    Log.d("BLE Controller", "Gatt connection state changed: $newState")
+                }
+            }
+        }
+
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            gatt.services.forEach { service ->
+                Log.d("BLE Controller", "\tService discovered: ${service.uuid}")
+                service.characteristics.forEach { characteristic ->
+                    Log.d("BLE Controller", "\t\tCharacteristic discovered: ${characteristic.uuid}")
+                }
+            }
+        }
+    }
+
     @RequiresPermission(BLUETOOTH_SCAN)
     fun startScan() {
-        Log.d(TAG, "BLE Start Called")
+        Log.d("BLE Controller", "BLE Start Called")
 
         bluetoothAdapter?.isEnabled?.let {
             if (!it) {
-                Log.e(TAG, "Bluetooth is not enabled")
+                Log.e("BLE Controller", "Bluetooth is not enabled")
                 return
             }
         }
 
         if (bleScanner == null) {
-            Log.e(TAG, "Bluetooth scanner is not available")
+            Log.e("BLE Controller", "Bluetooth scanner is not available")
             return
         }
 
@@ -124,10 +161,10 @@ class BLEController(application: Application) : AndroidViewModel(application) {
 
         try {
             bleScanner?.startScan(filters, settings, scanCallback)
-            Log.d(TAG, "BLE Scan Started")
+            Log.d("BLE Controller", "BLE Scan Started")
         }
         catch (e: Exception) {
-            Log.e(TAG, "BLE Scan Failed: ${e.message}")
+            Log.e("BLE Controller", "BLE Scan Failed: ${e.message}")
         }
     }
 
@@ -136,21 +173,8 @@ class BLEController(application: Application) : AndroidViewModel(application) {
         bleScanner?.stopScan(scanCallback)
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun connectToDevice(device: BluetoothDevice) {
-        Log.d(TAG, "BLE Connect Called")
-    }
-}
-
-
-private data class DeviceConnectionState(
-    val gatt: BluetoothGatt?,
-    val connectionState: Int,
-    val mtu: Int,
-    val services: List<BluetoothGattService> = emptyList(),
-    val messageSent: Boolean = false,
-    val messageReceived: String = "",
-) {
-    companion object {
-        val None = DeviceConnectionState(null, -1, -1)
+        device.connectGatt(appContext, false, gattCallback, TRANSPORT_LE)
     }
 }
