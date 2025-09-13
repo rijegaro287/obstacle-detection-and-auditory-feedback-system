@@ -4,13 +4,11 @@ import android.Manifest
 import android.Manifest.permission.BLUETOOTH_SCAN
 import android.annotation.SuppressLint
 import android.app.Application
-import android.app.Service
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothDevice.TRANSPORT_LE
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
@@ -18,25 +16,13 @@ import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY
-import android.content.ComponentName
-import android.content.ContentValues.TAG
 import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.Binder
-import android.os.Bundle
-import android.os.IBinder
 import android.os.ParcelUuid
 import android.util.Log
 import androidx.annotation.RequiresPermission
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.AndroidViewModel
-import com.google.android.gms.common.zzq
-import com.odafs.app.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.math.log
 
 const val DEVICE_NAME = "odafs"
 const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"

@@ -34,14 +34,17 @@ fun NavigationController() {
         ) {
             composable<Connecting> {
                 BackHandler (enabled = true) {  }
-                ConnectingView { navController.navigate(Scanning) }
+                ConnectingView (
+                    navigateToScanning = { navController.navigate(Scanning) }
+                )
             }
 
             composable<Scanning> {
                 BackHandler (enabled = true) {  }
-                ScanningView { deviceName ->
-                    navController.navigate(Controls(deviceName = deviceName))
-                }
+                ScanningView (
+                    navigateToConnecting = { navController.navigate(Connecting) },
+                    navigateToControls = { deviceName -> navController.navigate(Controls(deviceName = deviceName)) }
+                )
             }
 
             composable<Controls> { backStackEntry ->

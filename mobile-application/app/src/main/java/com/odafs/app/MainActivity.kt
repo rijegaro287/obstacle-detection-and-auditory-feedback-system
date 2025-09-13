@@ -14,7 +14,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import com.example.platform.connectivity.bluetooth.ble.FindBLEDevicesSample
 import com.odafs.app.ble.BLEController
 import com.odafs.app.ui.theme.ODAFSTheme
 

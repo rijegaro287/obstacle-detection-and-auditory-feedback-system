@@ -1,5 +1,6 @@
 package com.odafs.app.views
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,11 +22,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.odafs.app.ble.BLEController
 import com.odafs.app.components.CommandButton
 import com.odafs.app.components.DeviceCard
 import com.odafs.app.components.TopBar
@@ -40,7 +43,16 @@ val deviceList = listOf(
 )
 
 @Composable
-fun ScanningView(navigateToControls: (String) -> Unit) {
+fun ScanningView(
+    navigateToConnecting: () -> Unit,
+    navigateToControls: (String) -> Unit
+) {
+    LaunchedEffect(Unit) {
+        if (BLEController.gattConnection.value == null) {
+            navigateToConnecting()
+        }
+    }
+
     Scaffold(
         topBar = { TopBar(title = "Conéctate a un dispositivo") }
     ) { innerPadding ->
