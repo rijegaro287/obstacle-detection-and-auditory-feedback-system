@@ -1,5 +1,7 @@
 #include "ble_server.hpp"
 
+#include "configuration_iface.hpp"
+
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -142,22 +144,18 @@ void BLEServer::handle_char_method_call(GDBusConnection* connection,
 																				GVariant* parameters,
 																				GDBusMethodInvocation* invocation,
 																				gpointer user_data) {
-	printf("Characteristic method call: %s\n", method_name);
 	if (g_strcmp0(method_name, "ReadValue") == 0) {
 		GVariantBuilder builder;
+
 		g_variant_builder_init(&builder, G_VARIANT_TYPE("ay"));
-		g_variant_builder_add(&builder, "y", 0x48); // 'H'
-		g_variant_builder_add(&builder, "y", 0x65); // 'e'
-		g_variant_builder_add(&builder, "y", 0x6c); // 'l'
-		g_variant_builder_add(&builder, "y", 0x6c); // 'l'
-		g_variant_builder_add(&builder, "y", 0x6f); // 'o'
-		
+		for (char c : IConfiguration::get_response_buffer()) {
+			g_variant_builder_add(&builder, "y", (guint8)c);
+		}
+
 		GVariant* result = g_variant_new("(ay)", &builder);
 		g_dbus_method_invocation_return_value(invocation, result);
 	}
 	else if (g_strcmp0(method_name, "WriteValue") == 0) {
-		printf("Write value received\n");
-
     GVariant* value_variant = nullptr;
     GVariant* options_variant = nullptr;
 
@@ -171,13 +169,10 @@ void BLEServer::handle_char_method_call(GDBusConnection* connection,
 			printf("Failed to get options variant\n");
 		}
 
-		printf("Value variant type: %s\n", g_variant_get_type_string(value_variant));
-		printf("Options variant type: %s\n", g_variant_get_type_string(options_variant));
-
 		gsize n_elements;
 		const guint8 *data = (guint8*)g_variant_get_fixed_array(value_variant, &n_elements, sizeof(guint8));
 
-		printf("Received data (%zu bytes): %s\n", n_elements, data);
+		IConfiguration::process_command(string((const char*)data, n_elements));
 
 		g_dbus_method_invocation_return_value(invocation, nullptr);
 	}

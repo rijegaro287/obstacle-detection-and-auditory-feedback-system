@@ -14,7 +14,22 @@ ConfigModule& ConfigModule::get_instance() {
 }
 
 ConfigModule::ConfigModule() {
-	// Load configuration settings
+	this->response_buffer = "";
+}
+
+void ConfigModule::set_response_buffer(const string& buffer) {
+	this->response_buffer = buffer;
+}
+
+string ConfigModule::get_response_buffer() {
+	string temp = this->response_buffer;
+	this->response_buffer.clear();
+	return temp;
+}
+
+void ConfigModule::process_command(const string& command) {
+	printf("Processing command: %s\n", command.c_str());
+	this->set_response_buffer(command);
 }
 
 void ConfigModule::start() {
