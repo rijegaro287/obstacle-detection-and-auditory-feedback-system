@@ -120,12 +120,11 @@ object BLEController {
                     gatt.discoverServices()
                 }
                 BluetoothGatt.STATE_DISCONNECTED -> {
-                    _connecting.value = false
-                    _gattConnection.value = null
+                    disconnectFromDevice()
                 }
                 else -> {
                     Log.d("BLE Controller", "Gatt connection state changed: $newState")
-                    _connecting.value = false
+                    disconnectFromDevice()
                 }
             }
         }
@@ -210,6 +209,9 @@ object BLEController {
         }
         _serviceConnection.value = null
         _characteristicConnection.value = null
+
+        _connecting.value = false
+        _connected.value = false
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)

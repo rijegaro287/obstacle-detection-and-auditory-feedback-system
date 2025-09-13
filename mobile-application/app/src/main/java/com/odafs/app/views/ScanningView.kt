@@ -61,24 +61,14 @@ fun ScanningView(
     navigateToConnecting: () -> Unit,
     navigateToControls: (String) -> Unit
 ) {
-    var gattConnection by remember { mutableStateOf<BluetoothGatt?>(null) }
-    gattConnection = BLEController.gattConnection.collectAsState().value
+    var connected by remember { mutableStateOf(false) }
+    connected = BLEController.connected.collectAsState().value
 
-    var serviceConnection by remember { mutableStateOf<BluetoothGattService?>(null) }
-    serviceConnection = BLEController.serviceConnection.collectAsState().value
-
-    var characteristicConnection by remember { mutableStateOf<BluetoothGattCharacteristic?>(null) }
-    characteristicConnection = BLEController.characteristicConnection.collectAsState().value
+    LaunchedEffect(connected) {
+        if (!connected) navigateToConnecting()
+    }
 
     LaunchedEffect(Unit) {
-        if (gattConnection == null ||
-            serviceConnection == null ||
-            characteristicConnection == null
-        ) {
-            BLEController.disconnectFromDevice()
-            navigateToConnecting()
-        }
-
         BLEController.sendCommand("Hello!!!")
     }
 
