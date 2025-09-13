@@ -4,6 +4,11 @@
 #include <thread>
 #include <chrono>
 
+BLEServer& BLEServer::get_instance() {
+	static BLEServer instance;
+	return instance;
+}
+
 BLEServer::BLEServer() {
 	this->main_loop = nullptr;
 	this->connection = nullptr;

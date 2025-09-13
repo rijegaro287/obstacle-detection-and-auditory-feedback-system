@@ -20,11 +20,12 @@ ConfigModule::ConfigModule() {
 void ConfigModule::start() {
 	printf("Starting configuration module...\n");
 
+	BLEServer& ble_server = BLEServer::get_instance();
 	BTAudioController& bt_audio_controller = BTAudioController::get_instance();
 
-	// thread ble_server_thread(&BLEServer::start);
-	thread bt_audio_thread(&BTAudioController::start, &bt_audio_controller);
+	thread ble_server_thread(&BLEServer::start, &ble_server);
+	// thread bt_audio_thread(&BTAudioController::start, &bt_audio_controller);
 
-	// ble_server_thread.join();
-	bt_audio_thread.join();
+	ble_server_thread.join();
+	// bt_audio_thread.join();
 }

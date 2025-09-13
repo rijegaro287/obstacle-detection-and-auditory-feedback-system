@@ -71,6 +71,8 @@ public:
   BLEServer(BLEServer&&) = delete;
   BLEServer& operator=(BLEServer&&) = delete;
 
+	static BLEServer& get_instance();
+
 	void start();
 	void cleanup();
 private:
