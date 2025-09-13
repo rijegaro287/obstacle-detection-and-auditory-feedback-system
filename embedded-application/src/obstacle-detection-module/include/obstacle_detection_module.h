@@ -4,25 +4,16 @@
 #define OBSTACLE_DETECTION_MODULE_HPP
 
 #include <opencv2/opencv.hpp>
+#include "control_iface.hpp"
 
 class ObstacleDetectionModule {
 public:
     ObstacleDetectionModule();
 
-    struct Obstacle {
-        int label;          // etiqueta del componente 
-        double area;        // área en píxeles
-        double meanDepth;   // promedio de profundidad
-        double score;       // criterio de selección
-        double azimuth;     // angulo horizontal
-        double elevation;   // angulo vetical
-        cv::Point centroid; // centroide
-        cv::Mat image;      // imagen del obstaculo
-    };
-
     void previewDepth(cv::Mat& depthImage);
-    void viewDetection(ObstacleDetectionModule::Obstacle obstacle);
-    Obstacle startDetection(cv::Mat& image, cv::Mat& depthMap);
+    void viewDetection(Obstacle& obstacle);
+    Obstacle detect(cv::Mat& image, cv::Mat& depthMap);
+    void start();
 
 private:
     struct Components {

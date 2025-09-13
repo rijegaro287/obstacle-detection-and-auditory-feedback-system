@@ -1,26 +1,37 @@
 #pragma once
-
+#include <opencv2/opencv.hpp>
 #include <vector>
 
-typedef struct obstacle_position_t_ {
-  float azimuth;
-  float elevation;
-  float distance;
-} obstacle_position_t;
+typedef struct Frame_ {
+  cv::Mat depthMap;
+  cv::Mat image;
+} Frame;
 
-typedef struct audio_data_t_ {
+typedef struct Obstacle_ {
+  int label;          // etiqueta del componente 
+  double area;        // área en píxeles
+  double meanDepth;   // promedio de profundidad
+  double score;       // criterio de selección
+  double azimuth;     // ángulo horizontal
+  double elevation;   // ángulo vertical
+  cv::Point centroid; // centroide
+  cv::Mat image;      // imagen del obstáculo
+} Obstacle;
+
+typedef struct Audio_ {
   std::vector<double> left_signal;
   std::vector<double> right_signal;
   uint64_t sample_rate;
-} audio_data_t;
+} Audio;
 
 class IControl{
 private:
 public:
-  static obstacle_position_t get_obstacle_position();
-  static audio_data_t get_audio_data();
-  static void set_obstacle_position(const obstacle_position_t& position);
-  static void set_audio_data(const audio_data_t& data);
-  static void clear_obstacle_position();
-  static void clear_audio_data();
+  static Frame get_frame();
+  static Obstacle get_obstacle();
+  static Audio get_audio_data();
+  static void set_frame(const Frame& frame);
+  static void set_obstacle(const Obstacle& obstacle);
+  static void set_audio_data(const Audio& data);
+  static void unlock_mutexes();
 };

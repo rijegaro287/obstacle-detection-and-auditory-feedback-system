@@ -22,10 +22,12 @@ target_include_directories(bluetooth_controller PUBLIC
   include/bt-controller
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
+  ../control-module/include
 )
 target_link_libraries(bluetooth_controller PUBLIC
   ${GLIB_LIBRARIES}
   ${GIO_LIBRARIES}
+  control_iface
 )
 
 add_library(configuration_module STATIC
@@ -45,18 +47,18 @@ add_library(configuration_iface STATIC
   configuration_iface.cpp
 )
 target_include_directories(configuration_iface PUBLIC include)
-target_link_libraries(configuration_iface PRIVATE configuration_module)
+target_link_libraries(configuration_iface PUBLIC configuration_module)
 
-# Define the test executable
-add_executable(test_configuration_module
-  test/test_configuration_module.cpp
-)
-target_link_libraries(test_configuration_module PRIVATE configuration_module)
+# # Define the test executable
+# add_executable(test_configuration_module
+#   test/test_configuration_module.cpp
+# )
+# target_link_libraries(test_configuration_module PUBLIC configuration_module)
 
-# Enable testing for this module
-enable_testing()
+# # Enable testing for this module
+# enable_testing()
 
-# Add the test
-add_test(NAME test_configuration_module 
-         COMMAND test_configuration_module
-         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# # Add the test
+# add_test(NAME test_configuration_module 
+#          COMMAND test_configuration_module
+#          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,11 +1,13 @@
 #include <iostream>
 
 #include "image_capture_module.h"
-//#include "image_capture_module.hpp"
+#include "control_iface.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 using namespace Arducam;
 
@@ -61,7 +63,7 @@ bool ImageCaptureModule::captureFrame() {
         cv::Mat depth_vis;
         depth_frame_.convertTo(depth_vis, CV_8U, 255.0 / 7000);
         cv::applyColorMap(depth_vis, result_frame_, cv::COLORMAP_RAINBOW);
-        cv::imshow("Original Depth Frame", result_frame_);
+        //cv::imshow("Original Depth Frame", result_frame_);
     }
 
     tof_.releaseFrame(frame_); // liberar frame_
@@ -69,10 +71,10 @@ bool ImageCaptureModule::captureFrame() {
 }
 
 // Metodo preprocessDepth: preprocesamiento de la imagen
-cv::Mat ImageCaptureModule::preprocessDepth() {
+Frame ImageCaptureModule::preprocessDepth() {
     if (depth_frame_.empty()) {
         std::cerr << "[WARNING] La imagen de profundidad está vacía, no se puede preprocesar" << std::endl;
-        return cv::Mat();
+        return {cv::Mat(), cv::Mat()};
     }
 
     // Clonar y limitar valores mayores a MAX_DISTANCE para reducir ruido en zonas lejanas
@@ -115,34 +117,33 @@ cv::Mat ImageCaptureModule::preprocessDepth() {
     cv::merge(hsv_channels, hsv_image);
     cv::cvtColor(hsv_image, result_frame_, cv::COLOR_HSV2BGR);
 
-    return result_frame_;
+    return {depth_frame_, result_frame_};
 }
 
-int main() {
-    ImageCaptureModule capturemod;
-
+void ImageCaptureModule::start(){
     // Inicializar ToF camera
-    if (!capturemod.initialize()) {
-        return -1;
+    if (!initialize()) {
+        return;
     }
 
-    // Capturar frames
+    // Capturar frames (loop)
     while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         // si la captura NO fue exitosa vuelve a intentarlo en la siguiente iteracion/captura
-        if (!capturemod.captureFrame()) {
+        if (!captureFrame()) {
             continue;
         }
 
-        cv::Mat img = capturemod.preprocessDepth(); // imagen preprocesada
-        if (!img.empty()) {
-            cv::imshow("Preprocessed Depth Preview", img);
+        Frame frame = preprocessDepth(); // imagen preprocesada
+        if (!frame.image.empty()) {
+            std::cout << "Alto: " << frame.image.rows << ", Ancho: " << frame.image.cols << std::endl;
+            IControl::set_frame(frame);
+            //cv::imshow("Preprocessed Depth Preview", frame.image);
         }
 
         int key = cv::waitKey(1);
         if (key == 27 || key == 'q') break;
     }
-
-    return 0;
 }
 
 

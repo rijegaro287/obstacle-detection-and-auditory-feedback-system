@@ -1,5 +1,4 @@
 #include "feedback_module.hpp"
-#include "control_iface.hpp"
 
 #include <iostream>
 #include <thread>
@@ -78,8 +77,11 @@ kfr::univector<double, HRIR_N_TAPS> FeedbackModule::make_hrir_univector(uint64_t
 	return hrir;
 }
 
-uint8_t FeedbackModule::calculate_verbal_position(float azimuth, float elevation, float distance) {
+uint8_t FeedbackModule::calculate_verbal_position(Obstacle obstacle) {
 	uint8_t position = 0;
+
+	float azimuth = obstacle.azimuth;
+	float elevation = obstacle.elevation;
 
 	if (azimuth < (360 - VERBAL_AZIMUTH_THRESHOLD/2) && azimuth >= (360 - TOF_AZ_FOV/2)) {
 		position |= RIGHT_MASK;
@@ -110,13 +112,15 @@ uint8_t FeedbackModule::calculate_verbal_position(float azimuth, float elevation
 	return position;
 }
 
-void FeedbackModule::generate_non_verbal_feedback(float azimuth, float elevation, float distance) {
-	audio_data_t signal;
+void FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
+	Audio signal = Audio();
 	signal.left_signal = vector<double>(this->tap_signal.size());
 	signal.right_signal = vector<double>(this->tap_signal.size());
 	signal.sample_rate = NON_VERBAL_SAMPLE_RATE;
 
-	uint64_t sample_idx = this->position_tree.find_nearest({azimuth, elevation, distance});
+	uint64_t sample_idx = this->position_tree.find_nearest({obstacle.azimuth,
+																													obstacle.elevation,
+																													obstacle.meanDepth});
 
 	kfr::univector<double> output_l(this->tap_signal.size());
 	kfr::univector<double> output_r(this->tap_signal.size());
@@ -138,17 +142,17 @@ void FeedbackModule::generate_non_verbal_feedback(float azimuth, float elevation
 	IControl::set_audio_data(signal);
 }
 
-void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, float distance) {
+void FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
 	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
 
-	audio_data_t signal;
+	Audio signal;
 	signal.left_signal = vector<double>(n_samples);
 	signal.right_signal = vector<double>(n_samples);
 	signal.sample_rate = VERBAL_SAMPLE_RATE;
 
 	uint8_t position_idx;
 
-	uint8_t position = this->calculate_verbal_position(azimuth, elevation, distance);
+	uint8_t position = this->calculate_verbal_position(obstacle);
 	switch (position) {
 	case HORIZONTALLY_CENTERED_MASK | VERTICALLY_CENTERED_MASK:
 		position_idx = FRONT;
@@ -190,14 +194,14 @@ void FeedbackModule::generate_verbal_feedback(float azimuth, float elevation, fl
 	IControl::set_audio_data(signal);
 }
 
-void FeedbackModule::generate_feedback(float azimuth, float elevation, float distance) {
+void FeedbackModule::generate_feedback(Obstacle obstacle) {
 	if (this->feedback_mode == NON_VERBAL_MODE) {
 		printf("Generating non-verbal feedback...\n");
-		this->generate_non_verbal_feedback(azimuth, elevation, distance);
+		this->generate_non_verbal_feedback(obstacle);
 	} 
 	else if (this->feedback_mode == VERBAL_MODE) {
 		printf("Generating verbal feedback...\n");
-		this->generate_verbal_feedback(azimuth, elevation, distance);
+		this->generate_verbal_feedback(obstacle);
 	}
 	else {
 		printf("Invalid feedback mode\n");
@@ -206,15 +210,15 @@ void FeedbackModule::generate_feedback(float azimuth, float elevation, float dis
 
 void FeedbackModule::start() {
 	while (true) {
-		obstacle_position_t position = IControl::get_obstacle_position();
-		if (position.distance == 0) {
+		Obstacle obstacle = IControl::get_obstacle();
+		if (obstacle.meanDepth == 0) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			continue;
 		}
 		printf("Obstacle Position - Azimuth: %.2f, Elevation: %.2f, Distance: %.2f\n", 
-					 position.azimuth, position.elevation, position.distance);
+					 obstacle.azimuth, obstacle.elevation, obstacle.meanDepth);
 
-		this->generate_feedback(position.azimuth, position.elevation, position.distance);
+		this->generate_feedback(obstacle);
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}

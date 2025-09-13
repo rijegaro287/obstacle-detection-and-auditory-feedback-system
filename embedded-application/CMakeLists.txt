@@ -10,25 +10,24 @@ project(ObstacleDetectionAndAuditoryFeedbackSystem)
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Add all modules as subdirectories
+add_subdirectory(src/control-module)
+add_subdirectory(src/configuration-module)
 # add_subdirectory(src/image-capture-module)
 # add_subdirectory(src/obstacle-detection-module)
-add_subdirectory(src/control-module)
 add_subdirectory(src/feedback-module)
 add_subdirectory(src/transmission-module)
-add_subdirectory(src/configuration-module)
 
-# Create main executable that includes all modules
-# Uncomment the following lines if you want to create a main application that uses all modules.
-# main_application cannot be built if some module contains a main function.
 
 add_executable(main_application
   src/main.cpp
 )
-target_link_libraries(main_application PRIVATE
+target_link_libraries(main_application PUBLIC
   control_module
+  configuration_module
+  # image_capture_module
+  # obstacle_detection_module
   feedback_module
   transmission_module
-  configuration_module
 )
 
 # Enable testing at the top level

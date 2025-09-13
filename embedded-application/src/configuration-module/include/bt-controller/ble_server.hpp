@@ -66,20 +66,29 @@ static const char *CHAR_XML =
 
 class BLEServer : public BTController {
 public:
-	static void start();
-	static void cleanup();
+  BLEServer(const BLEServer&) = delete;
+  BLEServer& operator=(const BLEServer&) = delete;
+  BLEServer(BLEServer&&) = delete;
+  BLEServer& operator=(BLEServer&&) = delete;
+
+	void start();
+	void cleanup();
 private:
-  static GMainLoop *main_loop;
-  static GDBusConnection *connection;
+  GMainLoop *main_loop;
+  GDBusConnection *connection;
 
-  static GDBusNodeInfo *app_info;
-  static GDBusNodeInfo *service_info;
-  static GDBusNodeInfo *char_info;
-  static GDBusNodeInfo *adv_info;
+  GDBusNodeInfo *adv_info;
+  GDBusNodeInfo *app_info;
+  GDBusNodeInfo *service_info;
+  GDBusNodeInfo *char_info;
 
-	static int64_t init();
-	static int64_t register_application();
-	static int64_t advertise_application();
+	static GVariant* handle_adv_get_property(GDBusConnection* connection,
+																					 const gchar* sender,
+																					 const gchar* object_path,
+																					 const gchar* interface_name,
+																					 const gchar* property_name,
+																					 GError** error,
+																					 gpointer user_data);
 
 	static void handle_app_method_call(GDBusConnection* connection,
 																		 const gchar* sender,
@@ -90,6 +99,14 @@ private:
 																		 GDBusMethodInvocation* invocation,
 																		 gpointer user_data);
 
+	static GVariant* handle_service_get_property(GDBusConnection *connection,
+																				const gchar *sender,
+																				const gchar *object_path,
+																				const gchar *interface_name,
+																				const gchar *property_name,
+																				GError** error,
+																				gpointer user_data);
+															
 	static void handle_char_method_call(GDBusConnection* connection,
 																			const gchar* sender,
 																			const gchar* object_path,
@@ -107,11 +124,10 @@ private:
 																						GError** error,
 																						gpointer user_data);
 
-	static GVariant* handle_adv_get_property(GDBusConnection* connection,
-																					 const gchar* sender,
-																					 const gchar* object_path,
-																					 const gchar* interface_name,
-																					 const gchar* property_name,
-																					 GError** error,
-																					 gpointer user_data);
+	int64_t init();
+	int64_t register_application();
+	int64_t advertise_application();
+
+	BLEServer();
+	~BLEServer() { this->cleanup(); };
 };

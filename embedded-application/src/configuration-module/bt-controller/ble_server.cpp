@@ -4,13 +4,49 @@
 #include <thread>
 #include <chrono>
 
-GMainLoop* BLEServer::main_loop = nullptr;
-GDBusConnection* BLEServer::connection = nullptr;
+BLEServer::BLEServer() {
+	this->main_loop = nullptr;
+	this->connection = nullptr;
 
-GDBusNodeInfo* BLEServer::app_info = nullptr;
-GDBusNodeInfo* BLEServer::service_info = nullptr;
-GDBusNodeInfo* BLEServer::char_info = nullptr;
-GDBusNodeInfo* BLEServer::adv_info = nullptr;
+	this->adv_info = nullptr;
+	this->app_info = nullptr;
+	this->service_info = nullptr;
+	this->char_info = nullptr;
+}
+
+GVariant* BLEServer::handle_adv_get_property(GDBusConnection* connection,
+																						 const gchar* sender,
+																						 const gchar* object_path,
+																						 const gchar* interface_name,
+																						 const gchar* property_name,
+																						 GError** error,
+																						 gpointer user_data) {
+	if (g_strcmp0(property_name, "Type") == 0) {
+		return g_variant_new_string("peripheral");
+	}
+	else if (g_strcmp0(property_name, "LocalName") == 0) {
+		return g_variant_new_string(DEVICE_NAME);
+	}
+	else if (g_strcmp0(property_name, "Appearance") == 0) {
+		return g_variant_new_uint16(HID_APPEARANCE_CODE);
+	}
+	else if (g_strcmp0(property_name, "Discoverable") == 0) {
+		return g_variant_new_boolean(TRUE);
+	}
+	else if (g_strcmp0(property_name, "DiscoverableTimeout") == 0) {
+		return g_variant_new_uint16(0);
+	}
+	else if (g_strcmp0(property_name, "ScanResponseServiceUUIDs") == 0) {
+		GVariantBuilder builder;
+		g_variant_builder_init(&builder, G_VARIANT_TYPE("as"));
+		g_variant_builder_add(&builder, "s", SERVICE_UUID);
+		return g_variant_builder_end(&builder);
+	}
+
+	g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY, "Unknown property: %s", property_name);
+	return nullptr;
+}
+
 
 void BLEServer::handle_app_method_call(GDBusConnection* connection,
 																			 const gchar* sender,
@@ -73,46 +109,13 @@ void BLEServer::handle_app_method_call(GDBusConnection* connection,
 	}
 }
 
-GVariant* BLEServer::handle_adv_get_property(GDBusConnection* connection,
-																						 const gchar* sender,
-																						 const gchar* object_path,
-																						 const gchar* interface_name,
-																						 const gchar* property_name,
-																						 GError** error,
-																						 gpointer user_data) {
-	if (g_strcmp0(property_name, "Type") == 0) {
-		return g_variant_new_string("peripheral");
-	}
-	else if (g_strcmp0(property_name, "LocalName") == 0) {
-		return g_variant_new_string(DEVICE_NAME);
-	}
-	else if (g_strcmp0(property_name, "Appearance") == 0) {
-		return g_variant_new_uint16(HID_APPEARANCE_CODE);
-	}
-	else if (g_strcmp0(property_name, "Discoverable") == 0) {
-		return g_variant_new_boolean(TRUE);
-	}
-	else if (g_strcmp0(property_name, "DiscoverableTimeout") == 0) {
-		return g_variant_new_uint16(0);
-	}
-	else if (g_strcmp0(property_name, "ScanResponseServiceUUIDs") == 0) {
-		GVariantBuilder builder;
-		g_variant_builder_init(&builder, G_VARIANT_TYPE("as"));
-		g_variant_builder_add(&builder, "s", SERVICE_UUID);
-		return g_variant_builder_end(&builder);
-	}
-
-	g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY, "Unknown property: %s", property_name);
-	return nullptr;
-}
-
-GVariant* handle_service_get_property(GDBusConnection *connection,
-																						const gchar *sender,
-																						const gchar *object_path,
-																						const gchar *interface_name,
-																						const gchar *property_name,
-																						GError** error,
-																						gpointer user_data) {
+GVariant* BLEServer::handle_service_get_property(GDBusConnection *connection,
+																								 const gchar *sender,
+																								 const gchar *object_path,
+																								 const gchar *interface_name,
+																								 const gchar *property_name,
+																								 GError** error,
+																								 gpointer user_data) {
 	if (g_strcmp0(property_name, "UUID") == 0) {
 		return g_variant_new_string(SERVICE_UUID);
 	}
@@ -198,35 +201,171 @@ GVariant* BLEServer::handle_char_get_property(GDBusConnection *connection,
 	return nullptr;
 }
 
+int64_t BLEServer::init() {
+	GError *error = nullptr;
+
+  this->main_loop = g_main_loop_new(nullptr, FALSE);
+  if (this->main_loop == nullptr) {
+    printf("Failed to create GMainLoop\n");
+		g_error_free(error);
+    return -1;
+  }
+
+  this->connection =  this->create_system_bus_connection();
+	if (this->connection == nullptr) {
+		printf("Failed to create D-Bus connection\n");
+		g_error_free(error);
+		return -1;
+	}
+
+	this->adv_info = g_dbus_node_info_new_for_xml(ADV_XML, &error);
+  if (error) {
+    printf("Failed to parse advertising XML: %s\n", error->message);
+    g_error_free(error);
+    return -1;
+  }
+
+  this->app_info = g_dbus_node_info_new_for_xml(APP_XML, &error);
+  if (error) {
+    printf("Failed to parse introspection XML: %s\n", error->message);
+    g_error_free(error);
+		return -1;
+  }
+
+  this->service_info = g_dbus_node_info_new_for_xml(SERVICE_XML, &error);
+  if (error) {
+    printf("Failed to parse service XML: %s\n", error->message);
+    g_error_free(error);
+    return -1;
+  }
+
+  this->char_info = g_dbus_node_info_new_for_xml(CHAR_XML, &error);
+  if (error) {
+    printf("Failed to parse characteristic XML: %s\n", error->message);
+    g_error_free(error);
+    return -1;
+  }
+
+  return 0;
+}
+
+int64_t BLEServer::register_application() {
+	GError *error = nullptr;
+
+	const GDBusInterfaceVTable adv_vtable = {
+		nullptr,
+		BLEServer::handle_adv_get_property,
+		nullptr
+	};
+
+	const GDBusInterfaceVTable app_vtable = {
+		BLEServer::handle_app_method_call,
+		nullptr,
+		nullptr
+	};
+
+	const GDBusInterfaceVTable service_vtable = {
+		nullptr,
+		BLEServer::handle_service_get_property,
+		nullptr
+	};
+
+	const GDBusInterfaceVTable char_vtable = {
+		BLEServer::handle_char_method_call,
+		BLEServer::handle_char_get_property,
+		nullptr
+	};
+
+	g_dbus_connection_register_object(
+		this->connection,
+		APP_PATH,
+		this->app_info->interfaces[0],
+		&app_vtable,
+		nullptr,
+		nullptr,
+		&error
+	);
+
+	g_dbus_connection_register_object(
+		this->connection,
+		ADVERTISING_PATH,
+		this->adv_info->interfaces[0],
+		&adv_vtable,
+		nullptr,
+		nullptr,
+		&error
+	);
+
+	if (error) {
+		printf("Error registering adv object: %s\n", error->message);
+		g_error_free(error);
+		return -1;
+	}
+
+	g_dbus_connection_register_object(
+		this->connection,
+		SERVICE_PATH,
+		this->service_info->interfaces[0],
+		&service_vtable,
+		nullptr,
+		nullptr,
+		&error
+	);
+
+	if (error) {
+		printf("Error registering app object: %s\n", error->message);
+		g_error_free(error);
+		return -1;
+	}
+
+	g_dbus_connection_register_object(
+		this->connection,
+		CHARACTERISTIC_PATH,
+		this->char_info->interfaces[0],
+		&char_vtable,
+		nullptr,
+		nullptr,
+		&error
+	);
+
+	if (error) {
+		printf("Error registering char object: %s\n", error->message);
+		g_error_free(error);
+		return -1;
+	}
+
+	return 0;
+}
+
 int64_t BLEServer::advertise_application() {
-	GDBusProxy *adapter_proxy = BLEServer::create_adapter_proxy();
+	GDBusProxy *adapter_proxy = this->create_adapter_proxy();
 	if (adapter_proxy == nullptr) {
 		printf("Error creating adapter proxy\n");
 		return -1;
 	}
 
-	if (BLEServer::set_proxy_property(adapter_proxy,
+	if (this->set_proxy_property(adapter_proxy,
 																		BLUEZ_ADAPTER_IFACE,
 																		"Powered",
 																		g_variant_new_boolean(TRUE))) return -1;
 
-	if (BLEServer::set_proxy_property(adapter_proxy,
+	if (this->set_proxy_property(adapter_proxy,
 																		BLUEZ_ADAPTER_IFACE,
 																		"Discoverable",
 																		g_variant_new_boolean(TRUE))) return -1;
 
-	if (BLEServer::set_proxy_property(adapter_proxy,
+	if (this->set_proxy_property(adapter_proxy,
 																		BLUEZ_ADAPTER_IFACE,
 																		"DiscoverableTimeout",
 																		g_variant_new_uint32(0))) return -1;
 
-	if (BLEServer::set_proxy_property(adapter_proxy,
+	if (this->set_proxy_property(adapter_proxy,
 																		BLUEZ_ADAPTER_IFACE,
 																		"Pairable",
 																		g_variant_new_boolean(TRUE))) return -1;
 
 	g_dbus_connection_call(
-		BLEServer::connection,
+		this->connection,
 		BLUEZ_SERVICE,
 		BLUEZ_ADAPTER_PATH,
 		GATT_MANAGER_IFACE,
@@ -258,185 +397,49 @@ int64_t BLEServer::advertise_application() {
 	return 0;
 }
 
-int64_t BLEServer::register_application() {
-	GError *error = nullptr;
-
-	const GDBusInterfaceVTable app_vtable = {
-		BLEServer::handle_app_method_call,
-		nullptr,
-		nullptr
-	};
-
-	const GDBusInterfaceVTable service_vtable = {
-		nullptr,
-		handle_service_get_property,
-		nullptr
-	};
-
-	const GDBusInterfaceVTable char_vtable = {
-		BLEServer::handle_char_method_call,
-		BLEServer::handle_char_get_property,
-		nullptr
-	};
-
-	const GDBusInterfaceVTable adv_vtable = {
-		nullptr,
-		handle_adv_get_property,
-		nullptr
-	};
-
-	g_dbus_connection_register_object(
-		BLEServer::connection,
-		APP_PATH,
-		BLEServer::app_info->interfaces[0],
-		&app_vtable,
-		nullptr,
-		nullptr,
-		&error
-	);
-
-	g_dbus_connection_register_object(
-		BLEServer::connection,
-		ADVERTISING_PATH,
-		BLEServer::adv_info->interfaces[0],
-		&adv_vtable,
-		nullptr,
-		nullptr,
-		&error
-	);
-
-	if (error) {
-		printf("Error registering adv object: %s\n", error->message);
-		g_error_free(error);
-		return -1;
-	}
-
-	g_dbus_connection_register_object(
-		BLEServer::connection,
-		SERVICE_PATH,
-		BLEServer::service_info->interfaces[0],
-		&service_vtable,
-		nullptr,
-		nullptr,
-		&error
-	);
-
-	if (error) {
-		printf("Error registering app object: %s\n", error->message);
-		g_error_free(error);
-		return -1;
-	}
-
-	g_dbus_connection_register_object(
-		BLEServer::connection,
-		CHARACTERISTIC_PATH,
-		BLEServer::char_info->interfaces[0],
-		&char_vtable,
-		nullptr,
-		nullptr,
-		&error
-	);
-
-	if (error) {
-		printf("Error registering char object: %s\n", error->message);
-		g_error_free(error);
-		return -1;
-	}
-
-	return 0;
-}
-
-int64_t BLEServer::init() {
-	GError *error = nullptr;
-
-  BLEServer::main_loop = g_main_loop_new(nullptr, FALSE);
-  if (BLEServer::main_loop == nullptr) {
-    printf("Failed to create GMainLoop\n");
-		g_error_free(error);
-    return -1;
-  }
-
-  BLEServer::connection =  BLEServer::create_system_bus_connection();
-	if (BLEServer::connection == nullptr) {
-		printf("Failed to create D-Bus connection\n");
-		g_error_free(error);
-		return -1;
-	}
-
-  BLEServer::app_info = g_dbus_node_info_new_for_xml(APP_XML, &error);
-  if (error) {
-    printf("Failed to parse introspection XML: %s\n", error->message);
-    g_error_free(error);
-		return -1;
-  }
-
-	BLEServer::adv_info = g_dbus_node_info_new_for_xml(ADV_XML, &error);
-  if (error) {
-    printf("Failed to parse advertising XML: %s\n", error->message);
-    g_error_free(error);
-    return -1;
-  }
-
-  BLEServer::service_info = g_dbus_node_info_new_for_xml(SERVICE_XML, &error);
-  if (error) {
-    printf("Failed to parse service XML: %s\n", error->message);
-    g_error_free(error);
-    return -1;
-  }
-
-  BLEServer::char_info = g_dbus_node_info_new_for_xml(CHAR_XML, &error);
-  if (error) {
-    printf("Failed to parse characteristic XML: %s\n", error->message);
-    g_error_free(error);
-    return -1;
-  }
-
-  return 0;
-}
-
 void BLEServer::start() {
 	while (true) {
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 
-		if (BLEServer::init()) {
+		if (this->init()) {
 			printf("Failed to initialize BLEServer\n");
-			BLEServer::cleanup();
+			this->cleanup();
 			continue;
 		}
 
-		if (BLEServer::register_application() < 0) {
+		if (this->register_application() < 0) {
 			printf("Failed to register application\n");
-			BLEServer::cleanup();
+			this->cleanup();
 			continue;
 		}
 
-		if (BLEServer::advertise_application() < 0) {
+		if (this->advertise_application() < 0) {
 			printf("Failed to advertise application\n");
-			BLEServer::cleanup();
+			this->cleanup();
 			continue;
 		}
 
 		printf("BLE GATT server running...\n");
-		if (BLEServer::main_loop) {
-			g_main_loop_run(BLEServer::main_loop);
+		if (this->main_loop) {
+			g_main_loop_run(this->main_loop);
 		}
 	}
 }
 
 void BLEServer::cleanup() {
-	if (BLEServer::app_info) g_dbus_node_info_unref(BLEServer::app_info);
-  if (BLEServer::char_info) g_dbus_node_info_unref(BLEServer::char_info);
-  if (BLEServer::adv_info) g_dbus_node_info_unref(BLEServer::adv_info);
-  if (BLEServer::connection) g_object_unref(BLEServer::connection);
-	
-  BLEServer::app_info = nullptr;
-  BLEServer::char_info = nullptr;
-  BLEServer::adv_info = nullptr;
-  BLEServer::connection = nullptr;
-	
-	if (BLEServer::main_loop) {
-		g_main_loop_quit(BLEServer::main_loop);
-		g_main_loop_unref(BLEServer::main_loop);
-		BLEServer::main_loop = nullptr;
+	if (this->app_info) g_dbus_node_info_unref(this->app_info);
+  if (this->char_info) g_dbus_node_info_unref(this->char_info);
+  if (this->adv_info) g_dbus_node_info_unref(this->adv_info);
+  if (this->connection) g_object_unref(this->connection);
+
+  this->app_info = nullptr;
+  this->char_info = nullptr;
+  this->adv_info = nullptr;
+  this->connection = nullptr;
+
+	if (this->main_loop) {
+		g_main_loop_quit(this->main_loop);
+		g_main_loop_unref(this->main_loop);
+		this->main_loop = nullptr;
 	}
 }
