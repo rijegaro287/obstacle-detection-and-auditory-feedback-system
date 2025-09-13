@@ -2,7 +2,7 @@
 #include "control_iface.hpp"
 // #include "image_capture_iface.hpp"
 // #include "obstacle_detection_iface.hpp"
-// #include "feedback_iface.hpp"
+#include "feedback_iface.hpp"
 
 #include <iostream>
 #include <thread>
@@ -72,9 +72,6 @@ void ControlModule::start() {
   this->obstacle_mtx.unlock();
   this->audio_mtx.unlock();
 
-  /**this->obstacle_mtx.unlock();
-  this->audio_mtx.unlock();
-
   // IFeedback::set_feedback_mode(VERBAL_MODE);
   IFeedback::set_feedback_mode(NON_VERBAL_MODE);
 
@@ -101,10 +98,15 @@ void ControlModule::start() {
     }
 
     for (const auto& position : test_positions) {
-      IControl::set_obstacle({position[0], position[1], position[2]});
+      Obstacle obstacle = Obstacle();
+      obstacle.azimuth = position[0];
+      obstacle.elevation = position[1];
+      obstacle.meanDepth = position[2];
+
+      IControl::set_obstacle(obstacle);
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     mode = !mode;
-  }**/
+  }
 }
