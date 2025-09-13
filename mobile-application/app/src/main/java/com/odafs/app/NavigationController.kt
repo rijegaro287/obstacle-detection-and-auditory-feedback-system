@@ -1,6 +1,10 @@
 package com.odafs.app
 
+import android.Manifest.permission.BLUETOOTH_CONNECT
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -23,6 +27,8 @@ data object Scanning
 @Serializable
 data class Controls(val deviceName: String)
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(BLUETOOTH_CONNECT)
 @Composable
 fun NavigationController() {
     val navController = rememberNavController()

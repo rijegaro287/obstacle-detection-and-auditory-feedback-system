@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothStatusCodes
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
@@ -24,9 +25,11 @@ import android.os.ParcelUuid
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withTimeout
 
 const val DEVICE_NAME = "odafs"
 const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
@@ -48,13 +51,8 @@ object BLEController {
     val foundDevices: StateFlow<List<BLEDevice>> = _foundDevices.asStateFlow()
 
     private val _gattConnection = MutableStateFlow<BluetoothGatt?>(null)
-    val gattConnection: StateFlow<BluetoothGatt?> = _gattConnection.asStateFlow()
-
     private val _serviceConnection = MutableStateFlow<BluetoothGattService?>(null)
-    val serviceConnection: StateFlow<BluetoothGattService?> = _serviceConnection.asStateFlow()
-
     private val _characteristicConnection = MutableStateFlow<BluetoothGattCharacteristic?>(null)
-    val characteristicConnection: StateFlow<BluetoothGattCharacteristic?> = _characteristicConnection.asStateFlow()
 
     private val _connecting = MutableStateFlow(false)
     val connecting: StateFlow<Boolean> = _connecting.asStateFlow()
@@ -110,6 +108,49 @@ object BLEController {
         }
     }
 
+    private var pendingTransaction: CompletableDeferred<ByteArray?>? = null
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun BluetoothGatt.writeAndReadCharacteristic(
+        characteristic: BluetoothGattCharacteristic,
+        value: ByteArray
+    ) : ByteArray? {
+        if (pendingTransaction != null) {
+            Log.e("BLE Controller", "Another transaction is pending")
+            return null
+        }
+
+        val pending = CompletableDeferred<ByteArray?>()
+        pendingTransaction = pending
+
+        val startedTransaction = writeCharacteristic(
+            characteristic,
+            value,
+            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        )
+
+        if (startedTransaction != BluetoothStatusCodes.SUCCESS) {
+            pending.completeExceptionally(Exception("Characteristic write failed"))
+            pendingTransaction = null
+            return null
+        }
+
+        try {
+            return withTimeout(5000) {
+                pendingTransaction?.await()
+            }
+        }
+        catch (e: Exception) {
+            if (!pending.isCompleted) pending.cancel()
+            pendingTransaction = null
+            throw e
+        }
+        finally {
+            pendingTransaction = null
+        }
+    }
+
     private val gattCallback = object : BluetoothGattCallback() {
         @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
@@ -153,6 +194,41 @@ object BLEController {
             if (!serviceFound || !characteristicFound) disconnectFromDevice()
             else _connected.value = true
             _connecting.value = false
+        }
+
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
+            val pending = pendingTransaction ?: return
+
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                gatt.readCharacteristic(characteristic)
+            }
+            else {
+                pending.completeExceptionally(Exception("Characteristic write failed"))
+                pendingTransaction = null
+            }
+        }
+
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
+            val pending = pendingTransaction ?: return
+
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                @Suppress("DEPRECATION")
+                pending.complete(characteristic.value)
+            }
+            else {
+                pending.completeExceptionally(Exception("Characteristic read failed"))
+            }
+
+            pendingTransaction = null
         }
     }
 
@@ -216,7 +292,7 @@ object BLEController {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    fun sendCommand(command: String) {
+    suspend fun sendCommand(command: String) {
         if (_gattConnection.value == null ||
             _serviceConnection.value == null ||
             _characteristicConnection.value == null
@@ -226,13 +302,11 @@ object BLEController {
         }
 
         Log.d("BLE Controller", "Sending command: $command")
-        val commandBytes = command.toByteArray()
-        _characteristicConnection.value?.let {
-            _gattConnection.value?.writeCharacteristic(
-                it,
-                commandBytes,
-                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-            )
-        }
+        val result = _gattConnection.value!!.writeAndReadCharacteristic(
+            _characteristicConnection.value!!,
+            command.toByteArray()
+        )
+
+        Log.d("BLE Controller", "Received response: ${result?.decodeToString()}")
     }
 }

@@ -69,7 +69,7 @@ fun ScanningView(
     }
 
     LaunchedEffect(Unit) {
-        BLEController.sendCommand("Hello!!!")
+        BLEController.sendCommand("Cerote")
     }
 
     Scaffold(
@@ -128,6 +128,8 @@ fun ScanningView(
     }
 }
 
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Preview
 @Composable
 fun ScanningViewPreview () {
