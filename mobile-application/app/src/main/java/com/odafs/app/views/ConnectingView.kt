@@ -2,6 +2,8 @@ package com.odafs.app.views
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattService
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -40,11 +42,19 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
     var bleDevices by remember { mutableStateOf(emptyList<BLEDevice>()) }
     bleDevices = BLEController.foundDevices.collectAsState().value
 
-    var gattConnection by remember { mutableStateOf<BluetoothGatt?>(null) }
-    gattConnection = BLEController.gattConnection.collectAsState().value
+    var connected by remember { mutableStateOf(false) }
+    connected = BLEController.connected.collectAsState().value
+
+    var connecting by remember { mutableStateOf(false) }
+    connecting = BLEController.connecting.collectAsState().value
 
     LaunchedEffect(Unit) {
-        while (gattConnection == null) {
+        while (!connected) {
+            if (connecting) {
+                delay(100)
+                continue
+            }
+
             BLEController.startScan()
             delay(5000)
             BLEController.stopScan()

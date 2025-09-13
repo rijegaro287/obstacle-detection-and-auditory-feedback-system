@@ -1,6 +1,13 @@
 package com.odafs.app.views
 
+import android.Manifest
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattService
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +30,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +43,7 @@ import com.odafs.app.ble.BLEController
 import com.odafs.app.components.CommandButton
 import com.odafs.app.components.DeviceCard
 import com.odafs.app.components.TopBar
+import androidx.compose.runtime.collectAsState
 
 data class Device(val name: String, val address: String)
 
@@ -42,15 +54,32 @@ val deviceList = listOf(
     Device(name = "device 4", address = "address 4")
 )
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
 fun ScanningView(
     navigateToConnecting: () -> Unit,
     navigateToControls: (String) -> Unit
 ) {
+    var gattConnection by remember { mutableStateOf<BluetoothGatt?>(null) }
+    gattConnection = BLEController.gattConnection.collectAsState().value
+
+    var serviceConnection by remember { mutableStateOf<BluetoothGattService?>(null) }
+    serviceConnection = BLEController.serviceConnection.collectAsState().value
+
+    var characteristicConnection by remember { mutableStateOf<BluetoothGattCharacteristic?>(null) }
+    characteristicConnection = BLEController.characteristicConnection.collectAsState().value
+
     LaunchedEffect(Unit) {
-        if (BLEController.gattConnection.value == null) {
+        if (gattConnection == null ||
+            serviceConnection == null ||
+            characteristicConnection == null
+        ) {
+            BLEController.disconnectFromDevice()
             navigateToConnecting()
         }
+
+        BLEController.sendCommand("Hello!!!")
     }
 
     Scaffold(
@@ -112,5 +141,5 @@ fun ScanningView(
 @Preview
 @Composable
 fun ScanningViewPreview () {
-    ScanningView {}
+    ScanningView({}, {})
 }
