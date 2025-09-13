@@ -27,3 +27,7 @@ void IControl::set_obstacle(const Obstacle& obstacle) {
 void IControl::set_audio_data(const Audio& data) {
   ControlModule::get_instance().set_audio_data(data);
 }
+
+void IControl::unlock_mutexes() {
+  ControlModule::get_instance().unlock_mutexes();
+}

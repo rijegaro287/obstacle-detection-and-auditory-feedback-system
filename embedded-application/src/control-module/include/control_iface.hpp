@@ -33,4 +33,5 @@ public:
   static void set_frame(const Frame& frame);
   static void set_obstacle(const Obstacle& obstacle);
   static void set_audio_data(const Audio& data);
+  static void unlock_mutexes();
 };

@@ -22,10 +22,12 @@ target_include_directories(bluetooth_controller PUBLIC
   include/bt-controller
   ${GLIB_INCLUDE_DIRS}
   ${GIO_INCLUDE_DIRS}
+  ../control-module/include
 )
 target_link_libraries(bluetooth_controller PUBLIC
   ${GLIB_LIBRARIES}
   ${GIO_LIBRARIES}
+  control_iface
 )
 
 add_library(configuration_module STATIC

@@ -4,6 +4,8 @@
 #include <thread>
 #include <chrono>
 
+#include "control_iface.hpp"
+
 BTAudioController& BTAudioController::get_instance() {
 	static BTAudioController instance;
 	return instance;
@@ -337,7 +339,7 @@ bool BTAudioController::get_boolean_value(GVariant *variant) {
 void BTAudioController::start() {
 	vector<BlueZDevice> devices;
 	while (true) {
-		printf("Initializing Bluetooth Audio Controller...\n");
+		printf("Scanning for Bluetooth Audio Devices...\n");
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 		if (this->init() < 0) {
 			printf("Failed to initialize Bluetooth Audio Controller\n");
@@ -367,7 +369,9 @@ void BTAudioController::start() {
 			continue;
 		}
 
-		printf("BT Audio Controller running...\n");
+		printf("Connected to device: %s\n", this->connected_device->name);
+		IControl::unlock_mutexes();
+
 		if (this->main_loop) {
 			g_main_loop_run(this->main_loop);
 		}

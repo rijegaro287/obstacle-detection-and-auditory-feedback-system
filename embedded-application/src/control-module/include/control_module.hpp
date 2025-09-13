@@ -23,6 +23,8 @@ public:
   void set_obstacle(const Obstacle obstacle);
   void set_audio_data(const Audio& data);
 
+  void unlock_mutexes();
+
   void start();
 private:
   Frame frame;

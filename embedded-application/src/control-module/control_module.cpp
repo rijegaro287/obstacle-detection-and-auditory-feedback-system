@@ -67,14 +67,13 @@ void ControlModule::set_audio_data(const Audio& data) {
   this->audio_data.sample_rate = data.sample_rate;
 }
 
-void ControlModule::start() {
+void ControlModule::unlock_mutexes() {
   this->frame_mtx.unlock();
   this->obstacle_mtx.unlock();
   this->audio_mtx.unlock();
+}
 
-  // IFeedback::set_feedback_mode(VERBAL_MODE);
-  IFeedback::set_feedback_mode(NON_VERBAL_MODE);
-
+void ControlModule::start() {
   vector<vector<float>> test_positions = {
     {  0.0f,   0.0f, 0.5f}, // FRONT
     {  0.0f,  10.0f, 0.5f}, // ABOVE
@@ -104,7 +103,7 @@ void ControlModule::start() {
       obstacle.meanDepth = position[2];
 
       IControl::set_obstacle(obstacle);
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 
     mode = !mode;
