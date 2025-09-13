@@ -9,8 +9,6 @@
 #include <pthread.h>
 
 int main() {
-  // config_module.start();
-  
   ConfigModule& config_module = ConfigModule::get_instance();
   ControlModule& control_module = ControlModule::get_instance();
   // ImageCaptureModule capture_module;
