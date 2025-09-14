@@ -127,7 +127,7 @@ object BLEController {
     private var pendingTransaction: CompletableDeferred<ByteArray?>? = null
 
     private var failedHealthChecks = 0;
-    private var failedHealthChecksThreshold = 5;
+    private var failedHealthChecksThreshold = 8;
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)

@@ -9,14 +9,8 @@ configure_file(./dataset/hrirs.npy ./dataset/hrirs.npy COPYONLY)
 configure_file(./dataset/positions.npy ./dataset/positions.npy COPYONLY)
 configure_file(./dataset/verbal_feedback_signals.npy ./dataset/verbal_feedback_signals.npy COPYONLY)
 
-include(FetchContent)
-
-FetchContent_Declare(kfr
-  GIT_REPOSITORY https://github.com/kfrlib/kfr.git
-  GIT_TAG        origin/main
-)
-
-FetchContent_MakeAvailable(kfr)
+set(CMAKE_PREFIX_PATH "./kfr/install/lib/cmake" ${CMAKE_PREFIX_PATH})
+find_package(KFR CONFIG REQUIRED)
 
 # AddressSanitizer configuration
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
@@ -31,7 +25,7 @@ target_include_directories(feedback_module PUBLIC
   include
   ../control-module/include
 )
-target_link_libraries(feedback_module PUBLIC kfr kfr_dsp control_iface)
+target_link_libraries(feedback_module PUBLIC control_iface kfr kfr_dsp)
 
 add_library(feedback_iface STATIC 
   feedback_iface.cpp

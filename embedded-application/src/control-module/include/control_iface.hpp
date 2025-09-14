@@ -19,8 +19,8 @@ typedef struct Obstacle_ {
 } Obstacle;
 
 typedef struct Audio_ {
-  std::vector<double> left_signal;
-  std::vector<double> right_signal;
+  std::vector<float> left_signal;
+  std::vector<float> right_signal;
   uint64_t sample_rate;
 } Audio;
 

@@ -35,15 +35,15 @@ for idx in range(len(positions)):
     
     print(f'Processing HRIR {idx + 1}/{len(positions)}')
 
-    H = np.zeros((dimensions, 2), dtype=np.float64) # type: ignore
+    H = np.zeros((dimensions, 2), dtype=np.float32) # type: ignore
     H[:, 0] = hrirs[idx, 0, :]
     H[:, 1] = hrirs[idx, 1, :]
 
-    output_positions.append(np.array([azimuth, elevation, distance], dtype=np.float64))
+    output_positions.append(np.array([azimuth, elevation, distance], dtype=np.float32))
     output_hrirs.append(H)
 
-output_positions = np.array(output_positions, dtype=np.float64)
-output_hrirs = np.array(output_hrirs, dtype=np.float64)
+output_positions = np.array(output_positions, dtype=np.float32)
+output_hrirs = np.array(output_hrirs, dtype=np.float32)
 
 print('=' * 75)
 print(f'Output positions shape for dataset: {output_positions.shape}')

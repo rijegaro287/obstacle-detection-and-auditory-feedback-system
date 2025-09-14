@@ -110,9 +110,12 @@ fun ScanningView(
     LaunchedEffect(selectedDevice) {
         if (!connecting && !scanning && selectedDevice != null) {
             val connectionEstablished = BLEController.connectToDevice(selectedDevice!!)
-
-            if (connectionEstablished) navigateToControls(selectedDevice!!.name)
-            else selectedDevice = null
+            if (connectionEstablished) {
+                navigateToControls(selectedDevice!!.name)
+            }
+            else {
+                selectedDevice = null
+            }
         }
     }
 

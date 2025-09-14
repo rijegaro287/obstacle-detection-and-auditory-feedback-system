@@ -74,6 +74,8 @@ void ControlModule::unlock_mutexes() {
 }
 
 void ControlModule::start() {
+  this->unlock_mutexes();
+
   vector<vector<float>> test_positions = {
     {  0.0f,   0.0f, 0.5f}, // FRONT
     {  0.0f,  10.0f, 0.5f}, // ABOVE
@@ -103,7 +105,7 @@ void ControlModule::start() {
       obstacle.meanDepth = position[2];
 
       IControl::set_obstacle(obstacle);
-      std::this_thread::sleep_for(std::chrono::seconds(3));
+      std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 
     mode = !mode;

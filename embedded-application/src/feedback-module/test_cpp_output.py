@@ -15,7 +15,7 @@ print(f"Left channel shape: {left_channel.shape}")
 print(f"Right channel shape: {right_channel.shape}")
 print('=' * 75)
 
-rend = np.zeros((left_channel.shape[0], 2), dtype=np.float64)
+rend = np.zeros((left_channel.shape[0], 2), dtype=np.float32)
 rend[:, 0] = left_channel
 rend[:, 1] = right_channel
 
