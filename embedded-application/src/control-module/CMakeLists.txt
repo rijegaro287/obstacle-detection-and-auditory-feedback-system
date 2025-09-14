@@ -21,13 +21,13 @@ target_include_directories(control_module PUBLIC
     # ../image-capture-module/include
     # ../obstacle-detection-module/include
     ../feedback-module/include
-    # ../transmission-module/include
+    ../transmission-module/include
 )
 target_link_libraries(control_module PUBLIC
     # image_capture_iface
     # obstacle_detection_iface
     feedback_iface
-    # transmission_iface
+    transmission_iface
 )
 
 add_library(control_iface STATIC

@@ -9,7 +9,7 @@ configure_file(./dataset/hrirs.npy ./dataset/hrirs.npy COPYONLY)
 configure_file(./dataset/positions.npy ./dataset/positions.npy COPYONLY)
 configure_file(./dataset/verbal_feedback_signals.npy ./dataset/verbal_feedback_signals.npy COPYONLY)
 
-set(CMAKE_PREFIX_PATH "./kfr/install/lib/cmake" ${CMAKE_PREFIX_PATH})
+set(CMAKE_PREFIX_PATH "./libs/kfr/install/lib/cmake" ${CMAKE_PREFIX_PATH})
 find_package(KFR CONFIG REQUIRED)
 
 # AddressSanitizer configuration
@@ -25,7 +25,7 @@ target_include_directories(feedback_module PUBLIC
   include
   ../control-module/include
 )
-target_link_libraries(feedback_module PUBLIC control_iface kfr kfr_dsp)
+target_link_libraries(feedback_module PUBLIC control_iface kfr kfr_dft)
 
 add_library(feedback_iface STATIC 
   feedback_iface.cpp

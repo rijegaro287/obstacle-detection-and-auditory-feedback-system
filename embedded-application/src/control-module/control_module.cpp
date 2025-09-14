@@ -91,12 +91,12 @@ void ControlModule::start() {
   bool mode = false;
 
   while (true) {
-    if (mode) {
-      IFeedback::set_feedback_mode(VERBAL_MODE);
-    } 
-    else {
-      IFeedback::set_feedback_mode(NON_VERBAL_MODE);
-    }
+    // if (mode) {
+    //   IFeedback::set_feedback_mode(VERBAL_MODE);
+    // } 
+    // else {
+    //   IFeedback::set_feedback_mode(NON_VERBAL_MODE);
+    // }
 
     for (const auto& position : test_positions) {
       Obstacle obstacle = Obstacle();
@@ -105,7 +105,7 @@ void ControlModule::start() {
       obstacle.meanDepth = position[2];
 
       IControl::set_obstacle(obstacle);
-      std::this_thread::sleep_for(std::chrono::seconds(2));
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
     mode = !mode;

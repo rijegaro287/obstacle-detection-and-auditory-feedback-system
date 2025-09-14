@@ -3,20 +3,18 @@
 // #include "image_capture_module.h"
 // #include "obstacle_detection_module.h"
 #include "feedback_module.hpp"
-// #include "transmission_module.hpp"
+#include "transmission_module.hpp"
 
 #include <thread>
 #include <pthread.h>
 
 int main() {
-  // config_module.start();
-  
   // ConfigModule& config_module = ConfigModule::get_instance();
   ControlModule& control_module = ControlModule::get_instance();
   // ImageCaptureModule capture_module;
   // ObstacleDetectionModule detection_module;
   FeedbackModule& feedback_module = FeedbackModule::get_instance();
-  // TransmissionModule& transmission_module = TransmissionModule::get_instance();
+  TransmissionModule& transmission_module = TransmissionModule::get_instance();
 
   // printf("Starting Control, Feedback, and Transmission Modules...\n");
   // thread config_thread(&ConfigModule::start, &config_module);
@@ -24,14 +22,14 @@ int main() {
   // thread capture_thread(&ImageCaptureModule::start, &capture_module);
   // thread detection_thread(&ObstacleDetectionModule::start, &detection_module);
   thread feedback_thread(&FeedbackModule::start, &feedback_module);
-  // thread transmission_thread(&TransmissionModule::start, &transmission_module);
+  thread transmission_thread(&TransmissionModule::start, &transmission_module);
 
   // config_thread.join();
   control_thread.join();
   // capture_thread.join();
   // detection_thread.join();
   feedback_thread.join();
-  // transmission_thread.join();
+  transmission_thread.join();
 
   return 0;
 }

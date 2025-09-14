@@ -1,5 +1,4 @@
 #include "feedback_module.hpp"
-#include "kfr/all.hpp"
 
 #include <iostream>
 #include <thread>
@@ -123,21 +122,11 @@ void FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
 																													obstacle.elevation,
 																													obstacle.meanDepth});
 
-	kfr::univector<float> output_l(this->tap_signal.size());
-	kfr::univector<float> output_r(this->tap_signal.size());
-
 	kfr::univector<float, HRIR_N_TAPS> hrir_l = this->make_hrir_univector(sample_idx, LEFT_CHANNEL);
 	kfr::univector<float, HRIR_N_TAPS> hrir_r = this->make_hrir_univector(sample_idx, RIGHT_CHANNEL);
-	
-	auto start = std::chrono::high_resolution_clock::now();
-	kfr::filter_fir<float> filter_l(hrir_l);
-	kfr::filter_fir<float> filter_r(hrir_r);
-	
-	filter_l.apply(output_l, this->tap_signal);
-	filter_r.apply(output_r, this->tap_signal);
-	auto end = std::chrono::high_resolution_clock::now();
-	printf("Applying FIR filter took %ld milliseconds\n", 
-				 std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+
+	kfr::univector<float> output_l = kfr::convolve(this->tap_signal, hrir_l);
+	kfr::univector<float> output_r = kfr::convolve(this->tap_signal, hrir_r);
 
 	for (uint64_t i = 0; i < this->tap_signal.size(); i++) {
 		signal.left_signal[i] = output_l[i];
@@ -215,7 +204,6 @@ void FeedbackModule::generate_feedback(Obstacle obstacle) {
 
 void FeedbackModule::start() {
 	while (true) {
-		printf("========================= FEEDBACK =========================\n");
 		Obstacle obstacle = IControl::get_obstacle();
 		if (obstacle.meanDepth == 0) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
