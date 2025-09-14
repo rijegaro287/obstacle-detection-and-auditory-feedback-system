@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,15 +45,9 @@ import com.odafs.app.components.CommandButton
 import com.odafs.app.components.DeviceCard
 import com.odafs.app.components.TopBar
 import androidx.compose.runtime.collectAsState
-
-data class Device(val name: String, val address: String)
-
-val deviceList = listOf(
-    Device(name = "device 1", address = "address 1"),
-    Device(name = "device 2", address = "address 2"),
-    Device(name = "device 3", address = "address 3"),
-    Device(name = "device 4", address = "address 4")
-)
+import androidx.compose.ui.text.style.TextAlign
+import com.odafs.app.ble.BTDevice
+import kotlinx.coroutines.delay
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -64,12 +59,42 @@ fun ScanningView(
     var connected by remember { mutableStateOf(false) }
     connected = BLEController.connected.collectAsState().value
 
-    LaunchedEffect(connected) {
-        if (!connected) navigateToConnecting()
-    }
+    var scanning by remember { mutableStateOf(false) }
+    scanning = BLEController.scanning.collectAsState().value
+
+    var readyForNextScan by remember { mutableStateOf(true) }
+
+    var reloadClicked by remember { mutableStateOf(false) }
+
+    var foundDevices by remember { mutableStateOf(emptyList<BTDevice>()) }
 
     LaunchedEffect(Unit) {
-        BLEController.sendCommand("Cerote")
+        while (true) {
+            if (readyForNextScan) {
+                foundDevices = BLEController.scanForDevices()
+                readyForNextScan = false
+            }
+            delay(100)
+        }
+    }
+
+    LaunchedEffect(readyForNextScan) {
+        if (!scanning && !readyForNextScan) {
+            delay(10000)
+            readyForNextScan = true
+        }
+    }
+
+    LaunchedEffect(reloadClicked) {
+        if (reloadClicked) {
+            foundDevices = BLEController.scanForDevices()
+            reloadClicked = false
+            readyForNextScan = false
+        }
+    }
+
+    LaunchedEffect(connected) {
+        if (!connected) navigateToConnecting()
     }
 
     Scaffold(
@@ -94,7 +119,7 @@ fun ScanningView(
                     )
 
                     IconButton(
-                        onClick = {},
+                        onClick = { reloadClicked = true },
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .background(
@@ -111,14 +136,38 @@ fun ScanningView(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                if (scanning) {
+                    Spacer(modifier = Modifier.height(200.dp))
+                    Box (modifier = Modifier.fillMaxSize()) {
+                        Column (modifier = Modifier.align(Alignment.TopCenter)) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 6.dp,
+                                modifier = Modifier
+                                    .size(75.dp)
+                                    .align(Alignment.CenterHorizontally)
+                            )
 
-                LazyColumn {
-                    items(deviceList) { device ->
-                        DeviceCard(device.name) {
-                            navigateToControls(device.name)
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "Buscando Dispositivos de Audio",
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+                else {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    LazyColumn {
+                        items(foundDevices) { device ->
+                            DeviceCard(device.name) {
+                                navigateToControls(device.name)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
                 }
             }

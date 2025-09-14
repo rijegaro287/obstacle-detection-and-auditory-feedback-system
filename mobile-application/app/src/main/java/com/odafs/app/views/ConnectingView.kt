@@ -78,7 +78,6 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
             .fillMaxSize()
             .padding(horizontal = 20.dp)
         ) {
-
             Column (modifier = Modifier.align(Alignment.Center)) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,
@@ -88,7 +87,7 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
                         .align(Alignment.CenterHorizontally)
                 )
 
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = "Buscando Dispositivo",

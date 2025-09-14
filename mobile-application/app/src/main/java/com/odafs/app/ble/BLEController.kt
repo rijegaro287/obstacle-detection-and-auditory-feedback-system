@@ -40,6 +40,11 @@ data class BLEDevice(
     val serviceUUIDs: List<ParcelUuid>
 )
 
+data class BTDevice(
+    val name: String,
+    val address: String
+)
+
 object BLEController {
     private var appContext: Application? = null
 
@@ -59,6 +64,9 @@ object BLEController {
 
     private val _connected = MutableStateFlow(false)
     val connected: StateFlow<Boolean> = _connected.asStateFlow()
+
+    private val _scanning = MutableStateFlow(false)
+    val scanning: StateFlow<Boolean> = _scanning.asStateFlow()
 
     fun init(context: Context) {
         appContext = context.applicationContext as Application
@@ -137,7 +145,7 @@ object BLEController {
         }
 
         try {
-            return withTimeout(5000) {
+            return withTimeout(15000) {
                 pendingTransaction?.await()
             }
         }
@@ -292,13 +300,13 @@ object BLEController {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun sendCommand(command: String) {
+    suspend fun sendCommand(command: String) : String {
         if (_gattConnection.value == null ||
             _serviceConnection.value == null ||
             _characteristicConnection.value == null
         ) {
             Log.e("BLE Controller", "Gatt connection is not established")
-            return
+            return ""
         }
 
         Log.d("BLE Controller", "Sending command: $command")
@@ -307,6 +315,38 @@ object BLEController {
             command.toByteArray()
         )
 
-        Log.d("BLE Controller", "Received response: ${result?.decodeToString()}")
+        if (result == null) return ""
+        else return String(result)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun scanForDevices() : List<BTDevice>{
+        if (_scanning.value) return emptyList()
+
+        _scanning.value = true
+
+        val response = sendCommand(SCAN_COMMAND)
+        if (response[0] == '#') return emptyList()
+
+        val result = mutableListOf<BTDevice>()
+
+        val devicesString = response.split('$')
+        for (deviceString in devicesString) {
+            val deviceInfo = deviceString.split('@')
+
+            if (deviceInfo.size != 2) continue
+
+            val deviceName = deviceInfo[0]
+            val deviceAddress = deviceInfo[1]
+
+            result.add(BTDevice(deviceName, deviceAddress))
+        }
+
+        _scanning.value = false
+
+        return result
     }
 }
+
+const val SCAN_COMMAND = "scan"
