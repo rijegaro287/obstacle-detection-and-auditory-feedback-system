@@ -1,6 +1,7 @@
 .vscode/
 **/build/
 **/Testing/
+**/kfr
 
 **/*.sofa
 **/*.npy

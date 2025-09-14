@@ -1,0 +1,206 @@
+package com.odafs.app.views
+
+import android.Manifest
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.odafs.app.ble.BLEController
+import com.odafs.app.components.CommandButton
+import com.odafs.app.components.DeviceCard
+import com.odafs.app.components.TopBar
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.text.style.TextAlign
+import com.odafs.app.ble.BTDevice
+import kotlinx.coroutines.delay
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+@Composable
+fun ScanningView(
+    navigateToConnecting: () -> Unit,
+    navigateToControls: (String) -> Unit
+) {
+    var connected by remember { mutableStateOf(false) }
+    connected = BLEController.connected.collectAsState().value
+
+    var scanning by remember { mutableStateOf(false) }
+    scanning = BLEController.scanning.collectAsState().value
+
+    var connecting by remember { mutableStateOf(false) }
+    connecting = BLEController.connecting.collectAsState().value
+
+    var readyForNextScan by remember { mutableStateOf(true) }
+
+    var reloadClicked by remember { mutableStateOf(false) }
+
+    var selectedDevice by remember { mutableStateOf<BTDevice?>(null) }
+
+    var foundDevices by remember { mutableStateOf(emptyList<BTDevice>()) }
+
+    LaunchedEffect(connected) {
+        if (!connected) navigateToConnecting()
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2050)
+            BLEController.healthCheck()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (!connecting && !scanning && readyForNextScan) {
+                foundDevices = BLEController.scanForDevices()
+                readyForNextScan = false
+                reloadClicked = false
+            }
+            delay(100)
+        }
+    }
+
+    LaunchedEffect(readyForNextScan) {
+        if (!connecting && !scanning && !readyForNextScan) {
+            delay(10000)
+            readyForNextScan = true
+        }
+    }
+
+    LaunchedEffect(reloadClicked) {
+        Log.d("BLE Controller", "Reloading devices")
+        if (!connecting && !scanning && reloadClicked) {
+            foundDevices = BLEController.scanForDevices()
+            reloadClicked = false
+            readyForNextScan = false
+        }
+    }
+
+    LaunchedEffect(selectedDevice) {
+        if (!connecting && !scanning && selectedDevice != null) {
+            val connectionEstablished = BLEController.connectToDevice(selectedDevice!!)
+            if (connectionEstablished) {
+                navigateToControls(selectedDevice!!.name)
+            }
+            else {
+                selectedDevice = null
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = { TopBar(title = "Conéctate a un dispositivo") }
+    ) { innerPadding ->
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                top = innerPadding.calculateTopPadding(),
+                bottom = 75.dp,
+                start = 18.dp,
+                end = 18.dp
+            )
+        ) {
+            Column(modifier = Modifier.align(Alignment.TopCenter)) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Dispositivos disponibles:",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    )
+
+                    IconButton(
+                        onClick = { reloadClicked = true },
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                shape = CircleShape
+                            )
+                            .size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Botón para refrescar la lista de dispositivos de audio disponibles",
+                            modifier = Modifier.size(35.dp)
+                        )
+                    }
+                }
+
+                if (connecting || scanning) {
+                    Spacer(modifier = Modifier.height(200.dp))
+                    Box (modifier = Modifier.fillMaxSize()) {
+                        Column (modifier = Modifier.align(Alignment.TopCenter)) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 6.dp,
+                                modifier = Modifier
+                                    .size(75.dp)
+                                    .align(Alignment.CenterHorizontally)
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = if (connecting) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+                else {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    LazyColumn {
+                        items(foundDevices) { device ->
+                            DeviceCard(device.name) { selectedDevice = device }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
+
+            CommandButton(modifier = Modifier.align(Alignment.BottomCenter))
+        }
+    }
+}
+
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Preview
+@Composable
+fun ScanningViewPreview () {
+    ScanningView({}, {})
+}

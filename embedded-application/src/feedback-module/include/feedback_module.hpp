@@ -74,10 +74,10 @@ public:
   void start();
 private:
   FEEDBACK_MODES feedback_mode;
-  kfr::univector<double, TAP_N_SAMPLES> tap_signal;
-  kfr::tensor<double, 3> hrir_tensor;
+  kfr::univector<float, TAP_N_SAMPLES> tap_signal;
+  kfr::tensor<float, 3> hrir_tensor;
   kd_tree<3> position_tree;
-  kfr::tensor<double, 2> verbal_feedback_tensor;
+  kfr::tensor<float, 2> verbal_feedback_tensor;
 
   FeedbackModule();
   ~FeedbackModule() = default;
@@ -86,7 +86,7 @@ private:
   void init_hrir_tensor();
   void init_position_tree();
   void init_verbal_feedback_tensor();
-  kfr::univector<double, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
+  kfr::univector<float, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
   uint8_t calculate_verbal_position(Obstacle obstacle);
   void generate_non_verbal_feedback(Obstacle obstacle);
   void generate_verbal_feedback(Obstacle obstacle);

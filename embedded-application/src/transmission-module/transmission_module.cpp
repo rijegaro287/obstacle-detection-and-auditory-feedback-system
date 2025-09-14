@@ -27,9 +27,9 @@ TransmissionModule::~TransmissionModule() {
 	}
 }
 
-void TransmissionModule::convert_to_pcm(const vector<double>& interleaved, 
+void TransmissionModule::convert_to_pcm(const vector<float>& interleaved, 
 																				vector<int16_t>& pcm,
-																				double max_value) {
+																				float max_value) {
 	if (interleaved.size() % 2 != 0) {
 		printf("Error: Interleaved buffer size is not valid.\n");
 		return;
@@ -40,7 +40,7 @@ void TransmissionModule::convert_to_pcm(const vector<double>& interleaved,
 		return;
 	}
 	
-	double scale = INT16_MAX / max_value;
+	float scale = INT16_MAX / max_value;
 	for (uint64_t i = 0; i < interleaved.size(); i++) {
 		pcm[i] = static_cast<int16_t>(interleaved[i] * scale);
 		if (pcm[i] > INT16_MAX) pcm[i] = INT16_MAX;
@@ -48,9 +48,9 @@ void TransmissionModule::convert_to_pcm(const vector<double>& interleaved,
 	}
 }
 
-void TransmissionModule::interleave_audio(const vector<double>& left_channel, 
-																					const vector<double>& right_channel,
-																					vector<double>& interleaved) {
+void TransmissionModule::interleave_audio(const vector<float>& left_channel, 
+																					const vector<float>& right_channel,
+																					vector<float>& interleaved) {
 	if (left_channel.size() != right_channel.size()) {
 		printf("Error: Left and right channel sizes do not match.\n");
 		return;
@@ -67,8 +67,8 @@ void TransmissionModule::interleave_audio(const vector<double>& left_channel,
 	}
 }	
 
-double get_max_value(const vector<double>& audio) {
-	double max_value = 0.0;
+float get_max_value(const vector<float>& audio) {
+	float max_value = 0.0;
 	for (const auto& sample : audio) {
 		if (fabs(sample) > max_value) {
 			max_value = fabs(sample);
@@ -79,14 +79,14 @@ double get_max_value(const vector<double>& audio) {
 
 void TransmissionModule::preprocess_audio(Audio& signal, 
 																				  vector<int16_t>& pcm, 
-																					double max_value,
+																					float max_value,
 																					uint64_t start_idx,
 																					uint64_t end_idx) {
-		vector<double> left_chunk(signal.left_signal.begin() + start_idx,
+		vector<float> left_chunk(signal.left_signal.begin() + start_idx,
 															signal.left_signal.begin() + end_idx);
-		vector<double> right_chunk(signal.right_signal.begin() + start_idx,
+		vector<float> right_chunk(signal.right_signal.begin() + start_idx,
 															signal.right_signal.begin() + end_idx);
-		vector<double> interleaved_chunk(2 * left_chunk.size());
+		vector<float> interleaved_chunk(2 * left_chunk.size());
 
 		interleave_audio(left_chunk, right_chunk, interleaved_chunk);
 		convert_to_pcm(interleaved_chunk, pcm, max_value);
@@ -129,7 +129,7 @@ void TransmissionModule::send_audio(Audio& signal) {
 	}
 
 	printf("Sending audio...\n");
-  double max_value = max(get_max_value(signal.left_signal),
+  float max_value = max(get_max_value(signal.left_signal),
 												 get_max_value(signal.right_signal));
 
 	uint64_t signal_size = signal.left_signal.size();

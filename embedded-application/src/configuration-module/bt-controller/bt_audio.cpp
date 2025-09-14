@@ -11,17 +11,14 @@ BTAudioController& BTAudioController::get_instance() {
 	return instance;
 }
 
-int64_t BTAudioController::init() {
+BTAudioController::BTAudioController() {
 	GError *error = nullptr;
-	
 	this->main_loop = g_main_loop_new(nullptr, FALSE);
   if (this->main_loop == nullptr) {
     printf("Failed to create GMainLoop\n");
 		g_error_free(error);
-    return -1;
   }
-
-	return 0;
+	this->connected_device = nullptr;
 }
 
 int64_t BTAudioController::start_discovery(GDBusProxy *proxy) {
@@ -32,7 +29,7 @@ int64_t BTAudioController::start_discovery(GDBusProxy *proxy) {
 		"StartDiscovery",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		5000,
 		nullptr,
 		&error
 	);
@@ -56,7 +53,7 @@ int64_t BTAudioController::stop_discovery(GDBusProxy *proxy) {
 			"StopDiscovery",
 			nullptr,
 			G_DBUS_CALL_FLAGS_NONE,
-			-1,
+			5000,
 			nullptr,
 			&error
 		);
@@ -118,6 +115,8 @@ int64_t BTAudioController::scan_devices(vector<BlueZDevice>& devices, uint64_t t
 	GError *error = nullptr;
 	bool error_occurred = false;
 
+	devices.clear();
+
 	GDBusProxy *adapter_proxy = this->create_adapter_proxy();
 	if (adapter_proxy == nullptr) {
 		printf("Error creating adapter object_manager_proxy: %s\n", error->message);
@@ -161,7 +160,7 @@ int64_t BTAudioController::pair_device(GDBusProxy *proxy) {
 		"Pair",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		10000,
 		nullptr,
 		&error
 	);
@@ -186,7 +185,7 @@ int64_t BTAudioController::connect_to_device(GDBusProxy *proxy) {
 		"Connect",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		10000,
 		nullptr,
 		&error
 	);
@@ -211,7 +210,7 @@ int64_t BTAudioController::connect_to_device_profile(GDBusProxy *proxy, const ch
 		"ConnectProfile",
 		g_variant_new("(s)", uuid),
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		10000,
 		nullptr,
 		&error
 	);
@@ -227,7 +226,7 @@ int64_t BTAudioController::connect_to_device_profile(GDBusProxy *proxy, const ch
 	return 0;
 }
 
-int64_t BTAudioController::connect_and_pair_device(BlueZDevice *device) {
+int64_t BTAudioController::pair_and_connect_device(BlueZDevice *device) {
 	bool error = false;
 	GDBusProxy *device_proxy = nullptr;
 
@@ -240,7 +239,7 @@ int64_t BTAudioController::connect_and_pair_device(BlueZDevice *device) {
 
 	if (!this->is_paired(device_proxy)) {
 		if (pair_device(device_proxy) < 0) {
-			printf("Failed to pair to device\n");
+			printf("Failed to pair device\n");
 			error = true;
 			goto cleanup;
 		}
@@ -248,7 +247,7 @@ int64_t BTAudioController::connect_and_pair_device(BlueZDevice *device) {
 
 	if (!this->is_connected(device_proxy)) {
 		if (connect_to_device_profile(device_proxy, A2DP_SINK_UUID) < 0) {
-			printf("Failed to connect to profile\n");
+			printf("Failed to connect device profile\n");
 			error = true;
 			goto cleanup;
 		}
@@ -261,9 +260,9 @@ int64_t BTAudioController::connect_and_pair_device(BlueZDevice *device) {
 	else return 0;
 }
 
-BlueZDevice* BTAudioController::find_device(vector<BlueZDevice>& devices, const char *name) {
+BlueZDevice* BTAudioController::find_device(vector<BlueZDevice>& devices, string address) {
 	for (uint64_t idx = 0; idx < devices.size(); idx++) {
-		if (strcmp(devices[idx].name, name) == 0) {
+		if (devices[idx].address == address) {
 			return &devices[idx];
 		}
 	}
@@ -339,42 +338,37 @@ bool BTAudioController::get_boolean_value(GVariant *variant) {
 void BTAudioController::start() {
 	vector<BlueZDevice> devices;
 	while (true) {
-		printf("Scanning for Bluetooth Audio Devices...\n");
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		if (this->init() < 0) {
-			printf("Failed to initialize Bluetooth Audio Controller\n");
-			this->cleanup(devices);
-			continue;
-		}
+		// printf("Scanning for Bluetooth Audio Devices...\n");
+		// std::this_thread::sleep_for(std::chrono::seconds(1));
 
-		if (this->scan_devices(devices, 3) < 0) {
-			printf("Failed to scan devices\n");
-			this->cleanup(devices);
-			continue;
-		}
+		// if (this->scan_devices(devices, 3) < 0) {
+		// 	printf("Failed to scan devices\n");
+		// 	this->cleanup(devices);
+		// 	continue;
+		// }
 
-		this->print_devices(devices);
+		// this->print_devices(devices);
 
-		this->connected_device = this->find_device(devices, "QCY H3");
-		if (this->connected_device == nullptr) {
-			this->cleanup(devices);
-			continue;
-		}
+		// this->connected_device = this->find_device(devices, "QCY H3");
+		// if (this->connected_device == nullptr) {
+		// 	this->cleanup(devices);
+		// 	continue;
+		// }
 
-		printf("Connecting to device: %s (%s)\n", this->connected_device->name, this->connected_device->address);
+		// printf("Connecting to device: %s (%s)\n", this->connected_device->name, this->connected_device->address);
 
-		if (this->connect_and_pair_device(this->connected_device) < 0) {
-			printf("Failed to connect and pair to device\n");
-			this->cleanup(devices);
-			continue;
-		}
+		// if (this->pair_and_connect_device(this->connected_device) < 0) {
+		// 	printf("Failed to connect and pair to device\n");
+		// 	this->cleanup(devices);
+		// 	continue;
+		// }
 
-		printf("Connected to device: %s\n", this->connected_device->name);
-		IControl::unlock_mutexes();
+		// printf("Connected to device: %s\n", this->connected_device->name);
+		// IControl::unlock_mutexes();
 
-		if (this->main_loop) {
-			g_main_loop_run(this->main_loop);
-		}
+		// if (this->main_loop) {
+		// 	g_main_loop_run(this->main_loop);
+		// }
 	}
 }
 

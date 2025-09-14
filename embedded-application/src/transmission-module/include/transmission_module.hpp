@@ -25,9 +25,9 @@ private:
   TransmissionModule();
   ~TransmissionModule();
 
-	void convert_to_pcm(const vector<double>& interleaved, vector<int16_t>& pcm, double max_value);
-	void interleave_audio(const vector<double>& left_channel, const vector<double>& right_channel, vector<double>& interleaved);
-	void preprocess_audio(Audio& signal, vector<int16_t>& pcm, double max_value, uint64_t start_idx, uint64_t end_idx);
+	void convert_to_pcm(const vector<float>& interleaved, vector<int16_t>& pcm, float max_value);
+	void interleave_audio(const vector<float>& left_channel, const vector<float>& right_channel, vector<float>& interleaved);
+	void preprocess_audio(Audio& signal, vector<int16_t>& pcm, float max_value, uint64_t start_idx, uint64_t end_idx);
 	void send_pcm_data(vector<int16_t>& pcm, uint64_t sample_rate);
 	void send_audio(Audio& signal);
 };
