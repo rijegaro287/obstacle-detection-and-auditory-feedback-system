@@ -18,10 +18,10 @@ add_subdirectory(src/feedback-module)
 add_subdirectory(src/transmission-module)
 
 
-add_executable(main_application
+add_executable(main
   src/main.cpp
 )
-target_link_libraries(main_application PUBLIC
+target_link_libraries(main PUBLIC
   control_module
   configuration_module
   # image_capture_module

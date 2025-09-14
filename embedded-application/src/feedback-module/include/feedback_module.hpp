@@ -9,7 +9,7 @@
 
 #include "kd_tree.hpp"
 
-#define TAP_SIGNAL_PATH "./src/feedback-module/tap_alert.npy"
+#define TAP_SIGNAL_PATH "./src/feedback-module/dataset/tap_alert.npy"
 #define HRIR_PATH "./src/feedback-module/dataset/hrirs.npy"
 #define POSITION_PATH "./src/feedback-module/dataset/positions.npy"
 #define VERBAL_FEEDBACK_PATH "./src/feedback-module/dataset/verbal_feedback_signals.npy"

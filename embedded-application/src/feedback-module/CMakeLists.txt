@@ -4,13 +4,19 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(AuditoryFeedbackModule)
 
-configure_file(./tap_alert.npy ./tap_alert.npy COPYONLY)
+configure_file(./dataset/tap_alert.npy ./dataset/tap_alert.npy COPYONLY)
 configure_file(./dataset/hrirs.npy ./dataset/hrirs.npy COPYONLY)
 configure_file(./dataset/positions.npy ./dataset/positions.npy COPYONLY)
 configure_file(./dataset/verbal_feedback_signals.npy ./dataset/verbal_feedback_signals.npy COPYONLY)
 
-set(CMAKE_PREFIX_PATH "./libs/kfr/install/lib/cmake" ${CMAKE_PREFIX_PATH})
-find_package(KFR CONFIG REQUIRED)
+include(FetchContent)
+
+FetchContent_Declare(kfr
+  GIT_REPOSITORY https://github.com/kfrlib/kfr.git
+  GIT_TAG        origin/main
+)
+
+FetchContent_MakeAvailable(kfr)
 
 # AddressSanitizer configuration
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
