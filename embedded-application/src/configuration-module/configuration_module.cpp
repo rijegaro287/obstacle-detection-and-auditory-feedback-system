@@ -8,11 +8,13 @@
 #include "ble_server.hpp"
 #include "bt_audio.hpp"
 
+#define HEALTH_CHECK_COMMAND "health_check"
 #define SCAN_COMMAND "scan"
 #define CONNECT_COMMAND "connect"
 
 enum COMMAND_CODE {
-	SCAN_CODE = 1,
+	HEALTH_CHECK_CODE,
+	SCAN_CODE,
 	CONNECT_CODE,
 };
 
@@ -45,23 +47,26 @@ vector<string> split(const string& s, char delim) {
 	return elems;
 }
 
+vector<BlueZDevice> found_devices;
+
+string health_check_command() {
+	printf("Health check OK\n");
+	return "OK";
+}
+
 string scan_command() {
 	printf("Scanning for audio devices...\n");
-	vector<BlueZDevice> devices;
-	BTAudioController::get_instance().scan_devices(devices, 3);
+
+	BTAudioController::get_instance().scan_devices(found_devices, 3);
 
 	string response = "";
-	for (const auto& device : devices) {
+	for (const auto& device : found_devices) {
 		string device_info = "$" + string(device.name) + "@" + string(device.address);
 		response += device_info;
 	}
 
-	printf("%s\n", response.c_str());
-
 	return response;
 }
-
-vector<BlueZDevice> found_devices;
 
 string connect_command(vector<string>& args) {
 	if (args.size() != 1 || args[0].empty() ) {
@@ -76,24 +81,18 @@ string connect_command(vector<string>& args) {
 		return "#Error: Device not found";
 	}
 
-	if (BTAudioController::get_instance().pair_and_connect_device(device) == 0) {
-		return "Connected to device: " + string(device->name);
-	}
-	else {
+	if (BTAudioController::get_instance().pair_and_connect_device(device) < 0) {
 		return "#Error: Failed to connect to device";
 	}
+
+	return "Connected to device: " + string(device->name);
 }
 
-uint64_t map_command_to_code(const string& command) {
-	if (command == SCAN_COMMAND) {
-		return SCAN_CODE;
-	}
-	else if (command == CONNECT_COMMAND) {
-		return CONNECT_CODE;
-	}
-	else {
-		return 0;
-	}
+int64_t map_command_to_code(const string& command) {
+	if (command == HEALTH_CHECK_COMMAND) return HEALTH_CHECK_CODE;
+	else if (command == SCAN_COMMAND) return SCAN_CODE;
+	else if (command == CONNECT_COMMAND) return CONNECT_CODE;
+	else return -1;
 }
 
 void ConfigModule::process_command(const string& command) {
@@ -102,16 +101,20 @@ void ConfigModule::process_command(const string& command) {
 	uint64_t command_code;
 	string response;
 
-	tokens = split(command, ':');
+	tokens = split(command, '!');
 	if (tokens.size() == 0 || tokens.size() > 2) {
 		printf("Invalid command format\n");
-		response = "Error: Invalid command format";
+		response = "#Error: Invalid command format";
 		goto set_response;
 	}
 
 	command_code = map_command_to_code(tokens[0]);
 	tokens.erase(tokens.begin());
 	switch (command_code) {
+		case HEALTH_CHECK_CODE: {
+			response = health_check_command();
+			break;
+		}
 		case SCAN_CODE: {
 			response = scan_command();
 			break;
@@ -136,9 +139,5 @@ void ConfigModule::start() {
 	BLEServer& ble_server = BLEServer::get_instance();
 	BTAudioController& bt_audio_controller = BTAudioController::get_instance();
 
-	thread ble_server_thread(&BLEServer::start, &ble_server);
-	// thread bt_audio_thread(&BTAudioController::start, &bt_audio_controller);
-
-	ble_server_thread.join();
-	// bt_audio_thread.join();
+	ble_server.start();
 }

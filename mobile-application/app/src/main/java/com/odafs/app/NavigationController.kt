@@ -55,7 +55,7 @@ fun NavigationController() {
 
             composable<Controls> { backStackEntry ->
                 val controls = backStackEntry.toRoute<Controls>()
-                // BackHandler (enabled = true) {  }
+                BackHandler (enabled = true) {  }
                 ControlsView (deviceName = controls.deviceName) {
                     navController.navigate(Scanning) {
                         popUpTo(Connecting) { inclusive = true }

@@ -29,7 +29,7 @@ int64_t BTAudioController::start_discovery(GDBusProxy *proxy) {
 		"StartDiscovery",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		5000,
 		nullptr,
 		&error
 	);
@@ -53,7 +53,7 @@ int64_t BTAudioController::stop_discovery(GDBusProxy *proxy) {
 			"StopDiscovery",
 			nullptr,
 			G_DBUS_CALL_FLAGS_NONE,
-			-1,
+			5000,
 			nullptr,
 			&error
 		);
@@ -115,6 +115,8 @@ int64_t BTAudioController::scan_devices(vector<BlueZDevice>& devices, uint64_t t
 	GError *error = nullptr;
 	bool error_occurred = false;
 
+	devices.clear();
+
 	GDBusProxy *adapter_proxy = this->create_adapter_proxy();
 	if (adapter_proxy == nullptr) {
 		printf("Error creating adapter object_manager_proxy: %s\n", error->message);
@@ -158,7 +160,7 @@ int64_t BTAudioController::pair_device(GDBusProxy *proxy) {
 		"Pair",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		10000,
 		nullptr,
 		&error
 	);
@@ -183,7 +185,7 @@ int64_t BTAudioController::connect_to_device(GDBusProxy *proxy) {
 		"Connect",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		10000,
 		nullptr,
 		&error
 	);
@@ -208,7 +210,7 @@ int64_t BTAudioController::connect_to_device_profile(GDBusProxy *proxy, const ch
 		"ConnectProfile",
 		g_variant_new("(s)", uuid),
 		G_DBUS_CALL_FLAGS_NONE,
-		-1,
+		10000,
 		nullptr,
 		&error
 	);
@@ -237,7 +239,7 @@ int64_t BTAudioController::pair_and_connect_device(BlueZDevice *device) {
 
 	if (!this->is_paired(device_proxy)) {
 		if (pair_device(device_proxy) < 0) {
-			printf("Failed to pair to device\n");
+			printf("Failed to pair device\n");
 			error = true;
 			goto cleanup;
 		}
@@ -245,7 +247,7 @@ int64_t BTAudioController::pair_and_connect_device(BlueZDevice *device) {
 
 	if (!this->is_connected(device_proxy)) {
 		if (connect_to_device_profile(device_proxy, A2DP_SINK_UUID) < 0) {
-			printf("Failed to connect to profile\n");
+			printf("Failed to connect device profile\n");
 			error = true;
 			goto cleanup;
 		}

@@ -30,10 +30,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.cancellation.CancellationException
 
 const val DEVICE_NAME = "odafs"
 const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
 const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
+
+object COMMANDS {
+    const val HEALTH_CHECK = "health_check"
+    const val SCAN = "scan"
+    const val CONNECT = "connect"
+}
+
 
 data class BLEDevice(
     val device: BluetoothDevice,
@@ -118,6 +126,9 @@ object BLEController {
 
     private var pendingTransaction: CompletableDeferred<ByteArray?>? = null
 
+    private var failedHealthChecks = 0;
+    private var failedHealthChecksThreshold = 5;
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun BluetoothGatt.writeAndReadCharacteristic(
@@ -145,12 +156,17 @@ object BLEController {
         }
 
         try {
-            return withTimeout(15000) {
+            return withTimeout(10000) {
                 pendingTransaction?.await()
             }
         }
-        catch (e: Exception) {
-            if (!pending.isCompleted) pending.cancel()
+        catch (e: CancellationException) {
+            pendingTransaction?.cancel()
+            pendingTransaction = null
+            throw e
+        }
+        catch (e: Throwable) {
+            pendingTransaction?.completeExceptionally(e)
             pendingTransaction = null
             throw e
         }
@@ -165,10 +181,12 @@ object BLEController {
             Log.d("BLE Controller", "Gatt connection state changed: $newState")
             when (newState) {
                 BluetoothGatt.STATE_CONNECTED -> {
+                    Log.d("BLE Controller", "Gatt connection state changed: Connected")
                     _gattConnection.value = gatt
                     gatt.discoverServices()
                 }
                 BluetoothGatt.STATE_DISCONNECTED -> {
+                    Log.d("BLE Controller", "Gatt connection state changed: Disconnected")
                     disconnectFromDevice()
                 }
                 else -> {
@@ -306,28 +324,55 @@ object BLEController {
             _characteristicConnection.value == null
         ) {
             Log.e("BLE Controller", "Gatt connection is not established")
-            return ""
+            return "#No connection established"
         }
 
         Log.d("BLE Controller", "Sending command: $command")
-        val result = _gattConnection.value!!.writeAndReadCharacteristic(
-            _characteristicConnection.value!!,
-            command.toByteArray()
-        )
 
-        if (result == null) return ""
-        else return String(result)
+        try {
+            val result = _gattConnection.value!!.writeAndReadCharacteristic(
+                _characteristicConnection.value!!,
+                command.toByteArray()
+            )
+
+            val resultString = String(result!!)
+            Log.d("BLE Controller", "Received response: $resultString")
+            return resultString
+        }
+        catch (e: Exception) {
+            Log.e("BLE Controller", "Error sending command: ${e.message}")
+            return "#${e.message}"
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun healthCheck() : Boolean {
+        val response = sendCommand("${COMMANDS.HEALTH_CHECK}!")
+
+        if (response[0] != '#') {
+            failedHealthChecks = 0
+            return true
+        }
+
+        failedHealthChecks++
+        if (failedHealthChecks >= failedHealthChecksThreshold) {
+            disconnectFromDevice()
+        }
+        return false
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun scanForDevices() : List<BTDevice>{
         if (_scanning.value) return emptyList()
-
         _scanning.value = true
 
-        val response = sendCommand(SCAN_COMMAND)
-        if (response[0] == '#') return emptyList()
+        val response = sendCommand("${COMMANDS.SCAN}!")
+        if (response[0] == '#') {
+            _scanning.value = false
+            return emptyList()
+        }
 
         val result = mutableListOf<BTDevice>()
 
@@ -347,6 +392,20 @@ object BLEController {
 
         return result
     }
-}
 
-const val SCAN_COMMAND = "scan"
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun connectToDevice(device: BTDevice) : Boolean {
+        if (_connecting.value) return false
+        _connecting.value = true
+
+        val response = sendCommand("${COMMANDS.CONNECT}!${device.address}")
+        if (response[0] == '#') {
+            _connecting.value = false
+            return false
+        }
+
+        _connecting.value = false
+        return true
+    }
+}

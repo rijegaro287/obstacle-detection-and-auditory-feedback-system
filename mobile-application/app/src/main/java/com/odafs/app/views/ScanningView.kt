@@ -1,9 +1,6 @@
 package com.odafs.app.views
 
 import android.Manifest
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattService
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -21,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -62,39 +58,62 @@ fun ScanningView(
     var scanning by remember { mutableStateOf(false) }
     scanning = BLEController.scanning.collectAsState().value
 
+    var connecting by remember { mutableStateOf(false) }
+    connecting = BLEController.connecting.collectAsState().value
+
     var readyForNextScan by remember { mutableStateOf(true) }
 
     var reloadClicked by remember { mutableStateOf(false) }
 
+    var selectedDevice by remember { mutableStateOf<BTDevice?>(null) }
+
     var foundDevices by remember { mutableStateOf(emptyList<BTDevice>()) }
+
+    LaunchedEffect(connected) {
+        if (!connected) navigateToConnecting()
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
-            if (readyForNextScan) {
+            delay(2050)
+            BLEController.healthCheck()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (!connecting && !scanning && readyForNextScan) {
                 foundDevices = BLEController.scanForDevices()
                 readyForNextScan = false
+                reloadClicked = false
             }
             delay(100)
         }
     }
 
     LaunchedEffect(readyForNextScan) {
-        if (!scanning && !readyForNextScan) {
+        if (!connecting && !scanning && !readyForNextScan) {
             delay(10000)
             readyForNextScan = true
         }
     }
 
     LaunchedEffect(reloadClicked) {
-        if (reloadClicked) {
+        Log.d("BLE Controller", "Reloading devices")
+        if (!connecting && !scanning && reloadClicked) {
             foundDevices = BLEController.scanForDevices()
             reloadClicked = false
             readyForNextScan = false
         }
     }
 
-    LaunchedEffect(connected) {
-        if (!connected) navigateToConnecting()
+    LaunchedEffect(selectedDevice) {
+        if (!connecting && !scanning && selectedDevice != null) {
+            val connectionEstablished = BLEController.connectToDevice(selectedDevice!!)
+
+            if (connectionEstablished) navigateToControls(selectedDevice!!.name)
+            else selectedDevice = null
+        }
     }
 
     Scaffold(
@@ -136,7 +155,7 @@ fun ScanningView(
                     }
                 }
 
-                if (scanning) {
+                if (connecting || scanning) {
                     Spacer(modifier = Modifier.height(200.dp))
                     Box (modifier = Modifier.fillMaxSize()) {
                         Column (modifier = Modifier.align(Alignment.TopCenter)) {
@@ -151,7 +170,7 @@ fun ScanningView(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = "Buscando Dispositivos de Audio",
+                                text = if (connecting) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
@@ -163,9 +182,7 @@ fun ScanningView(
                     Spacer(modifier = Modifier.height(20.dp))
                     LazyColumn {
                         items(foundDevices) { device ->
-                            DeviceCard(device.name) {
-                                navigateToControls(device.name)
-                            }
+                            DeviceCard(device.name) { selectedDevice = device }
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
