@@ -1,9 +1,6 @@
 package com.odafs.app.views
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattService
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,8 +47,10 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
     var connecting by remember { mutableStateOf(false) }
     connecting = BLEController.connecting.collectAsState().value
 
-    LaunchedEffect(Unit) {
-        while (!connected) {
+    LaunchedEffect(connected) {
+        if (connected) navigateToScanning()
+
+        while (true) {
             if (connecting) {
                 delay(100)
                 continue
@@ -67,10 +68,8 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
                     }
                 }
             }
-
             delay(1000)
         }
-        navigateToScanning()
     }
 
     Scaffold (topBar = { TopBar(title = "Conectando") }) { innerPadding ->
@@ -119,5 +118,5 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
 @Preview
 @Composable
 fun ConnectingViewPreview() {
-    ConnectingView({})
+    ConnectingView {}
 }

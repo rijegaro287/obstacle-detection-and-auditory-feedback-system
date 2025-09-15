@@ -55,13 +55,11 @@ fun ScanningView(
     var connected by remember { mutableStateOf(false) }
     connected = BLEController.connected.collectAsState().value
 
-    var scanning by remember { mutableStateOf(false) }
-    scanning = BLEController.scanning.collectAsState().value
+    var discovering by remember { mutableStateOf(false) }
+    discovering = BLEController.discovering.collectAsState().value
 
     var connecting by remember { mutableStateOf(false) }
     connecting = BLEController.connecting.collectAsState().value
-
-    var readyForNextScan by remember { mutableStateOf(true) }
 
     var reloadClicked by remember { mutableStateOf(false) }
 
@@ -81,35 +79,21 @@ fun ScanningView(
     }
 
     LaunchedEffect(Unit) {
-        while (true) {
-            if (!connecting && !scanning && readyForNextScan) {
-                foundDevices = BLEController.scanForDevices()
-                readyForNextScan = false
-                reloadClicked = false
-            }
-            delay(100)
-        }
-    }
-
-    LaunchedEffect(readyForNextScan) {
-        if (!connecting && !scanning && !readyForNextScan) {
-            delay(10000)
-            readyForNextScan = true
-        }
+        foundDevices = BLEController.scanForAudioDevices(7000)
+        reloadClicked = false
     }
 
     LaunchedEffect(reloadClicked) {
         Log.d("BLE Controller", "Reloading devices")
-        if (!connecting && !scanning && reloadClicked) {
-            foundDevices = BLEController.scanForDevices()
+        if (!connecting && !discovering && reloadClicked) {
+            foundDevices = BLEController.scanForAudioDevices(7000)
             reloadClicked = false
-            readyForNextScan = false
         }
     }
 
     LaunchedEffect(selectedDevice) {
-        if (!connecting && !scanning && selectedDevice != null) {
-            val connectionEstablished = BLEController.connectToDevice(selectedDevice!!)
+        if (!connecting && selectedDevice != null) {
+            val connectionEstablished = BLEController.pairAndConnectAudioDevice(selectedDevice!!)
             if (connectionEstablished) {
                 navigateToControls(selectedDevice!!.name)
             }
@@ -158,7 +142,7 @@ fun ScanningView(
                     }
                 }
 
-                if (connecting || scanning) {
+                if (connecting || discovering) {
                     Spacer(modifier = Modifier.height(200.dp))
                     Box (modifier = Modifier.fillMaxSize()) {
                         Column (modifier = Modifier.align(Alignment.TopCenter)) {
