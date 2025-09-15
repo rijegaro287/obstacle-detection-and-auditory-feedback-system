@@ -43,7 +43,8 @@ GVariant* BLEServer::handle_adv_get_property(GDBusConnection* connection,
 	else if (g_strcmp0(property_name, "DiscoverableTimeout") == 0) {
 		return g_variant_new_uint16(0);
 	}
-	else if (g_strcmp0(property_name, "ScanResponseServiceUUIDs") == 0) {
+	else if (g_strcmp0(property_name, "ScanResponseServiceUUIDs") == 0 ||
+					 g_strcmp0(property_name, "ServiceUUIDs") == 0) {
 		GVariantBuilder builder;
 		g_variant_builder_init(&builder, G_VARIANT_TYPE("as"));
 		g_variant_builder_add(&builder, "s", SERVICE_UUID);

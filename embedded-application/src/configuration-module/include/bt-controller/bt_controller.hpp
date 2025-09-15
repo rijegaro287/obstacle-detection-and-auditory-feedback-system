@@ -27,7 +27,7 @@ public:
   GDBusProxy* create_object_manager_proxy();
   GDBusProxy* create_properties_proxy();
   GDBusProxy* create_adapter_proxy();
-  GDBusProxy* create_device_proxy(BlueZDevice *device);
+  GDBusProxy* create_device_proxy(BlueZDevice& device);
   GVariant* get_managed_objects(GDBusProxy *proxy);
   GVariant* get_proxy_property(GDBusProxy *proxy, const char *interface, const char *property);
   int64_t set_proxy_property(GDBusProxy *proxy, const char *interface, const char *property, GVariant *value);

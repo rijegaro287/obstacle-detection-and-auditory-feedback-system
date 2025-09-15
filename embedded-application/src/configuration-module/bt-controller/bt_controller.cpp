@@ -70,13 +70,13 @@ GDBusProxy* BTController::create_adapter_proxy() {
 	return adapter_proxy;
 }
 
-GDBusProxy* BTController::create_device_proxy(BlueZDevice *device) {
+GDBusProxy* BTController::create_device_proxy(BlueZDevice& device) {
 	GError* error = nullptr;
 
 	char device_path[BUFFER_SIZE_L] = {0};
 	char device_addr[BUFFER_SIZE_S] = {0};
 
-	this->addr_to_path(device->address, device_addr, BUFFER_SIZE_S);
+	this->addr_to_path(device.address, device_addr, BUFFER_SIZE_S);
 
 	snprintf(device_path, BUFFER_SIZE_L, "%s/dev_%s", BLUEZ_ADAPTER_PATH, device_addr);
 	device_path[BUFFER_SIZE_L - 1] = '\0';
@@ -109,7 +109,7 @@ GVariant* BTController::get_managed_objects(GDBusProxy *proxy) {
 		"GetManagedObjects",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		3000,
+		10000,
 		nullptr,
 		&error
 	);
@@ -136,7 +136,7 @@ GVariant* BTController::get_proxy_property(GDBusProxy *proxy,
 		"org.freedesktop.DBus.Properties.Get",
 		g_variant_new("(ss)", interface, property),
 		G_DBUS_CALL_FLAGS_NONE,
-		3000,
+		10000,
 		nullptr,
 		&error
 	);
@@ -164,7 +164,7 @@ int64_t BTController::set_proxy_property(GDBusProxy *proxy,
 		"org.freedesktop.DBus.Properties.Set",
 		g_variant_new("(ssv)", interface, property, value),
 		G_DBUS_CALL_FLAGS_NONE,
-		3000,
+		10000,
 		nullptr,
 		&error
 	);
