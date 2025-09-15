@@ -38,10 +38,11 @@ rm *.wav
 
 sudo apt autoremove -y
 
+cd ../../../../
+
 # Arducam TOF SDK
 git clone https://github.com/ArduCAM/Arducam_tof_camera.git
 cd Arducam_tof_camera
 ./Install_dependencies.sh
 cd ..
 rm -rf Arducam_tof_camera
-
