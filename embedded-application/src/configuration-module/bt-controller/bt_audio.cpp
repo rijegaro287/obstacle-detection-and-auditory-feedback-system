@@ -204,6 +204,39 @@ int64_t BTAudioController::connect_device(BlueZDevice& device) {
 	return 0;
 }
 
+int64_t BTAudioController::disconnect_device(BlueZDevice& device) {
+	bool found_error = false;
+	GError* error = nullptr;
+	GVariant *result = nullptr;
+	GDBusProxy *device_proxy = nullptr;
+
+	device_proxy = this->create_device_proxy(device);
+	if (device_proxy == nullptr) {
+		goto cleanup;
+	}
+
+	result = g_dbus_proxy_call_sync(
+		device_proxy,
+		"DisconnectProfile",
+		g_variant_new("(s)", A2DP_SINK_UUID),
+		G_DBUS_CALL_FLAGS_NONE,
+		10000,
+		nullptr,
+		&error
+	);
+
+	cleanup:
+	if (device_proxy) g_object_unref(device_proxy);
+	if (result) g_variant_unref(result);
+	if (found_error || error) {
+		printf("Error connecting to device: %s\n", error->message);
+		g_error_free(error);
+		return -1;
+	}
+
+	return 0;
+}
+
 bool BTAudioController::is_paired(BlueZDevice& device) {
 	bool is_paired = false;
 	GVariant *result = nullptr;

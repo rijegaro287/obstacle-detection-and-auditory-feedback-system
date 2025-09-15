@@ -31,6 +31,7 @@ vector<string> ConfigModule::split(const string& s, char delim) {
 
 int64_t ConfigModule::map_command_to_code(const string& command) {
 	if (command == HEALTH_CHECK_COMMAND) return HEALTH_CHECK_CODE;
+	else if (command == AUDIO_HEALTH_CHECK_COMMAND) return AUDIO_HEALTH_CHECK_CODE;
 	else if (command == START_DISCOVERY_COMMAND) return START_DISCOVERY_CODE;
 	else if (command == STOP_DISCOVERY_COMMAND) return STOP_DISCOVERY_CODE;
 	else if (command == GET_DEVICES_COMMAND) return GET_DEVICES_CODE;
@@ -41,6 +42,23 @@ int64_t ConfigModule::map_command_to_code(const string& command) {
 
 string ConfigModule::health_check_command() {
 	printf("Health check OK\n");
+	return "OK";
+}
+
+string ConfigModule::audio_health_check_command() {
+	BlueZDevice *connected_device = BTAudioController::get_instance().connected_device;
+	
+	if (connected_device == nullptr) {
+		printf("No audio device connected\n");
+		return "#Error: No audio device connected";
+	}
+
+	if (!BTAudioController::get_instance().is_connected(*connected_device)) {
+		printf("Audio device not connected\n");
+		return "#Error: Audio device not connected";
+	}
+
+	printf("Audio health check OK\n");
 	return "OK";
 }
 
@@ -119,7 +137,37 @@ string ConfigModule::connect_device_command(vector<string>& args) {
 		return "#Error: Failed to connect to device";
 	}
 
+	BTAudioController::get_instance().connected_device = &device;
+
 	return "Connected to device: " + string(device.name);
+}
+
+string ConfigModule::disconnect_device_command(vector<string>& args) {
+	if (args.size() != 1 || args[0].empty()) {
+		return "#Error: No device address provided";
+	}
+	
+	printf("Disconnecting from audio device %s...\n", args[0].c_str());
+	string address = args[0];
+	int64_t device_idx = BTAudioController::get_instance().find_device_idx(this->found_devices, address);
+
+	if (device_idx < 0) {
+		return "#Error: Device not found";
+	}
+
+	BlueZDevice& device = this->found_devices[device_idx];
+
+	if (!BTAudioController::get_instance().is_connected(device)) {
+		return "Device already disconnected: " + string(device.name);
+	}
+
+	if (BTAudioController::get_instance().disconnect_device(device) < 0) {
+		return "#Error: Failed to disconnect from device";
+	}
+
+	BTAudioController::get_instance().cleanup(this->found_devices);
+
+	return "Disconnected from device: " + string(device.name);
 }
 
 void ConfigModule::process_command(const string& command) {
@@ -142,6 +190,10 @@ void ConfigModule::process_command(const string& command) {
 			response = this->health_check_command();
 			break;
 		}
+		case AUDIO_HEALTH_CHECK_CODE: {
+			response = this->audio_health_check_command();
+			break;
+		}
 		case START_DISCOVERY_CODE: {
 			response = this->start_discovery_command();
 			break;
@@ -162,8 +214,12 @@ void ConfigModule::process_command(const string& command) {
 			response = this->connect_device_command(tokens);
 			break;
 		}
+		case DISCONNECT_DEVICE_CODE: {
+			response = this->disconnect_device_command(tokens);
+			break;
+		}
 		default: {
-			printf("Unknown command %s\n", tokens[0].c_str());
+			printf("Unknown command %s\n", command.c_str());
 			break;
 		}
 	}
