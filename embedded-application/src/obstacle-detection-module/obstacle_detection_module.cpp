@@ -282,10 +282,10 @@ Obstacle ObstacleDetectionModule::calculateAngles(Obstacle& obstacle) {
 double ObstacleDetectionModule::mapAzimuth(double azimuth) {
     if (azimuth < 0) {
         // cuadrante izquierdo 
-        return (azimuth + FOV_X_DEG/2.0);  // 0° en el borde derecho, FOV_X/2° en el borde izquierdo
+        return -azimuth;  // 0° en el borde derecho, FOV_X/2° en el borde izquierdo
     } else {
         // cuadrante derecho 
-        return 360.0 - (azimuth + FOV_X_DEG/2.0);
+        return 360.0 - azimuth;
     }
 }
 
