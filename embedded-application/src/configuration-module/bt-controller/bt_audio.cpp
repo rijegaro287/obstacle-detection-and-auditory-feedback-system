@@ -21,11 +21,19 @@ BTAudioController::BTAudioController() {
 	this->connected_device = nullptr;
 }
 
-int64_t BTAudioController::start_discovery(GDBusProxy *proxy) {
+int64_t BTAudioController::start_discovery() {
 	GError *error = nullptr;
+	GVariant *result = nullptr;
+	GDBusProxy *adapter_proxy = nullptr;
 
-	GVariant *result = g_dbus_proxy_call_sync(
-		proxy,
+	adapter_proxy = this->create_adapter_proxy();
+	if (adapter_proxy == nullptr) {
+		printf("Error creating adapter object_manager_proxy: %s\n", error->message);
+		goto cleanup;
+	}
+
+	result = g_dbus_proxy_call_sync(
+		adapter_proxy,
 		"StartDiscovery",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
@@ -33,38 +41,48 @@ int64_t BTAudioController::start_discovery(GDBusProxy *proxy) {
 		nullptr,
 		&error
 	);
-
+	
+	cleanup:
+	if (adapter_proxy) g_object_unref(adapter_proxy);
+	if (result) g_variant_unref(result);
 	if (error) {
 		printf("Error starting discovery: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
 
-	if (result) g_variant_unref(result);
-
 	return 0;
 }
 
-int64_t BTAudioController::stop_discovery(GDBusProxy *proxy) {
+int64_t BTAudioController::stop_discovery() {
 	GError *error = nullptr;
+	GVariant *result = nullptr;
+	GDBusProxy *adapter_proxy = nullptr;
 
-	GVariant *result = g_dbus_proxy_call_sync(
-			proxy,
-			"StopDiscovery",
-			nullptr,
-			G_DBUS_CALL_FLAGS_NONE,
-			10000,
-			nullptr,
-			&error
-		);
+	adapter_proxy = this->create_adapter_proxy();
+	if (adapter_proxy == nullptr) {
+		printf("Error creating adapter object_manager_proxy: %s\n", error->message);
+		goto cleanup;
+	}
+
+	result = g_dbus_proxy_call_sync(
+		adapter_proxy,
+		"StopDiscovery",
+		nullptr,
+		G_DBUS_CALL_FLAGS_NONE,
+		10000,
+		nullptr,
+		&error
+	);
 	
+	cleanup:
+	if (adapter_proxy) g_object_unref(adapter_proxy);
+	if (result) g_variant_unref(result);
 	if (error) {
-		printf("Error stopping discovery: %s\n", error->message);
+		printf("Error starting discovery: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
-
-	if (result) g_variant_unref(result);
 
 	return 0;
 }
@@ -111,52 +129,28 @@ int64_t BTAudioController::get_discovered_devices(vector<BlueZDevice>& devices) 
 	return device_count;
 }
 
-int64_t BTAudioController::scan_devices(vector<BlueZDevice>& devices, uint64_t timeout_sec) {
-	GError *error = nullptr;
-	bool error_occurred = false;
-
-	devices.clear();
-
-	GDBusProxy *adapter_proxy = this->create_adapter_proxy();
-	if (adapter_proxy == nullptr) {
-		printf("Error creating adapter object_manager_proxy: %s\n", error->message);
-		error_occurred = true;
-		goto cleanup;
+int64_t BTAudioController::find_device_idx(vector<BlueZDevice>& devices, string address) {
+	for (uint64_t idx = 0; idx < devices.size(); idx++) {
+		if (devices[idx].address == address) {
+			return idx;
+		}
 	}
-
-	if (this->start_discovery(adapter_proxy) < 0) {
-		printf("Failed to start discovery\n");
-		error_occurred = true;
-		goto cleanup;
-	}
-
-	this_thread::sleep_for(std::chrono::seconds(timeout_sec));
-
-	if (this->stop_discovery(adapter_proxy) < 0) {
-		printf("Failed to stop discovery\n");
-		error_occurred = true;
-		goto cleanup;
-	}
-
-	if (this->get_discovered_devices(devices) < 0) {
-		printf("Failed to scan devices\n");
-		error_occurred = true;
-		goto cleanup;
-	}
-
-	cleanup:
-	if (adapter_proxy) g_object_unref(adapter_proxy);
-	if (error_occurred) return -1;
-	
-	return 0;
+	return -1;
 }
 
-int64_t BTAudioController::pair_device(GDBusProxy *proxy) {
-	if (proxy == nullptr) return -1;
+int64_t BTAudioController::pair_device(BlueZDevice& device) {
+	bool found_error = false;
 	GError* error = nullptr;
+	GVariant *result = nullptr;
+	GDBusProxy *device_proxy = nullptr;
 
-	GVariant *result = g_dbus_proxy_call_sync(
-		proxy,
+	device_proxy = this->create_device_proxy(device);
+	if (device_proxy == nullptr) {
+		goto cleanup;
+	}
+
+	result = g_dbus_proxy_call_sync(
+		device_proxy,
 		"Pair",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
@@ -165,121 +159,62 @@ int64_t BTAudioController::pair_device(GDBusProxy *proxy) {
 		&error
 	);
 
-	if (error) {
+	cleanup:
+	if (device_proxy) g_object_unref(device_proxy);
+	if (result) g_variant_unref(result);
+	if (found_error || error) {
 		printf("Error pairing to device: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
 
-	if (result) g_variant_unref(result);
-
 	return 0;
 }
 
-int64_t BTAudioController::connect_to_device(GDBusProxy *proxy) {
-	if (proxy == nullptr) return -1;
+int64_t BTAudioController::connect_device(BlueZDevice& device) {
+	bool found_error = false;
 	GError* error = nullptr;
+	GVariant *result = nullptr;
+	GDBusProxy *device_proxy = nullptr;
 
-	GVariant *result = g_dbus_proxy_call_sync(
-		proxy,
-		"Connect",
-		nullptr,
+	device_proxy = this->create_device_proxy(device);
+	if (device_proxy == nullptr) {
+		goto cleanup;
+	}
+
+	result = g_dbus_proxy_call_sync(
+		device_proxy,
+		"ConnectProfile",
+		g_variant_new("(s)", A2DP_SINK_UUID),
 		G_DBUS_CALL_FLAGS_NONE,
 		10000,
 		nullptr,
 		&error
 	);
 
-	if (error) {
+	cleanup:
+	if (device_proxy) g_object_unref(device_proxy);
+	if (result) g_variant_unref(result);
+	if (found_error || error) {
 		printf("Error connecting to device: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
 
-	if (result) g_variant_unref(result);
-
 	return 0;
 }
 
-int64_t BTAudioController::connect_to_device_profile(GDBusProxy *proxy, const char *uuid) {
-	if (proxy == nullptr) return -1;
-	GError* error = nullptr;
-
-	GVariant *result = g_dbus_proxy_call_sync(
-		proxy,
-		"ConnectProfile",
-		g_variant_new("(s)", uuid),
-		G_DBUS_CALL_FLAGS_NONE,
-		10000,
-		nullptr,
-		&error
-	);
-
-	if (error) {
-		printf("Error connecting to profile: %s\n", error->message);
-		g_error_free(error);
-		return -1;
-	}
-
-	if (result) g_variant_unref(result);
-
-	return 0;
-}
-
-int64_t BTAudioController::pair_and_connect_device(BlueZDevice *device) {
-	bool error = false;
+bool BTAudioController::is_paired(BlueZDevice& device) {
+	bool is_paired = false;
+	GVariant *result = nullptr;
 	GDBusProxy *device_proxy = nullptr;
 
 	device_proxy = this->create_device_proxy(device);
 	if (device_proxy == nullptr) {
-		printf("Failed to create device proxy\n");
-		error = true;
 		goto cleanup;
 	}
 
-	if (!this->is_paired(device_proxy)) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		if (pair_device(device_proxy) < 0) {
-			printf("Failed to pair device\n");
-			error = true;
-			goto cleanup;
-		}
-	}
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-
-	if (!this->is_connected(device_proxy)) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		if (connect_to_device_profile(device_proxy, A2DP_SINK_UUID) < 0) {
-			printf("Failed to connect device profile\n");
-			error = true;
-			goto cleanup;
-		}
-	}
-
-	cleanup:
-	if (device_proxy) g_object_unref(device_proxy);
-	
-	if (error) return -1;
-	else return 0;
-}
-
-BlueZDevice* BTAudioController::find_device(vector<BlueZDevice>& devices, string address) {
-	for (uint64_t idx = 0; idx < devices.size(); idx++) {
-		if (devices[idx].address == address) {
-			return &devices[idx];
-		}
-	}
-	return nullptr;
-}
-
-bool BTAudioController::is_paired(GDBusProxy *proxy) {
-	if (proxy == nullptr) return false;
-
-	GVariant *result = nullptr;
-	bool is_paired = false;
-
-	result = this->get_proxy_property(proxy, BLUEZ_DEVICE_IFACE, "Paired");
+	result = this->get_proxy_property(device_proxy, BLUEZ_DEVICE_IFACE, "Paired");
 	if (result == nullptr) {
 		printf("Failed to get 'Paired' property\n");
 		goto cleanup;
@@ -289,17 +224,22 @@ bool BTAudioController::is_paired(GDBusProxy *proxy) {
 
 	cleanup:
 	g_variant_unref(result);
+	g_object_unref(device_proxy);
 	
 	return is_paired;
 }
 
-bool BTAudioController::is_connected(GDBusProxy *proxy) {
-	if (proxy == nullptr) return false;
-
-	GVariant *result = nullptr;
+bool BTAudioController::is_connected(BlueZDevice& device) {
 	bool is_connected = false;
+	GVariant *result = nullptr;
+	GDBusProxy *device_proxy = nullptr;
 
-	result = this->get_proxy_property(proxy, BLUEZ_DEVICE_IFACE, "Connected");
+	device_proxy = this->create_device_proxy(device);
+	if (device_proxy == nullptr) {
+		goto cleanup;
+	}
+
+	result = this->get_proxy_property(device_proxy, BLUEZ_DEVICE_IFACE, "Connected");
 	if (result == nullptr) {
 		printf("Failed to get 'Connected' property\n");
 		goto cleanup;
@@ -309,6 +249,7 @@ bool BTAudioController::is_connected(GDBusProxy *proxy) {
 
 	cleanup:
 	g_variant_unref(result);
+	g_object_unref(device_proxy);
 	
 	return is_connected;
 }

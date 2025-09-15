@@ -70,13 +70,13 @@ GDBusProxy* BTController::create_adapter_proxy() {
 	return adapter_proxy;
 }
 
-GDBusProxy* BTController::create_device_proxy(BlueZDevice *device) {
+GDBusProxy* BTController::create_device_proxy(BlueZDevice& device) {
 	GError* error = nullptr;
 
 	char device_path[BUFFER_SIZE_L] = {0};
 	char device_addr[BUFFER_SIZE_S] = {0};
 
-	this->addr_to_path(device->address, device_addr, BUFFER_SIZE_S);
+	this->addr_to_path(device.address, device_addr, BUFFER_SIZE_S);
 
 	snprintf(device_path, BUFFER_SIZE_L, "%s/dev_%s", BLUEZ_ADAPTER_PATH, device_addr);
 	device_path[BUFFER_SIZE_L - 1] = '\0';

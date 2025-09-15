@@ -6,13 +6,19 @@
 #include <vector>
 
 #define HEALTH_CHECK_COMMAND "health_check"
-#define SCAN_COMMAND "scan"
-#define CONNECT_COMMAND "connect"
+#define START_DISCOVERY_COMMAND "start_discovery"
+#define STOP_DISCOVERY_COMMAND "stop_discovery"
+#define GET_DEVICES_COMMAND "get_devices"
+#define PAIR_DEVICE_COMMAND "pair_device"
+#define CONNECT_DEVICE_COMMAND "connect_device"
 
 enum COMMAND_CODE {
 	HEALTH_CHECK_CODE,
-	SCAN_CODE,
-	CONNECT_CODE,
+  START_DISCOVERY_CODE,
+  STOP_DISCOVERY_CODE,
+  GET_DEVICES_CODE,
+  PAIR_DEVICE_CODE,
+	CONNECT_DEVICE_CODE,
 };
 
 
@@ -39,8 +45,11 @@ private:
   int64_t map_command_to_code(const string& command);
 
   string health_check_command();
-  string scan_command();
-  string connect_command(vector<string>& args);
+  string start_discovery_command();
+  string stop_discovery_command();
+  string get_devices_command();
+  string pair_device_command(vector<string>& args);
+  string connect_device_command(vector<string>& args);
 
   ConfigModule();
   ~ConfigModule() = default;

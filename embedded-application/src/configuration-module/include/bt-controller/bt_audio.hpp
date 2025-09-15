@@ -14,10 +14,16 @@ public:
 
   static BTAudioController& get_instance();
 
-	int64_t scan_devices(vector<BlueZDevice>& devices, uint64_t timeout_sec);
-	BlueZDevice* find_device(vector<BlueZDevice>& devices, string address);
-	int64_t pair_and_connect_device(BlueZDevice *device);
+	int64_t start_discovery();
+	int64_t stop_discovery();
+	int64_t get_discovered_devices(vector<BlueZDevice>& devices);
+	int64_t find_device_idx(vector<BlueZDevice>& devices, string address);
+	int64_t pair_device(BlueZDevice& device);
+	int64_t connect_device(BlueZDevice& device);
 
+	bool is_paired(BlueZDevice& device);
+	bool is_connected(BlueZDevice& device);
+	bool get_boolean_value(GVariant *variant);	
 
 	void start();
 	void cleanup(vector<BlueZDevice>& devices);
@@ -25,17 +31,6 @@ private:
 	GMainLoop *main_loop;
 	BlueZDevice *connected_device;
 	
-	int64_t start_discovery(GDBusProxy *proxy);
-	int64_t stop_discovery(GDBusProxy *proxy);
-	int64_t get_discovered_devices(vector<BlueZDevice>& devices);
-	int64_t pair_device(GDBusProxy *proxy);
-	int64_t connect_to_device(GDBusProxy *proxy);
-	int64_t connect_to_device_profile(GDBusProxy *proxy, const char *uuid);
-	
-	bool is_paired(GDBusProxy *proxy);
-	bool is_connected(GDBusProxy *proxy);
-	bool get_boolean_value(GVariant *variant);
-
 	BTAudioController();
 	~BTAudioController() = default;
 };

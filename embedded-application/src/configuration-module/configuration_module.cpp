@@ -31,8 +31,11 @@ vector<string> ConfigModule::split(const string& s, char delim) {
 
 int64_t ConfigModule::map_command_to_code(const string& command) {
 	if (command == HEALTH_CHECK_COMMAND) return HEALTH_CHECK_CODE;
-	else if (command == SCAN_COMMAND) return SCAN_CODE;
-	else if (command == CONNECT_COMMAND) return CONNECT_CODE;
+	else if (command == START_DISCOVERY_COMMAND) return START_DISCOVERY_CODE;
+	else if (command == STOP_DISCOVERY_COMMAND) return STOP_DISCOVERY_CODE;
+	else if (command == GET_DEVICES_COMMAND) return GET_DEVICES_CODE;
+	else if (command == PAIR_DEVICE_COMMAND) return PAIR_DEVICE_CODE;
+	else if (command == CONNECT_DEVICE_COMMAND) return CONNECT_DEVICE_CODE;
 	else return -1;
 }
 
@@ -41,10 +44,22 @@ string ConfigModule::health_check_command() {
 	return "OK";
 }
 
-string ConfigModule::scan_command() {
-	printf("Scanning for audio devices...\n");
+string ConfigModule::start_discovery_command() {
+	printf("Starting discovery...\n");
+	this->found_devices.clear();
+	BTAudioController::get_instance().start_discovery();
+	return "Discovery started";
+}
 
-	BTAudioController::get_instance().scan_devices(found_devices, 3);
+string ConfigModule::stop_discovery_command() {
+	printf("Stopping discovery...\n");
+	BTAudioController::get_instance().stop_discovery();
+	return "Discovery stopped";
+}
+
+string ConfigModule::get_devices_command() {
+	printf("Getting discovered devices...\n");
+	BTAudioController::get_instance().get_discovered_devices(this->found_devices);
 
 	string response = "";
 	for (const auto& device : found_devices) {
@@ -55,26 +70,56 @@ string ConfigModule::scan_command() {
 	return response;
 }
 
-string ConfigModule::connect_command(vector<string>& args) {
-	printf("Connect command with %zu args\n", args.size());
-	
-	if (args.size() != 1 || args[0].empty() ) {
+string ConfigModule::pair_device_command(vector<string>& args) {
+	if (args.size() != 1 || args[0].empty()) {
+		return "#Error: No device address provided";
+	}
+
+	printf("Pairing with audio device %s...\n", args[0].c_str());
+	string address = args[0];
+	int64_t device_idx = BTAudioController::get_instance().find_device_idx(this->found_devices, address);
+
+	if (device_idx < 0) {
+		return "#Error: Device not found";
+	}
+
+	BlueZDevice& device = this->found_devices[device_idx];
+
+	if (BTAudioController::get_instance().is_paired(device)) {
+		return "Device already paired: " + string(device.name);
+	}
+
+	if (BTAudioController::get_instance().pair_device(device) < 0) {
+		return "#Error: Failed to pair with device";
+	}
+
+	return "Paired with device: " + string(device.name);
+}
+
+string ConfigModule::connect_device_command(vector<string>& args) {
+	if (args.size() != 1 || args[0].empty()) {
 		return "#Error: No device address provided";
 	}
 	
 	printf("Connecting to audio device %s...\n", args[0].c_str());
 	string address = args[0];
-	BlueZDevice* device = BTAudioController::get_instance().find_device(found_devices, address);
+	int64_t device_idx = BTAudioController::get_instance().find_device_idx(this->found_devices, address);
 
-	if (device == nullptr) {
+	if (device_idx < 0) {
 		return "#Error: Device not found";
 	}
 
-	if (BTAudioController::get_instance().pair_and_connect_device(device) < 0) {
+	BlueZDevice& device = this->found_devices[device_idx];
+
+	if (BTAudioController::get_instance().is_connected(device)) {
+		return "Device already connected: " + string(device.name);
+	}
+
+	if (BTAudioController::get_instance().connect_device(device) < 0) {
 		return "#Error: Failed to connect to device";
 	}
 
-	return "Connected to device: " + string(device->name);
+	return "Connected to device: " + string(device.name);
 }
 
 void ConfigModule::process_command(const string& command) {
@@ -97,12 +142,24 @@ void ConfigModule::process_command(const string& command) {
 			response = this->health_check_command();
 			break;
 		}
-		case SCAN_CODE: {
-			response = this->scan_command();
+		case START_DISCOVERY_CODE: {
+			response = this->start_discovery_command();
 			break;
 		}
-		case CONNECT_CODE: {
-			response = this->connect_command(tokens);
+		case STOP_DISCOVERY_CODE: {
+			response = this->stop_discovery_command();
+			break;
+		}
+		case GET_DEVICES_CODE: {
+			response = this->get_devices_command();
+			break;
+		}
+		case PAIR_DEVICE_CODE: {
+			response = this->pair_device_command(tokens);
+			break;
+		}
+		case CONNECT_DEVICE_CODE: {
+			response = this->connect_device_command(tokens);
 			break;
 		}
 		default: {
