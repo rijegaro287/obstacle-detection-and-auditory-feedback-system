@@ -18,7 +18,6 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY
 import android.content.Context
 import android.os.Build
 import android.os.ParcelUuid
@@ -26,6 +25,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,8 +38,13 @@ const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
 
 object COMMANDS {
     const val HEALTH_CHECK = "health_check"
-    const val SCAN = "scan"
-    const val CONNECT = "connect"
+    const val AUDIO_HEALTH_CHECK = "audio_health_check"
+    const val START_DISCOVERY = "start_discovery"
+    const val STOP_DISCOVERY = "stop_discovery"
+    const val GET_DEVICES = "get_devices"
+    const val PAIR_DEVICE = "pair_device"
+    const val CONNECT_DEVICE = "connect_device"
+    const val DISCONNECT_DEVICE = "disconnect_device"
 }
 
 
@@ -73,8 +78,8 @@ object BLEController {
     private val _connected = MutableStateFlow(false)
     val connected: StateFlow<Boolean> = _connected.asStateFlow()
 
-    private val _scanning = MutableStateFlow(false)
-    val scanning: StateFlow<Boolean> = _scanning.asStateFlow()
+    private val _discovering = MutableStateFlow(false)
+    val discovering: StateFlow<Boolean> = _discovering.asStateFlow()
 
     fun init(context: Context) {
         appContext = context.applicationContext as Application
@@ -126,8 +131,9 @@ object BLEController {
 
     private var pendingTransaction: CompletableDeferred<ByteArray?>? = null
 
-    private var failedHealthChecks = 0;
-    private var failedHealthChecksThreshold = 8;
+    private var failedHealthChecks = 0
+    private var failedAudioHealthChecks = 0
+    private var failedHealthChecksThreshold = 8
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -156,7 +162,7 @@ object BLEController {
         }
 
         try {
-            return withTimeout(10000) {
+            return withTimeout(20000) {
                 pendingTransaction?.await()
             }
         }
@@ -178,7 +184,6 @@ object BLEController {
     private val gattCallback = object : BluetoothGattCallback() {
         @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            Log.d("BLE Controller", "Gatt connection state changed: $newState")
             when (newState) {
                 BluetoothGatt.STATE_CONNECTED -> {
                     Log.d("BLE Controller", "Gatt connection state changed: Connected")
@@ -277,8 +282,7 @@ object BLEController {
 
         val filters = listOf<ScanFilter>()
         val settings = ScanSettings.Builder()
-            .setScanMode(SCAN_MODE_LOW_LATENCY)
-            .setReportDelay(0L)
+            .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
             .build()
 
         try {
@@ -312,13 +316,14 @@ object BLEController {
         _serviceConnection.value = null
         _characteristicConnection.value = null
 
+        _discovering.value = false
         _connecting.value = false
         _connected.value = false
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun sendCommand(command: String) : String {
+    private suspend fun sendCommand(command: String) : String {
         if (_gattConnection.value == null ||
             _serviceConnection.value == null ||
             _characteristicConnection.value == null
@@ -340,7 +345,6 @@ object BLEController {
             return resultString
         }
         catch (e: Exception) {
-            Log.e("BLE Controller", "Error sending command: ${e.message}")
             return "#${e.message}"
         }
     }
@@ -357,6 +361,8 @@ object BLEController {
 
         failedHealthChecks++
         if (failedHealthChecks >= failedHealthChecksThreshold) {
+            Log.e("BLE Controller", "Health check failed $failedHealthChecks times in a row")
+            failedHealthChecks = 0
             disconnectFromDevice()
         }
         return false
@@ -364,19 +370,55 @@ object BLEController {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun scanForDevices() : List<BTDevice>{
-        if (_scanning.value) return emptyList()
-        _scanning.value = true
+    suspend fun audioHealthCheck() : Boolean {
+        val response = sendCommand("${COMMANDS.AUDIO_HEALTH_CHECK}!")
 
-        val response = sendCommand("${COMMANDS.SCAN}!")
-        if (response[0] == '#') {
-            _scanning.value = false
+        if (response[0] != '#') {
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        failedAudioHealthChecks++
+        if (failedAudioHealthChecks >= failedHealthChecksThreshold) {
+            Log.e("BLE Controller", "Audio health check failed $failedAudioHealthChecks times in a row")
+            failedAudioHealthChecks = 0
+        }
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun scanForAudioDevices(scanningTime: Long = 10000) : List<BTDevice>{
+        if (_discovering.value) return emptyList()
+        _discovering.value = true
+
+        val startDiscoveryResponse = sendCommand("${COMMANDS.START_DISCOVERY}!")
+        if (startDiscoveryResponse[0] == '#') {
+            Log.e("BLE Controller", "Error starting audio device discovery: $startDiscoveryResponse")
+            _discovering.value = false
+            return emptyList()
+        }
+
+        delay(scanningTime)
+
+        val stopDiscoveryResponse = sendCommand("${COMMANDS.STOP_DISCOVERY}!")
+        if (stopDiscoveryResponse[0] == '#') {
+            Log.e("BLE Controller", "Error stopping audio device discovery: $stopDiscoveryResponse")
+            _discovering.value = false
+            return emptyList()
+        }
+
+        delay(100)
+
+        val getDevicesResponse = sendCommand("${COMMANDS.GET_DEVICES}!")
+        if (getDevicesResponse[0] == '#') {
+            Log.e("BLE Controller", "Error getting audio devices: $getDevicesResponse")
             return emptyList()
         }
 
         val result = mutableListOf<BTDevice>()
 
-        val devicesString = response.split('$')
+        val devicesString = getDevicesResponse.split('$')
         for (deviceString in devicesString) {
             val deviceInfo = deviceString.split('@')
 
@@ -388,24 +430,37 @@ object BLEController {
             result.add(BTDevice(deviceName, deviceAddress))
         }
 
-        _scanning.value = false
+        _discovering.value = false
+        failedHealthChecks = 0
 
         return result
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun connectToDevice(device: BTDevice) : Boolean {
+    suspend fun pairAndConnectAudioDevice(device: BTDevice) : Boolean {
         if (_connecting.value) return false
         _connecting.value = true
 
-        val response = sendCommand("${COMMANDS.CONNECT}!${device.address}")
-        if (response[0] == '#') {
+        val pairResponse = sendCommand("${COMMANDS.PAIR_DEVICE}!${device.address}")
+        if (pairResponse[0] == '#') {
+            Log.e("BLE Controller", "Error pairing device: $pairResponse")
+            _connecting.value = false
+            return false
+        }
+
+        delay(10000)
+
+        val connectResponse = sendCommand("${COMMANDS.CONNECT_DEVICE}!${device.address}")
+        if (connectResponse[0] == '#') {
+            Log.e("BLE Controller", "Error connecting to device: $connectResponse")
             _connecting.value = false
             return false
         }
 
         _connecting.value = false
+        failedHealthChecks = 0
+
         return true
     }
 }
