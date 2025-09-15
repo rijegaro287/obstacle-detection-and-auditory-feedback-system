@@ -29,7 +29,7 @@ int64_t BTAudioController::start_discovery(GDBusProxy *proxy) {
 		"StartDiscovery",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		5000,
+		10000,
 		nullptr,
 		&error
 	);
@@ -53,7 +53,7 @@ int64_t BTAudioController::stop_discovery(GDBusProxy *proxy) {
 			"StopDiscovery",
 			nullptr,
 			G_DBUS_CALL_FLAGS_NONE,
-			5000,
+			10000,
 			nullptr,
 			&error
 		);
@@ -238,6 +238,7 @@ int64_t BTAudioController::pair_and_connect_device(BlueZDevice *device) {
 	}
 
 	if (!this->is_paired(device_proxy)) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		if (pair_device(device_proxy) < 0) {
 			printf("Failed to pair device\n");
 			error = true;
@@ -245,7 +246,10 @@ int64_t BTAudioController::pair_and_connect_device(BlueZDevice *device) {
 		}
 	}
 
+	std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
 	if (!this->is_connected(device_proxy)) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		if (connect_to_device_profile(device_proxy, A2DP_SINK_UUID) < 0) {
 			printf("Failed to connect device profile\n");
 			error = true;

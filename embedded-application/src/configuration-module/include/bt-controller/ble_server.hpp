@@ -38,6 +38,7 @@ static const char *ADV_XML =
 "    <property name='Discoverable' type='b' access='read'/>"
 "    <property name='DiscoverableTimeout' type='q' access='read'/>"
 "    <property name='ScanResponseServiceUUIDs' type='as' access='read'/>"
+"    <property name='ServiceUUIDs' type='as' access='read'/>"
 "  </interface>"
 "</node>";
 

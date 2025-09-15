@@ -109,7 +109,7 @@ GVariant* BTController::get_managed_objects(GDBusProxy *proxy) {
 		"GetManagedObjects",
 		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
-		3000,
+		10000,
 		nullptr,
 		&error
 	);
@@ -136,7 +136,7 @@ GVariant* BTController::get_proxy_property(GDBusProxy *proxy,
 		"org.freedesktop.DBus.Properties.Get",
 		g_variant_new("(ss)", interface, property),
 		G_DBUS_CALL_FLAGS_NONE,
-		3000,
+		10000,
 		nullptr,
 		&error
 	);
@@ -164,7 +164,7 @@ int64_t BTController::set_proxy_property(GDBusProxy *proxy,
 		"org.freedesktop.DBus.Properties.Set",
 		g_variant_new("(ssv)", interface, property, value),
 		G_DBUS_CALL_FLAGS_NONE,
-		3000,
+		10000,
 		nullptr,
 		&error
 	);
