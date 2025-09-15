@@ -167,10 +167,21 @@ fun ScanningView(
                 }
                 else {
                     Spacer(modifier = Modifier.height(20.dp))
-                    LazyColumn {
-                        items(foundDevices) { device ->
-                            DeviceCard(device.name) { selectedDevice = device }
-                            Spacer(modifier = Modifier.height(8.dp))
+
+                    if (foundDevices.isEmpty()) {
+                        Text(
+                            text = "No se encontraron dispositivos de audio disponibles",
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    else {
+                        LazyColumn {
+                            items(foundDevices) { device ->
+                                DeviceCard(device.name) { selectedDevice = device }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
                         }
                     }
                 }

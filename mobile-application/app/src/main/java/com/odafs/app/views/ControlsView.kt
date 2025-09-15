@@ -1,5 +1,9 @@
 package com.odafs.app.views
 
+import android.Manifest
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,12 +43,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.odafs.app.ble.BLEController
 import com.odafs.app.components.CommandButton
 import com.odafs.app.components.TopBar
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
 fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2050)
+            BLEController.healthCheck()
+        }
+    }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2550)
+            if (!BLEController.audioHealthCheck()) {
+                navigateToScanning()
+            }
+        }
+    }
+
     Scaffold(
         topBar = { TopBar(title = deviceName) }
     ) { innerPadding ->

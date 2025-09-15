@@ -38,11 +38,13 @@ const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
 
 object COMMANDS {
     const val HEALTH_CHECK = "health_check"
+    const val AUDIO_HEALTH_CHECK = "audio_health_check"
     const val START_DISCOVERY = "start_discovery"
     const val STOP_DISCOVERY = "stop_discovery"
     const val GET_DEVICES = "get_devices"
     const val PAIR_DEVICE = "pair_device"
     const val CONNECT_DEVICE = "connect_device"
+    const val DISCONNECT_DEVICE = "disconnect_device"
 }
 
 
@@ -130,6 +132,7 @@ object BLEController {
     private var pendingTransaction: CompletableDeferred<ByteArray?>? = null
 
     private var failedHealthChecks = 0
+    private var failedAudioHealthChecks = 0
     private var failedHealthChecksThreshold = 8
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -342,7 +345,6 @@ object BLEController {
             return resultString
         }
         catch (e: Exception) {
-            Log.e("BLE Controller", "Error sending command: ${e.message}")
             return "#${e.message}"
         }
     }
@@ -362,6 +364,24 @@ object BLEController {
             Log.e("BLE Controller", "Health check failed $failedHealthChecks times in a row")
             failedHealthChecks = 0
             disconnectFromDevice()
+        }
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun audioHealthCheck() : Boolean {
+        val response = sendCommand("${COMMANDS.AUDIO_HEALTH_CHECK}!")
+
+        if (response[0] != '#') {
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        failedAudioHealthChecks++
+        if (failedAudioHealthChecks >= failedHealthChecksThreshold) {
+            Log.e("BLE Controller", "Audio health check failed $failedAudioHealthChecks times in a row")
+            failedAudioHealthChecks = 0
         }
         return false
     }
