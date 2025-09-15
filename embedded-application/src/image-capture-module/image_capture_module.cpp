@@ -136,13 +136,15 @@ void ImageCaptureModule::start(){
 
         Frame frame = preprocessDepth(); // imagen preprocesada
         if (!frame.image.empty()) {
-            std::cout << "Alto: " << frame.image.rows << ", Ancho: " << frame.image.cols << std::endl;
             IControl::set_frame(frame);
             //cv::imshow("Preprocessed Depth Preview", frame.image);
         }
 
-        int key = cv::waitKey(1);
-        if (key == 27 || key == 'q') break;
+        // int key = cv::waitKey(1);
+        // if (key == 27 || key == 'q') break;
+        
+        uint64_t fps = 5 ; // frecuencia de captura deseada
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000/fps)); // ajustar frecuencia de captura
     }
 }
 

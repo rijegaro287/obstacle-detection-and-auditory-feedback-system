@@ -377,7 +377,6 @@ void ObstacleDetectionModule::start(){
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         Frame frame = IControl::get_frame();
-        std::cout << "OBS= Alto: " << frame.image.rows << ", Ancho: " << frame.image.cols << std::endl;
         cv::Mat depth = frame.depthMap;
         cv::Mat img = frame.image;
 
@@ -399,7 +398,6 @@ void ObstacleDetectionModule::start(){
             //Set obstaculo
             IControl::set_obstacle(obs);
         }
-        printf("__________________________");
 
         /*int key = cv::waitKey(1);
         if (key == 27 || key == 'q') break;*/

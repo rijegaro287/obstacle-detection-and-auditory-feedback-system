@@ -76,38 +76,38 @@ void ControlModule::unlock_mutexes() {
 void ControlModule::start() {
   this->unlock_mutexes();
 
-  vector<vector<float>> test_positions = {
-    {  0.0f,   0.0f, 0.5f}, // FRONT
-    {  0.0f,  10.0f, 0.5f}, // ABOVE
-    {  0.0f, -10.0f, 0.5f}, // BELOW
-    {340.0f, 	 0.0f, 0.5f}, // RIGHT
-    { 25.0f,   0.0f, 0.5f}, // LEFT
-    {340.0f,  10.0f, 0.5f}, // ABOVE RIGHT
-    { 25.0f,  10.0f, 0.5f}, // ABOVE LEFT
-    {340.0f, -10.0f, 0.5f}, // BELOW RIGHT
-    { 25.0f, -10.0f, 0.5f}, // BELOW LEFT
-  };
+  // vector<vector<float>> test_positions = {
+  //   {  0.0f,   0.0f, 0.5f}, // FRONT
+  //   {  0.0f,  10.0f, 0.5f}, // ABOVE
+  //   {  0.0f, -10.0f, 0.5f}, // BELOW
+  //   {340.0f, 	 0.0f, 0.5f}, // RIGHT
+  //   { 25.0f,   0.0f, 0.5f}, // LEFT
+  //   {340.0f,  10.0f, 0.5f}, // ABOVE RIGHT
+  //   { 25.0f,  10.0f, 0.5f}, // ABOVE LEFT
+  //   {340.0f, -10.0f, 0.5f}, // BELOW RIGHT
+  //   { 25.0f, -10.0f, 0.5f}, // BELOW LEFT
+  // };
 
-  bool mode = false;
+  // bool mode = false;
 
-  while (true) {
-    // if (mode) {
-    //   IFeedback::set_feedback_mode(VERBAL_MODE);
-    // } 
-    // else {
-    //   IFeedback::set_feedback_mode(NON_VERBAL_MODE);
-    // }
+  // while (true) {
+  //   // if (mode) {
+  //   //   IFeedback::set_feedback_mode(VERBAL_MODE);
+  //   // } 
+  //   // else {
+  //   //   IFeedback::set_feedback_mode(NON_VERBAL_MODE);
+  //   // }
 
-    for (const auto& position : test_positions) {
-      Obstacle obstacle = Obstacle();
-      obstacle.azimuth = position[0];
-      obstacle.elevation = position[1];
-      obstacle.meanDepth = position[2];
+  //   // for (const auto& position : test_positions) {
+  //   //   Obstacle obstacle = Obstacle();
+  //   //   obstacle.azimuth = position[0];
+  //   //   obstacle.elevation = position[1];
+  //   //   obstacle.meanDepth = position[2];
 
-      IControl::set_obstacle(obstacle);
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
+  //   //   IControl::set_obstacle(obstacle);
+  //   //   std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  //   // }
 
-    mode = !mode;
-  }
+  //   // mode = !mode;
+  // }
 }

@@ -206,7 +206,7 @@ void FeedbackModule::start() {
 	while (true) {
 		Obstacle obstacle = IControl::get_obstacle();
 		if (obstacle.meanDepth == 0) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue;
 		}
 		printf("Obstacle Position - Azimuth: %.2f, Elevation: %.2f, Distance: %.2f\n", 
@@ -214,6 +214,6 @@ void FeedbackModule::start() {
 
 		this->generate_feedback(obstacle);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
 }
