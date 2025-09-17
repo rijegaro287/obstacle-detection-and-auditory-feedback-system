@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.odafs.app.logic.processCommand
 import java.util.Locale
 
 @Composable
@@ -37,6 +38,7 @@ fun CommandButton(modifier: Modifier = Modifier) {
             val spoken = matches?.get(0) ?: ""
             speechText.value = spoken
             Toast.makeText(context, "Dijiste: $spoken", Toast.LENGTH_LONG).show()
+            processCommand(context, spoken)
         } else {
             Toast.makeText(context, "No se pudo reconocer tu voz", Toast.LENGTH_SHORT).show()
         }
