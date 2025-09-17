@@ -4,6 +4,7 @@ import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.BLUETOOTH
 import android.Manifest.permission.BLUETOOTH_CONNECT
 import android.Manifest.permission.BLUETOOTH_SCAN
+import android.app.ComponentCaller
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Intent
@@ -11,14 +12,18 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import androidx.compose.ui.Modifier
 import com.odafs.app.ble.BLEController
+import com.odafs.app.components.CommandButton
 import com.odafs.app.ui.theme.ODAFSTheme
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
@@ -65,7 +70,7 @@ class MainActivity : ComponentActivity() {
             BLUETOOTH_CONNECT,
             ACCESS_FINE_LOCATION
         ))
-        showEnableBluetoothDialog()
+        //showEnableBluetoothDialog()
 
         BLEController.init(applicationContext)
     }
@@ -78,7 +83,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ODAFSTheme {
-                NavigationController()
+                //NavigationController()
+                CommandButton(modifier = Modifier)
             }
         }
     }
