@@ -37,6 +37,7 @@ int64_t ConfigModule::map_command_to_code(const string& command) {
 	else if (command == GET_DEVICES_COMMAND) return GET_DEVICES_CODE;
 	else if (command == PAIR_DEVICE_COMMAND) return PAIR_DEVICE_CODE;
 	else if (command == CONNECT_DEVICE_COMMAND) return CONNECT_DEVICE_CODE;
+	else if (command == DISCONNECT_DEVICE_COMMAND) return DISCONNECT_DEVICE_CODE;
 	else return -1;
 }
 
@@ -90,6 +91,7 @@ string ConfigModule::get_devices_command() {
 
 string ConfigModule::pair_device_command(vector<string>& args) {
 	if (args.size() != 1 || args[0].empty()) {
+		printf("No device address provided\n");
 		return "#Error: No device address provided";
 	}
 
@@ -98,6 +100,7 @@ string ConfigModule::pair_device_command(vector<string>& args) {
 	int64_t device_idx = BTAudioController::get_instance().find_device_idx(this->found_devices, address);
 
 	if (device_idx < 0) {
+		printf("Device not found: %s\n", address.c_str());
 		return "#Error: Device not found";
 	}
 
@@ -108,6 +111,7 @@ string ConfigModule::pair_device_command(vector<string>& args) {
 	}
 
 	if (BTAudioController::get_instance().pair_device(device) < 0) {
+		printf("Failed to pair with device: %s\n", device.name);
 		return "#Error: Failed to pair with device";
 	}
 
@@ -116,6 +120,7 @@ string ConfigModule::pair_device_command(vector<string>& args) {
 
 string ConfigModule::connect_device_command(vector<string>& args) {
 	if (args.size() != 1 || args[0].empty()) {
+		printf("No device address provided\n");
 		return "#Error: No device address provided";
 	}
 	
@@ -124,26 +129,28 @@ string ConfigModule::connect_device_command(vector<string>& args) {
 	int64_t device_idx = BTAudioController::get_instance().find_device_idx(this->found_devices, address);
 
 	if (device_idx < 0) {
+		printf("Device not found: %s\n", address.c_str());
 		return "#Error: Device not found";
 	}
 
 	BlueZDevice& device = this->found_devices[device_idx];
+	BTAudioController::get_instance().connected_device = &device;
 
 	if (BTAudioController::get_instance().is_connected(device)) {
 		return "Device already connected: " + string(device.name);
 	}
 
 	if (BTAudioController::get_instance().connect_device(device) < 0) {
+		BTAudioController::get_instance().connected_device = nullptr;
 		return "#Error: Failed to connect to device";
 	}
-
-	BTAudioController::get_instance().connected_device = &device;
 
 	return "Connected to device: " + string(device.name);
 }
 
 string ConfigModule::disconnect_device_command(vector<string>& args) {
 	if (args.size() != 1 || args[0].empty()) {
+		printf("No device address provided\n");
 		return "#Error: No device address provided";
 	}
 	
@@ -152,6 +159,7 @@ string ConfigModule::disconnect_device_command(vector<string>& args) {
 	int64_t device_idx = BTAudioController::get_instance().find_device_idx(this->found_devices, address);
 
 	if (device_idx < 0) {
+		printf("Device not found: %s\n", address.c_str());
 		return "#Error: Device not found";
 	}
 
@@ -162,11 +170,12 @@ string ConfigModule::disconnect_device_command(vector<string>& args) {
 	}
 
 	if (BTAudioController::get_instance().disconnect_device(device) < 0) {
+		printf("Failed to disconnect from device: %s\n", device.name);
 		return "#Error: Failed to disconnect from device";
 	}
 
 	BTAudioController::get_instance().cleanup(this->found_devices);
-
+	
 	return "Disconnected from device: " + string(device.name);
 }
 

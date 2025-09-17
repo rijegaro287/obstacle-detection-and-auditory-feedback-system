@@ -56,6 +56,10 @@ private:
   string pair_device_command(vector<string>& args);
   string connect_device_command(vector<string>& args);
   string disconnect_device_command(vector<string>& args);
+  string start_feedback_command();
+  string stop_feedback_command();
+  string set_volume();
+  string set_feedback_mode();
 
   ConfigModule();
   ~ConfigModule() = default;
