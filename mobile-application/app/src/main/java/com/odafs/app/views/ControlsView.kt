@@ -53,6 +53,7 @@ import kotlin.math.roundToInt
 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
 fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
+    var isPlaying by remember { mutableStateOf(false) }
     var disconnectClicked by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -76,6 +77,19 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
             if (BLEController.disconnectAudioDevice()) {
                 disconnectClicked = false
                 navigateToScanning()
+            }
+        }
+    }
+
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            if (!BLEController.startAudioFeedback()) {
+                isPlaying = false
+            }
+        }
+        else {
+            if (!BLEController.stopAudioFeedback()) {
+                isPlaying = true
             }
         }
     }
@@ -105,8 +119,6 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                             .fillMaxWidth()
                             .padding(vertical = 50.dp)
                         ) {
-                            var isPlaying by remember { mutableStateOf(false) }
-
                             val volumeButtonSize = 65
                             val volumeIconSize = 55
 
