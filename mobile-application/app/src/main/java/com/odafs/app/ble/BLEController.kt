@@ -81,6 +81,8 @@ object BLEController {
     private val _discovering = MutableStateFlow(false)
     val discovering: StateFlow<Boolean> = _discovering.asStateFlow()
 
+    private val _connectedAudioDevice = MutableStateFlow<BTDevice?>(null)
+
     fun init(context: Context) {
         appContext = context.applicationContext as Application
 
@@ -162,7 +164,7 @@ object BLEController {
         }
 
         try {
-            return withTimeout(20000) {
+            return withTimeout(10000) {
                 pendingTransaction?.await()
             }
         }
@@ -458,9 +460,27 @@ object BLEController {
             return false
         }
 
+        _connectedAudioDevice.value = device
         _connecting.value = false
         failedHealthChecks = 0
 
         return true
     }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun disconnectAudioDevice() : Boolean {
+        val response = sendCommand("${COMMANDS.DISCONNECT_DEVICE}!${_connectedAudioDevice.value?.address}")
+
+        if (response[0] != '#') {
+            _connectedAudioDevice.value = null
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        failedAudioHealthChecks++
+        Log.e("BLE Controller", "Error disconnecting from device: $response")
+        return false
+    }
+
 }

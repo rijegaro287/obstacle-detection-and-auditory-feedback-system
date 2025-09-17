@@ -53,16 +53,28 @@ import kotlin.math.roundToInt
 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
 fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
+    var disconnectClicked by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         while (true) {
             delay(2050)
             BLEController.healthCheck()
         }
     }
+
     LaunchedEffect(Unit) {
         while (true) {
             delay(2550)
             if (!BLEController.audioHealthCheck()) {
+                navigateToScanning()
+            }
+        }
+    }
+
+    LaunchedEffect(disconnectClicked) {
+        if (disconnectClicked) {
+            if (BLEController.disconnectAudioDevice()) {
+                disconnectClicked = false
                 navigateToScanning()
             }
         }
@@ -239,7 +251,7 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                         Spacer(modifier = Modifier.height(surfaceVerticalPadding.dp))
 
                         Button(
-                            onClick = {},
+                            onClick = { disconnectClicked = true },
                             shape = RoundedCornerShape(6.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -262,6 +274,8 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Preview
 @Composable
 fun ControlsViewPreview() {
