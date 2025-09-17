@@ -2,7 +2,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 
-#include "image_capture_module.h"
+#include "image_capture_module.hpp"
 #include "image_capture_iface.hpp"
 
 int main() {

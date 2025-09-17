@@ -10,10 +10,10 @@ project(ObstacleDetectionAndAuditoryFeedbackSystem)
 # set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Add all modules as subdirectories
-add_subdirectory(src/control-module)
 add_subdirectory(src/configuration-module)
-# add_subdirectory(src/image-capture-module)
-# add_subdirectory(src/obstacle-detection-module)
+add_subdirectory(src/control-module)
+add_subdirectory(src/image-capture-module)
+add_subdirectory(src/obstacle-detection-module)
 add_subdirectory(src/feedback-module)
 add_subdirectory(src/transmission-module)
 
@@ -22,10 +22,10 @@ add_executable(main
   src/main.cpp
 )
 target_link_libraries(main PUBLIC
-  control_module
   configuration_module
-  # image_capture_module
-  # obstacle_detection_module
+  control_module
+  image_capture_module
+  obstacle_detection_module
   feedback_module
   transmission_module
 )

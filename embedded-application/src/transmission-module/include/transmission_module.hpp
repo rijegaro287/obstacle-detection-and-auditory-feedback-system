@@ -18,8 +18,12 @@ public:
 
   static TransmissionModule& get_instance();
 
+  void start_transmission();
+  void stop_transmission();
+
 	void start();
 private:
+  bool running;
 	snd_pcm_t *pcm_handle;
 
   TransmissionModule();

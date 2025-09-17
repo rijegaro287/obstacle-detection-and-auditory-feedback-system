@@ -4,6 +4,9 @@
 
 class IImageCapture {
 public:
+    static void start_capture();
+    static void stop_capture();
+    
     static bool initialize();
     static bool captureFrame();
     static Frame preprocessDepth();
