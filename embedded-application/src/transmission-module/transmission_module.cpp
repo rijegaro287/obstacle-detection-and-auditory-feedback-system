@@ -149,16 +149,35 @@ void TransmissionModule::send_audio(Audio& signal) {
 	// }
 }
 
+void TransmissionModule::start_transmission() {
+	this->running = true;
+}
+
+void TransmissionModule::stop_transmission() {
+	this->running = false;
+}
+
 void TransmissionModule::start() {
 	while (true) {
+		printf("==========> TRANSMISSION ==================================================\n");
+		if (!this->running) {
+			printf("Transmission module is paused...\n");
+			std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
+			continue;
+		}
+
 		Audio signal = IControl::get_audio_data();
 			if (signal.left_signal.empty() ||
 					signal.right_signal.empty() ||
 					signal.sample_rate == 0) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
 			continue;
 		}
+
+		printf("Audio Data - Sample Rate: %lu, Left Channel Size: %zu, Right Channel Size: %zu\n", 
+					 signal.sample_rate, signal.left_signal.size(), signal.right_signal.size());
+
 		send_audio(signal);
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
 	}
 }

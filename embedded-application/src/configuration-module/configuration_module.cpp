@@ -1,5 +1,5 @@
 #include "configuration_module.hpp"
-#include "configuration_iface.hpp"
+#include "control_iface.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -38,6 +38,10 @@ int64_t ConfigModule::map_command_to_code(const string& command) {
 	else if (command == PAIR_DEVICE_COMMAND) return PAIR_DEVICE_CODE;
 	else if (command == CONNECT_DEVICE_COMMAND) return CONNECT_DEVICE_CODE;
 	else if (command == DISCONNECT_DEVICE_COMMAND) return DISCONNECT_DEVICE_CODE;
+	else if (command == START_FEEDBACK_COMMAND) return START_FEEDBACK_CODE;
+	else if (command == STOP_FEEDBACK_COMMAND) return STOP_FEEDBACK_CODE;
+	else if (command == SET_VOLUME_COMMAND) return SET_VOLUME_CODE;
+	else if (command == SET_FEEDBACK_MODE_COMMAND) return SET_FEEDBACK_MODE_CODE;
 	else return -1;
 }
 
@@ -179,7 +183,30 @@ string ConfigModule::disconnect_device_command(vector<string>& args) {
 	return "Disconnected from device: " + string(device.name);
 }
 
+string ConfigModule::start_feedback_command() {
+	printf("Starting feedback...\n");
+	IControl::start_feedback();
+	return "Feedback started";
+}
+
+string ConfigModule::stop_feedback_command() {
+	printf("Stopping feedback...\n");
+	IControl::stop_feedback();
+	return "Feedback stopped";
+}
+
+string ConfigModule::set_volume_command(vector<string>& args) {
+	printf("Setting volume...\n");
+	return "Volume set";
+}
+
+string ConfigModule::set_feedback_mode_command() {
+	printf("Setting feedback mode...\n");
+	return "Feedback mode set";
+}
+
 void ConfigModule::process_command(const string& command) {
+	printf("==========> CONFIG =========================================================\n");
 	printf("Processing command: %s\n", command.c_str());
 	vector<string> tokens;
 	uint64_t command_code;
@@ -227,6 +254,22 @@ void ConfigModule::process_command(const string& command) {
 			response = this->disconnect_device_command(tokens);
 			break;
 		}
+		case START_FEEDBACK_CODE: {
+			response = this->start_feedback_command();
+			break;
+		}
+		case STOP_FEEDBACK_CODE: {
+			response = this->stop_feedback_command();
+			break;
+		}
+		case SET_VOLUME_CODE: {
+			response = this->set_volume_command(tokens);
+			break;
+		}
+		case SET_FEEDBACK_MODE_CODE: {
+			response = this->set_feedback_mode_command();
+			break;
+		}
 		default: {
 			printf("Unknown command %s\n", command.c_str());
 			break;
@@ -238,6 +281,7 @@ void ConfigModule::process_command(const string& command) {
 }
 
 void ConfigModule::start() {
+	printf("==========> CONFIG ========================================================\n");
 	printf("Starting configuration module...\n");
 
 	BLEServer& ble_server = BLEServer::get_instance();

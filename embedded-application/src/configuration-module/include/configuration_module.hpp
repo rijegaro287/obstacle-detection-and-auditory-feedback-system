@@ -13,6 +13,10 @@
 #define PAIR_DEVICE_COMMAND "pair_device"
 #define CONNECT_DEVICE_COMMAND "connect_device"
 #define DISCONNECT_DEVICE_COMMAND "disconnect_device"
+#define START_FEEDBACK_COMMAND "start_feedback"
+#define STOP_FEEDBACK_COMMAND "stop_feedback"
+#define SET_VOLUME_COMMAND "set_volume"
+#define SET_FEEDBACK_MODE_COMMAND "set_feedback_mode"
 
 enum COMMAND_CODE {
 	HEALTH_CHECK_CODE,
@@ -22,7 +26,11 @@ enum COMMAND_CODE {
   GET_DEVICES_CODE,
   PAIR_DEVICE_CODE,
 	CONNECT_DEVICE_CODE,
-  DISCONNECT_DEVICE_CODE
+  DISCONNECT_DEVICE_CODE,
+  START_FEEDBACK_CODE,
+  STOP_FEEDBACK_CODE,
+  SET_VOLUME_CODE,
+  SET_FEEDBACK_MODE_CODE
 };
 
 
@@ -58,8 +66,8 @@ private:
   string disconnect_device_command(vector<string>& args);
   string start_feedback_command();
   string stop_feedback_command();
-  string set_volume();
-  string set_feedback_mode();
+  string set_volume_command(vector<string>& args);
+  string set_feedback_mode_command();
 
   ConfigModule();
   ~ConfigModule() = default;

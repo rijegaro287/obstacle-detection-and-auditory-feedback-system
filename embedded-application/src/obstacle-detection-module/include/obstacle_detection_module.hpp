@@ -1,21 +1,29 @@
 #pragma once
 
-#ifndef OBSTACLE_DETECTION_MODULE_HPP
-#define OBSTACLE_DETECTION_MODULE_HPP
-
 #include <opencv2/opencv.hpp>
 #include "control_iface.hpp"
 
 class ObstacleDetectionModule {
 public:
-    ObstacleDetectionModule();
+    ObstacleDetectionModule(const ObstacleDetectionModule&) = delete;
+    ObstacleDetectionModule& operator=(const ObstacleDetectionModule&) = delete;
+    ObstacleDetectionModule(ObstacleDetectionModule&&) = delete;
+    ObstacleDetectionModule& operator=(ObstacleDetectionModule&&) = delete;
+
+    static ObstacleDetectionModule& get_instance();
 
     void previewDepth(cv::Mat& depthImage);
     void viewDetection(Obstacle& obstacle);
     Obstacle detect(cv::Mat& image, cv::Mat& depthMap);
+
+    void start_detection();
+    void stop_detection();
+    
     void start();
 
 private:
+    bool running;
+
     struct Components {
         cv::Mat labels;     // labels de los componentes
         cv::Mat stats;      // stats
@@ -43,6 +51,6 @@ private:
     Obstacle calculateAngles(Obstacle& obstacle);
     double mapAzimuth(double azimuth);
 
+    ObstacleDetectionModule();
+    ~ObstacleDetectionModule() = default;
 };
-
-#endif // OBSTACLE_DETECTION_MODULE_HPP

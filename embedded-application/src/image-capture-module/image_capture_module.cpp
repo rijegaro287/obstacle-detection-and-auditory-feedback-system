@@ -1,10 +1,11 @@
 #include <iostream>
 
-#include "image_capture_module.h"
-#include "control_iface.hpp"
+#include "image_capture_module.hpp"
+
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -14,8 +15,18 @@ using namespace Arducam;
 #define MAX_DISTANCE 4000
 int max_range = 0;
 
+ImageCaptureModule& ImageCaptureModule::get_instance() {
+    static ImageCaptureModule instance;
+    return instance;
+}
+
 // Constructor: Inicializacion del modulo (frame=nullptr)
-ImageCaptureModule::ImageCaptureModule() : frame_(nullptr) {}
+ImageCaptureModule::ImageCaptureModule() {
+    this->running = false;
+    frame_ = nullptr;
+    depth_frame_ = cv::Mat();
+    result_frame_ = cv::Mat();
+}
 
 // Destructor 
 ImageCaptureModule::~ImageCaptureModule() {
@@ -120,7 +131,15 @@ Frame ImageCaptureModule::preprocessDepth() {
     return {depth_frame_, result_frame_};
 }
 
-void ImageCaptureModule::start(){
+void ImageCaptureModule::start_capture() {
+    this->running = true;
+}
+
+void ImageCaptureModule::stop_capture() {
+    this->running = false;
+}
+
+void ImageCaptureModule::start() {
     // Inicializar ToF camera
     if (!initialize()) {
         return;
@@ -128,9 +147,16 @@ void ImageCaptureModule::start(){
 
     // Capturar frames (loop)
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		printf("==========> CAPTURE =======================================================\n");
+        if (!this->running) {
+            printf("Image Capture module is paused...\n");
+            std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
+            continue;
+        }
+
         // si la captura NO fue exitosa vuelve a intentarlo en la siguiente iteracion/captura
         if (!captureFrame()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
             continue;
         }
 
@@ -143,10 +169,6 @@ void ImageCaptureModule::start(){
         // int key = cv::waitKey(1);
         // if (key == 27 || key == 'q') break;
         
-        uint64_t fps = 5 ; // frecuencia de captura deseada
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000/fps)); // ajustar frecuencia de captura
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000/TARGET_FPS)); // ajustar frecuencia de captura
     }
 }
-
-
-

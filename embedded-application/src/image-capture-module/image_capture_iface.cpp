@@ -1,17 +1,22 @@
 #include "image_capture_iface.hpp"
-#include "image_capture_module.h"
+#include "image_capture_module.hpp"
 
-// Instancia global interna 
-static ImageCaptureModule g_imageCapture;
+void IImageCapture::start_capture(){
+    ImageCaptureModule::get_instance().start_capture();
+}
+
+void IImageCapture::stop_capture(){
+    ImageCaptureModule::get_instance().stop_capture();
+}
 
 bool IImageCapture::initialize() {
-    return g_imageCapture.initialize();
+    return ImageCaptureModule::get_instance().initialize();
 }
 
 bool IImageCapture::captureFrame() {
-    return g_imageCapture.captureFrame();
+    return ImageCaptureModule::get_instance().captureFrame();
 }
 
 Frame IImageCapture::preprocessDepth() {
-    return g_imageCapture.preprocessDepth();
+    return ImageCaptureModule::get_instance().preprocessDepth();
 }
