@@ -1,11 +1,8 @@
 #pragma once
 
-#include <cstdint>
+#include "control_iface.hpp"
 
-enum FEEDBACK_MODES {
-  NON_VERBAL_MODE,
-  VERBAL_MODE
-};
+#include <cstdint>
 
 class IFeedback{
 private:

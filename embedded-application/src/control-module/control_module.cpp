@@ -90,8 +90,8 @@ void ControlModule::set_volume(uint64_t volume) {
   IFeedback::set_volume(volume);
 }
 
-void ControlModule::set_feedback_mode() {
-  IFeedback::set_feedback_mode(NON_VERBAL_MODE);
+void ControlModule::set_feedback_mode(FEEDBACK_MODES mode) {
+  IFeedback::set_feedback_mode(mode);
 }
 
 void ControlModule::set_received_commands(bool status) {
@@ -107,9 +107,8 @@ void ControlModule::unlock_mutexes() {
 void ControlModule::start() {
   this->unlock_mutexes();
 
-  IFeedback::set_feedback_mode(VERBAL_MODE);
   while (true) {
-	  // printf("==========> CONTROL =======================================================\n");
+	  printf("==========> CONTROL =======================================================\n");
     if (received_commands) {
       received_commands = false;
     }

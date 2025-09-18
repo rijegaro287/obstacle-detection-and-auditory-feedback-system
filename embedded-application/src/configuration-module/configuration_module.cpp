@@ -199,9 +199,29 @@ string ConfigModule::set_volume_command(vector<string>& args) {
 	return "Volume set to " + to_string(volume);
 }
 
-string ConfigModule::set_feedback_mode_command() {
-	printf("Setting feedback mode...\n");
-	return "Feedback mode set";
+string ConfigModule::set_feedback_mode_command(vector<string>& args) {
+	if (args.size() != 1 || args[0].empty()) {
+		printf("No feedback mode provided\n");
+		return "#Error: No feedback mode provided";
+	}
+
+	printf("Setting feedback mode to %s...\n", args[0].c_str());
+	string mode_string = args[0];
+	FEEDBACK_MODES mode;
+	if (mode_string == NON_VERBAL_MODE_STRING) {
+		mode = NON_VERBAL_MODE;
+	}
+	else if (mode_string == VERBAL_MODE_STRING) {
+		mode = VERBAL_MODE;
+	}
+	else {
+		printf("Invalid feedback mode: %s\n", mode_string.c_str());
+		return "#Error: Invalid feedback mode";
+	}
+
+	IControl::set_feedback_mode(mode);
+
+	return "Feedback mode set to " + mode_string;
 }
 
 void ConfigModule::process_command(const string& command) {
@@ -268,7 +288,7 @@ void ConfigModule::process_command(const string& command) {
 			break;
 		}
 		case SET_FEEDBACK_MODE_CODE: {
-			response = this->set_feedback_mode_command();
+			response = this->set_feedback_mode_command(tokens);
 			break;
 		}
 		default: {
