@@ -45,8 +45,11 @@ object COMMANDS {
     const val PAIR_DEVICE = "pair_device"
     const val CONNECT_DEVICE = "connect_device"
     const val DISCONNECT_DEVICE = "disconnect_device"
+    const val START_FEEDBACK = "start_feedback"
+    const val STOP_FEEDBACK = "stop_feedback"
+    const val SET_VOLUME = "set_volume"
+    const val SET_FEEDBACK_MODE = "set_feedback_mode"
 }
-
 
 data class BLEDevice(
     val device: BluetoothDevice,
@@ -361,6 +364,7 @@ object BLEController {
             return true
         }
 
+        Log.e("BLE Controller", "Health check failed: $response")
         failedHealthChecks++
         if (failedHealthChecks >= failedHealthChecksThreshold) {
             Log.e("BLE Controller", "Health check failed $failedHealthChecks times in a row")
@@ -380,6 +384,7 @@ object BLEController {
             return true
         }
 
+        Log.e("BLE Controller", "Audio health check failed: $response")
         failedAudioHealthChecks++
         if (failedAudioHealthChecks >= failedHealthChecksThreshold) {
             Log.e("BLE Controller", "Audio health check failed $failedAudioHealthChecks times in a row")
@@ -483,4 +488,33 @@ object BLEController {
         return false
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun startAudioFeedback() : Boolean {
+        val response = sendCommand("${COMMANDS.START_FEEDBACK}!")
+
+        if (response[0] != '#') {
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        failedAudioHealthChecks++
+        Log.e("BLE Controller", "Error starting feedback: $response")
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun stopAudioFeedback() : Boolean {
+        val response = sendCommand("${COMMANDS.STOP_FEEDBACK}!")
+
+        if (response[0] != '#') {
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        failedAudioHealthChecks++
+        Log.e("BLE Controller", "Error stopping feedback: $response")
+        return false
+    }
 }
