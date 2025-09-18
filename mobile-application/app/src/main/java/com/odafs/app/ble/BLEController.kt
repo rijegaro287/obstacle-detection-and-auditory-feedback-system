@@ -36,6 +36,11 @@ const val DEVICE_NAME = "odafs"
 const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
 const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
 
+object FEEDBACK_MODES {
+    const val NON_VERBAL_FEEDBACK = "non_verbal"
+    const val VERBAL_FEEDBACK = "verbal"
+}
+
 object COMMANDS {
     const val HEALTH_CHECK = "health_check"
     const val AUDIO_HEALTH_CHECK = "audio_health_check"
@@ -85,6 +90,7 @@ object BLEController {
     val discovering: StateFlow<Boolean> = _discovering.asStateFlow()
 
     private val _connectedAudioDevice = MutableStateFlow<BTDevice?>(null)
+    val connectedAudioDevice: StateFlow<BTDevice?> = _connectedAudioDevice.asStateFlow()
 
     fun init(context: Context) {
         appContext = context.applicationContext as Application
@@ -138,7 +144,7 @@ object BLEController {
 
     private var failedHealthChecks = 0
     private var failedAudioHealthChecks = 0
-    private var failedHealthChecksThreshold = 8
+    private var failedHealthChecksThreshold = 5
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -324,6 +330,7 @@ object BLEController {
         _discovering.value = false
         _connecting.value = false
         _connected.value = false
+        _connectedAudioDevice.value = null
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -345,7 +352,11 @@ object BLEController {
                 command.toByteArray()
             )
 
-            val resultString = String(result!!)
+            if (result == null) {
+                return "#Error sending command $command"
+            }
+
+            val resultString = String(result)
             Log.d("BLE Controller", "Received response: $resultString")
             return resultString
         }
@@ -389,6 +400,7 @@ object BLEController {
         if (failedAudioHealthChecks >= failedHealthChecksThreshold) {
             Log.e("BLE Controller", "Audio health check failed $failedAudioHealthChecks times in a row")
             failedAudioHealthChecks = 0
+            _connectedAudioDevice.value = null
         }
         return false
     }
@@ -456,7 +468,7 @@ object BLEController {
             return false
         }
 
-        delay(10000)
+        delay(6000)
 
         val connectResponse = sendCommand("${COMMANDS.CONNECT_DEVICE}!${device.address}")
         if (connectResponse[0] == '#') {
@@ -475,7 +487,7 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun disconnectAudioDevice() : Boolean {
-        val response = sendCommand("${COMMANDS.DISCONNECT_DEVICE}!${_connectedAudioDevice.value?.address}")
+        val response = sendCommand("${COMMANDS.DISCONNECT_DEVICE}!")
 
         if (response[0] != '#') {
             _connectedAudioDevice.value = null
@@ -515,6 +527,34 @@ object BLEController {
 
         failedAudioHealthChecks++
         Log.e("BLE Controller", "Error stopping feedback: $response")
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun setAudioVolume(volume: Int) : Boolean {
+        val response = sendCommand("${COMMANDS.SET_VOLUME}!${volume}")
+
+        if (response[0] != '#') {
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Error setting volume: $response")
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun setFeedbackMode(mode: String) : Boolean {
+        val response = sendCommand("${COMMANDS.SET_FEEDBACK_MODE}!${mode}")
+
+        if (response[0] != '#') {
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Error setting feedback mode: $response")
         return false
     }
 }
