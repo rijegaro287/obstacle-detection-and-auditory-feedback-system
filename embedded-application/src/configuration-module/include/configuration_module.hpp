@@ -48,6 +48,8 @@ public:
   void set_response_buffer(const string& buffer);
   string get_response_buffer();
   void process_command(const string& command);
+  string disconnect_device_command();
+
   void start();
 private:
   vector<BlueZDevice> found_devices;
@@ -63,7 +65,6 @@ private:
   string get_devices_command();
   string pair_device_command(vector<string>& args);
   string connect_device_command(vector<string>& args);
-  string disconnect_device_command(vector<string>& args);
   string start_feedback_command();
   string stop_feedback_command();
   string set_volume_command(vector<string>& args);

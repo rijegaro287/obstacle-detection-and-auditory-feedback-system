@@ -44,6 +44,10 @@ void IControl::set_feedback_mode() {
   ControlModule::get_instance().set_feedback_mode();
 }
 
+void IControl::set_received_commands(bool status) {
+  ControlModule::get_instance().set_received_commands(status);
+}
+
 void IControl::unlock_mutexes() {
   ControlModule::get_instance().unlock_mutexes();
 }

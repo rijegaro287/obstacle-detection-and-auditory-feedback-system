@@ -1,4 +1,5 @@
 #include "control_module.hpp"
+#include "configuration_iface.hpp"
 #include "control_iface.hpp"
 #include "image_capture_iface.hpp"
 #include "obstacle_detection_iface.hpp"
@@ -8,6 +9,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+
+static bool received_commands = false;
 
 ControlModule& ControlModule::get_instance() {
 	static ControlModule instance;
@@ -66,6 +69,7 @@ void ControlModule::set_audio_data(const Audio& data) {
   this->audio_data.left_signal = data.left_signal;
   this->audio_data.right_signal = data.right_signal;
   this->audio_data.sample_rate = data.sample_rate;
+  this->audio_data.gain = data.gain;
 }
 
 void ControlModule::start_feedback() {
@@ -90,6 +94,10 @@ void ControlModule::set_feedback_mode() {
   IFeedback::set_feedback_mode(NON_VERBAL_MODE);
 }
 
+void ControlModule::set_received_commands(bool status) {
+  received_commands = status;
+}
+
 void ControlModule::unlock_mutexes() {
   this->frame_mtx.unlock();
   this->obstacle_mtx.unlock();
@@ -98,4 +106,18 @@ void ControlModule::unlock_mutexes() {
 
 void ControlModule::start() {
   this->unlock_mutexes();
+
+  IFeedback::set_feedback_mode(VERBAL_MODE);
+  while (true) {
+	  // printf("==========> CONTROL =======================================================\n");
+    if (received_commands) {
+      received_commands = false;
+    }
+    else {
+      printf("No commands received in the last %d seconds. Stopping feedback...\n", CONTROL_THREAD_SLEEP_MS / 1000);
+      this->stop_feedback();
+      IConfiguration::disconnect_audio_device();
+    }
+    this_thread::sleep_for(chrono::milliseconds(CONTROL_THREAD_SLEEP_MS));
+  }
 }

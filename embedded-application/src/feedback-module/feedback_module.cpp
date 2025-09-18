@@ -29,10 +29,11 @@ void FeedbackModule::stop_feedback() {
 
 void FeedbackModule::set_volume(uint64_t volume) {
 	if (volume >= 100) {
-		volume = 1.0f;
+		this->volume = 1.0f;
 	}
-
-	this->volume = static_cast<float>(volume) / 100.0f;
+	else {
+		this->volume = static_cast<float>(volume) / 100.0f;
+	}
 }
 
 void FeedbackModule::set_feedback_mode(FEEDBACK_MODES mode) {
@@ -131,10 +132,15 @@ uint8_t FeedbackModule::calculate_verbal_position(Obstacle obstacle) {
 }
 
 Audio FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
+	uint64_t n_samples = this->tap_signal.size();
+	float distance_gain = (obstacle.meanDepth / MAX_OBSTACLE_DISTANCE);
+	float total_gain = this->volume * (1 -  distance_gain);
+
 	Audio signal = Audio();
-	signal.left_signal = std::vector<float>(this->tap_signal.size());
-	signal.right_signal = std::vector<float>(this->tap_signal.size());
+	signal.left_signal = std::vector<float>(n_samples);
+	signal.right_signal = std::vector<float>(n_samples);
 	signal.sample_rate = NON_VERBAL_SAMPLE_RATE;
+	signal.gain = total_gain;
 
 	uint64_t sample_idx = this->position_tree.find_nearest({obstacle.azimuth,
 																													obstacle.elevation,
@@ -146,11 +152,9 @@ Audio FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
 	kfr::univector<float> output_l = kfr::convolve(this->tap_signal, hrir_l);
 	kfr::univector<float> output_r = kfr::convolve(this->tap_signal, hrir_r);
 
-	float distance_gain = (obstacle.meanDepth / MAX_OBSTACLE_DISTANCE);
-	float total_gain = this->volume * (1 -  distance_gain);
-	for (uint64_t i = 0; i < this->tap_signal.size(); i++) {
-		signal.left_signal[i] = total_gain * output_l[i];
-		signal.right_signal[i] = total_gain * output_r[i];
+	for (uint64_t i = 0; i < n_samples; i++) {
+		signal.left_signal[i] = output_l[i];
+		signal.right_signal[i] = output_r[i];
 	}
 
 	printf("Non-verbal feedback generated\n");
@@ -158,10 +162,13 @@ Audio FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
 }
 
 Audio FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
+	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
+	
 	Audio signal = Audio();
-	signal.left_signal = std::vector<float>(this->verbal_feedback_tensor.shape()[1]);
-	signal.right_signal = std::vector<float>(this->verbal_feedback_tensor.shape()[1]);
+	signal.left_signal = std::vector<float>(n_samples);
+	signal.right_signal = std::vector<float>(n_samples);
 	signal.sample_rate = VERBAL_SAMPLE_RATE;
+	signal.gain = this->volume;
 
 	uint8_t position_idx;
 	uint8_t position = this->calculate_verbal_position(obstacle);
@@ -197,10 +204,9 @@ Audio FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
 		return signal;
 	}
 
-	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
 	for (uint64_t i = 0; i < n_samples; i++) {
-		signal.left_signal[i] = this->volume * this->verbal_feedback_tensor(position_idx, i);
-		signal.right_signal[i] = this->volume * this->verbal_feedback_tensor(position_idx, i);
+		signal.left_signal[i] = this->verbal_feedback_tensor(position_idx, i);
+		signal.right_signal[i] = this->verbal_feedback_tensor(position_idx, i);
 	}
 
 	printf("Verbal feedback generated\n");
@@ -225,7 +231,7 @@ Audio FeedbackModule::generate_feedback(Obstacle obstacle) {
 
 void FeedbackModule::start() {
 	while (true) {
-		printf("==========> FEEDBACK ======================================================\n");
+		// printf("==========> FEEDBACK ======================================================\n");
 		if (!this->running) {
 			printf("Feedback module is paused...\n");
 			std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
@@ -234,7 +240,7 @@ void FeedbackModule::start() {
 
 		Obstacle obstacle = IControl::get_obstacle();
 		if (obstacle.meanDepth == 0) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(FEEDBACK_THREAD_SLEEP_MS));
+			std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
 			continue;
 		}
 
@@ -243,6 +249,6 @@ void FeedbackModule::start() {
 
 		Audio output_signal = this->generate_feedback(obstacle);
 		IControl::set_audio_data(output_signal);
-		std::this_thread::sleep_for(std::chrono::milliseconds(FEEDBACK_THREAD_SLEEP_MS));
+		std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
 	}
 }

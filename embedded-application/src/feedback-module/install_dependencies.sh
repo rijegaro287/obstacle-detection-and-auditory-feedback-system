@@ -4,4 +4,4 @@ set -o pipefail
 
 sudo apt-get install libportaudio2 
 
-pip install numpy scipy pysoundfile sounddevice python-sofa piper-tts
+pip install numpy scipy pysoundfile sounddevice python-sofa piper-tts librosa

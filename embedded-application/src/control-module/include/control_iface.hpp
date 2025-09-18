@@ -2,15 +2,11 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-// #define THREAD_SLEEP_MS 10
-// #define FEEDBACK_THREAD_SLEEP_MS 50
-// #define PAUSED_SLEEP_MS 500
-// #define TARGET_FPS 5
-
-#define THREAD_SLEEP_MS 3000
-#define FEEDBACK_THREAD_SLEEP_MS 3000
-#define PAUSED_SLEEP_MS 3000
-#define TARGET_FPS 1/3
+#define TARGET_FPS 5
+#define THREAD_SLEEP_MS 10
+#define CONTROL_THREAD_SLEEP_MS 5000
+#define COMMAND_RETURN_SLEEP_MS 100
+#define PAUSED_SLEEP_MS 500
 
 #define MAX_OBSTACLE_DISTANCE 4000
 
@@ -34,6 +30,7 @@ typedef struct Audio_ {
   std::vector<float> left_signal;
   std::vector<float> right_signal;
   uint64_t sample_rate;
+  float gain;
 } Audio;
 
 class IControl{
@@ -52,6 +49,8 @@ public:
   static void stop_feedback();
   static void set_volume(uint64_t volume);
   static void set_feedback_mode();
+
+  static void set_received_commands(bool status);
   
   static void unlock_mutexes();
 };
