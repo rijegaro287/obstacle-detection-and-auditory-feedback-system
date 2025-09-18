@@ -68,7 +68,9 @@ fun ScanningView(
     var foundDevices by remember { mutableStateOf(emptyList<BTDevice>()) }
 
     LaunchedEffect(connected) {
-        if (!connected) navigateToConnecting()
+        if (!connected) {
+            navigateToConnecting()
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -79,27 +81,41 @@ fun ScanningView(
     }
 
     LaunchedEffect(Unit) {
-        foundDevices = BLEController.scanForAudioDevices(7000)
+        foundDevices = BLEController.scanForAudioDevices(8000)
         reloadClicked = false
     }
 
     LaunchedEffect(reloadClicked) {
-        Log.d("BLE Controller", "Reloading devices")
-        if (!connecting && !discovering && reloadClicked) {
-            foundDevices = BLEController.scanForAudioDevices(7000)
-            reloadClicked = false
+        while (true) {
+            if (!connecting && !discovering && reloadClicked) {
+                Log.d("BLE Controller", "Reloading devices")
+                foundDevices = BLEController.scanForAudioDevices(8000)
+                reloadClicked = false
+            }
+            else {
+                break
+            }
+            delay(100)
         }
+
     }
 
     LaunchedEffect(selectedDevice) {
-        if (!connecting && selectedDevice != null) {
-            val connectionEstablished = BLEController.pairAndConnectAudioDevice(selectedDevice!!)
-            if (connectionEstablished) {
-                navigateToControls(selectedDevice!!.name)
+        while (true) {
+            if (!connecting && selectedDevice != null) {
+                Log.d("BLE Controller", "Connecting to ${selectedDevice!!.name}")
+                val connectionEstablished = BLEController.pairAndConnectAudioDevice(selectedDevice!!)
+                if (connectionEstablished) {
+                    navigateToControls(selectedDevice!!.name)
+                }
+                else {
+                    selectedDevice = null
+                }
             }
             else {
-                selectedDevice = null
+                break
             }
+            delay(100)
         }
     }
 
