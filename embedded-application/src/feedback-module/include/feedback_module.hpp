@@ -15,7 +15,7 @@
 #define VERBAL_FEEDBACK_PATH "./src/feedback-module/dataset/verbal_feedback_signals.npy"
 
 #define NON_VERBAL_SAMPLE_RATE 48000
-#define VERBAL_SAMPLE_RATE 22050
+#define VERBAL_SAMPLE_RATE 48000
 
 #define TAP_N_SAMPLES 48000
 #define HRIR_N_TAPS 256

@@ -24,6 +24,7 @@ target_include_directories(control_module PUBLIC
     ../transmission-module/include
 )
 target_link_libraries(control_module PUBLIC
+    configuration_iface
     image_capture_iface
     obstacle_detection_iface
     feedback_iface

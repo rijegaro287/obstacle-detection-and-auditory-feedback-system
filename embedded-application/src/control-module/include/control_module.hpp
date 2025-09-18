@@ -30,10 +30,13 @@ public:
   void set_volume(uint64_t volume);
   void set_feedback_mode();
 
+  void set_received_commands(bool status);
   void unlock_mutexes();
 
   void start();
 private:
+  bool received_commands;
+
   Frame frame;
   Obstacle obstacle;
   Audio audio_data;

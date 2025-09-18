@@ -14,14 +14,32 @@ TransmissionModule& TransmissionModule::get_instance() {
 }
 
 TransmissionModule::TransmissionModule() {
+	int64_t error;
+
 	if (snd_pcm_open(&this->pcm_handle, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-		printf("Error opening PCM device\n");
+		printf("Error opening 48kHz PCM device\n");
+		this->pcm_handle = nullptr;
+		return;
+	}
+
+	error = snd_pcm_set_params(
+		this->pcm_handle,
+		SND_PCM_FORMAT_S16_LE,
+		SND_PCM_ACCESS_RW_INTERLEAVED,
+		2, 
+		48000, 
+		1,
+		PCM_LATENCY
+	);
+
+	if (error < 0) {
+		printf("Error setting 48kHz PCM parameters: %s\n", snd_strerror(error));
 		return;
 	}
 }
 
 TransmissionModule::~TransmissionModule() {
-	if (pcm_handle) {
+	if (this->pcm_handle) {
 		snd_pcm_drain(pcm_handle);
 		snd_pcm_close(pcm_handle);
 	}
@@ -29,7 +47,8 @@ TransmissionModule::~TransmissionModule() {
 
 void TransmissionModule::convert_to_pcm(const vector<float>& interleaved, 
 																				vector<int16_t>& pcm,
-																				float max_value) {
+																				float max_value,
+																				float gain) {
 	if (interleaved.size() % 2 != 0) {
 		printf("Error: Interleaved buffer size is not valid.\n");
 		return;
@@ -42,7 +61,7 @@ void TransmissionModule::convert_to_pcm(const vector<float>& interleaved,
 	
 	float scale = INT16_MAX / max_value;
 	for (uint64_t i = 0; i < interleaved.size(); i++) {
-		pcm[i] = static_cast<int16_t>(interleaved[i] * scale);
+		pcm[i] = static_cast<int16_t>(interleaved[i] * scale * gain);
 		if (pcm[i] > INT16_MAX) pcm[i] = INT16_MAX;
 		if (pcm[i] < INT16_MIN) pcm[i] = INT16_MIN;
 	}
@@ -89,7 +108,7 @@ void TransmissionModule::preprocess_audio(Audio& signal,
 		vector<float> interleaved_chunk(2 * left_chunk.size());
 
 		interleave_audio(left_chunk, right_chunk, interleaved_chunk);
-		convert_to_pcm(interleaved_chunk, pcm, max_value);
+		convert_to_pcm(interleaved_chunk, pcm, max_value, signal.gain);
 }
 
 void TransmissionModule::send_pcm_data(vector<int16_t>& pcm, uint64_t sample_rate) {
@@ -98,27 +117,18 @@ void TransmissionModule::send_pcm_data(vector<int16_t>& pcm, uint64_t sample_rat
 		return;
 	}
 
-	int64_t error = snd_pcm_set_params(
-		this->pcm_handle,
-		SND_PCM_FORMAT_S16_LE,
-		SND_PCM_ACCESS_RW_INTERLEAVED,
-		2, 
-		sample_rate, 
-		1,
-		PCM_LATENCY
-	);
-
-	if (error < 0) {
-		printf("Error setting PCM parameters: %s\n", snd_strerror(error));
+	if (this->pcm_handle == nullptr) {
+		printf("Error: pcm_handle is null\n");
 		return;
 	}
 
-	error = snd_pcm_writei(this->pcm_handle, pcm.data(), pcm.size()/2);
+	int64_t error = snd_pcm_writei(this->pcm_handle, pcm.data(), pcm.size()/2);
 	if (error == -EPIPE) {
 		snd_pcm_prepare(this->pcm_handle);
-	} 
+	}
 	else if (error < 0) {
 		printf("Error writing to PCM device: %s\n", snd_strerror(error));
+		return;
 	}
 }
 
@@ -137,16 +147,6 @@ void TransmissionModule::send_audio(Audio& signal) {
 
 	this->preprocess_audio(signal, processed, max_value, 0, signal_size);
 	this->send_pcm_data(processed, signal.sample_rate);
-
-	// uint64_t n_chunks = (signal_size + AUDIO_CHUNK_N_SAMPLES - 1) / AUDIO_CHUNK_N_SAMPLES;
-	// for (uint64_t chunk_idx = 0; chunk_idx < n_chunks; chunk_idx++) {
-	// 	uint64_t start_idx = chunk_idx * AUDIO_CHUNK_N_SAMPLES;
-	// 	uint64_t end_idx = min(start_idx + AUDIO_CHUNK_N_SAMPLES, signal_size);
-
-	// 	vector<int16_t> processed_chunk(2 * (end_idx - start_idx));
-	// 	this->preprocess_audio(signal, processed_chunk, max_value, start_idx, end_idx);
-	// 	this->send_pcm_data(processed_chunk, signal.sample_rate);
-	// }
 }
 
 void TransmissionModule::start_transmission() {
@@ -177,7 +177,17 @@ void TransmissionModule::start() {
 		printf("Audio Data - Sample Rate: %lu, Left Channel Size: %zu, Right Channel Size: %zu\n", 
 					 signal.sample_rate, signal.left_signal.size(), signal.right_signal.size());
 
-		send_audio(signal);
-		std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
+		try {
+			send_audio(signal);
+		}
+		catch (const std::exception& e) {
+			printf("Error during audio transmission: %s\n", e.what());
+			std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
+			continue;
+		}
+
+		uint64_t n_samples = signal.left_signal.size();
+		uint64_t sleep_ms = ((n_samples * 1000) / signal.sample_rate) / 10;
+		std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
 	}
 }
