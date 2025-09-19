@@ -140,10 +140,6 @@ string ConfigModule::connect_device_command(vector<string>& args) {
 	BlueZDevice& device = this->found_devices[device_idx];
 	BTAudioController::get_instance().connected_device = &device;
 
-	if (BTAudioController::get_instance().is_connected(device)) {
-		return "Device already connected: " + string(device.name);
-	}
-
 	if (BTAudioController::get_instance().connect_device(device) < 0) {
 		BTAudioController::get_instance().connected_device = nullptr;
 		return "#Error: Failed to connect to device";
@@ -227,7 +223,6 @@ string ConfigModule::set_feedback_mode_command(vector<string>& args) {
 void ConfigModule::process_command(const string& command) {
 	printf("==========> CONFIG =========================================================\n");
 	printf("Processing command: %s\n", command.c_str());
-	IControl::set_received_commands(true);
 
 	vector<string> tokens;
 	uint64_t command_code;
@@ -248,6 +243,7 @@ void ConfigModule::process_command(const string& command) {
 			break;
 		}
 		case AUDIO_HEALTH_CHECK_CODE: {
+			IControl::set_received_commands(true);
 			response = this->audio_health_check_command();
 			break;
 		}

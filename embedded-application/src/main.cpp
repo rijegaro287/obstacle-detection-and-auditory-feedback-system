@@ -35,13 +35,6 @@ int main() {
   thread feedback_thread(&FeedbackModule::start, &feedback_module);
   thread transmission_thread(&TransmissionModule::start, &transmission_module);
 
-  set_thread_priority(config_thread, SCHED_RR, 80);
-  set_thread_priority(control_thread, SCHED_RR, 70);
-  set_thread_priority(capture_thread, SCHED_RR, 60);
-  set_thread_priority(detection_thread, SCHED_RR, 60);
-  set_thread_priority(feedback_thread, SCHED_RR, 60);
-  set_thread_priority(transmission_thread, SCHED_RR, 80);
-
   config_thread.join();
   control_thread.join();
   capture_thread.join();

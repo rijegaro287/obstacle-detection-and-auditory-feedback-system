@@ -115,6 +115,9 @@ void ControlModule::start() {
     else {
       printf("No commands received in the last %d seconds. Stopping feedback...\n", CONTROL_THREAD_SLEEP_MS / 1000);
       this->stop_feedback();
+      this->frame = Frame();
+      this->obstacle = Obstacle();
+      this->audio_data = Audio();
       IConfiguration::disconnect_audio_device();
     }
     this_thread::sleep_for(chrono::milliseconds(CONTROL_THREAD_SLEEP_MS));
