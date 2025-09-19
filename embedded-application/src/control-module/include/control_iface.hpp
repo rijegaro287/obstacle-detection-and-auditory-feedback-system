@@ -1,14 +1,23 @@
 #pragma once
+
 #include <opencv2/opencv.hpp>
 #include <vector>
 
 #define TARGET_FPS 5
 #define THREAD_SLEEP_MS 10
-#define CONTROL_THREAD_SLEEP_MS 5000
-#define COMMAND_RETURN_SLEEP_MS 100
+#define CONTROL_THREAD_SLEEP_MS 7500
+#define COMMAND_RETURN_SLEEP_MS 50
 #define PAUSED_SLEEP_MS 500
 
 #define MAX_OBSTACLE_DISTANCE 4000
+
+#define NON_VERBAL_MODE_STRING "non_verbal"
+#define VERBAL_MODE_STRING "verbal"
+
+enum FEEDBACK_MODES {
+  NON_VERBAL_MODE,
+  VERBAL_MODE
+};
 
 typedef struct Frame_ {
   cv::Mat depthMap;
@@ -48,7 +57,7 @@ public:
   static void start_feedback();
   static void stop_feedback();
   static void set_volume(uint64_t volume);
-  static void set_feedback_mode();
+  static void set_feedback_mode(FEEDBACK_MODES mode);
 
   static void set_received_commands(bool status);
   

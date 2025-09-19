@@ -28,7 +28,7 @@ public:
   void start_feedback();
   void stop_feedback();
   void set_volume(uint64_t volume);
-  void set_feedback_mode();
+  void set_feedback_mode(FEEDBACK_MODES mode);
 
   void set_received_commands(bool status);
   void unlock_mutexes();

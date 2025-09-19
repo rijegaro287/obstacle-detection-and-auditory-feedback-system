@@ -40,8 +40,8 @@ void IControl::set_volume(uint64_t volume) {
   ControlModule::get_instance().set_volume(volume);
 }
 
-void IControl::set_feedback_mode() {
-  ControlModule::get_instance().set_feedback_mode();
+void IControl::set_feedback_mode(FEEDBACK_MODES mode) {
+  ControlModule::get_instance().set_feedback_mode(mode);
 }
 
 void IControl::set_received_commands(bool status) {

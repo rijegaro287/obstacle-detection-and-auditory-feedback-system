@@ -177,14 +177,7 @@ void TransmissionModule::start() {
 		printf("Audio Data - Sample Rate: %lu, Left Channel Size: %zu, Right Channel Size: %zu\n", 
 					 signal.sample_rate, signal.left_signal.size(), signal.right_signal.size());
 
-		try {
-			send_audio(signal);
-		}
-		catch (const std::exception& e) {
-			printf("Error during audio transmission: %s\n", e.what());
-			std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
-			continue;
-		}
+		send_audio(signal);
 
 		uint64_t n_samples = signal.left_signal.size();
 		uint64_t sleep_ms = ((n_samples * 1000) / signal.sample_rate) / 10;

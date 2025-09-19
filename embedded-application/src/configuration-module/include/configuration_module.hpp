@@ -68,7 +68,7 @@ private:
   string start_feedback_command();
   string stop_feedback_command();
   string set_volume_command(vector<string>& args);
-  string set_feedback_mode_command();
+  string set_feedback_mode_command(vector<string>& args);
 
   ConfigModule();
   ~ConfigModule() = default;

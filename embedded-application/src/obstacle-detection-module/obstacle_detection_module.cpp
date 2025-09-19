@@ -389,7 +389,7 @@ void ObstacleDetectionModule::stop_detection() {
 
 void ObstacleDetectionModule::start() { 
     while (true) {
-        // printf("==========> DETECTION =====================================================\n");
+        printf("==========> DETECTION =====================================================\n");
         if (!this->running) {
             printf("Obstacle detection paused...\n");
             std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
