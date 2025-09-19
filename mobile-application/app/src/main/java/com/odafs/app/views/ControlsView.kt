@@ -36,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,8 +46,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.odafs.app.ble.BLEController
-import com.odafs.app.ble.BTDevice
-import com.odafs.app.ble.FEEDBACK_MODES
+import com.odafs.app.ble.BTAudioDevice
+import com.odafs.app.ble.Delays
+import com.odafs.app.ble.FeedbackModes
+import com.odafs.app.components.AutoDismissDialog
 import com.odafs.app.components.CommandButton
 import com.odafs.app.components.TopBar
 import kotlinx.coroutines.delay
@@ -66,36 +67,54 @@ fun ControlsView(
     var connected by remember { mutableStateOf(false) }
     connected = BLEController.connected.collectAsState().value
 
-    var connectedAudioDevice by remember { mutableStateOf<BTDevice?>(null) }
+    var connectedAudioDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
     connectedAudioDevice = BLEController.connectedAudioDevice.collectAsState().value
 
     var isPlaying by remember { mutableStateOf(false) }
     var disconnectClicked by remember { mutableStateOf(false) }
     var volumeValue by remember { mutableFloatStateOf(0.5f) }
-    var switchChecked by remember { mutableStateOf(true) }
+    var switchChecked by remember { mutableStateOf(false) }
+
+    var showError by remember { mutableStateOf(false) }
+    var errorTitle by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    var onDismiss : () -> Unit by remember { mutableStateOf({}) }
+    val errorTimeout = 5000L
 
     LaunchedEffect(connected) {
         if (!connected) {
-            navigateToConnecting()
+            errorTitle = "Conexión perdida"
+            errorMessage = "Se perdió la conexión con el dispositivo de procesamiento"
+            showError = true
+            onDismiss = {
+                showError = false
+                navigateToConnecting()
+            }
         }
     }
 
     LaunchedEffect(connectedAudioDevice) {
         if (connectedAudioDevice == null) {
-            navigateToScanning()
+            errorTitle = "Conexión perdida"
+            errorMessage = "Se perdió la conexión con el dispositivo de audio"
+            showError = true
+            onDismiss = {
+                showError = false
+                navigateToScanning()
+            }
         }
     }
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(2050)
+            delay(Delays.HEALTH_CHECK_DELAY)
             BLEController.healthCheck()
         }
     }
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(2550)
+            delay(Delays.AUDIO_HEALTH_CHECK_DELAY)
             BLEController.audioHealthCheck()
         }
     }
@@ -113,7 +132,7 @@ fun ControlsView(
             else {
                 break
             }
-            delay(100)
+            delay(Delays.MISC_DELAY)
         }
     }
 
@@ -127,7 +146,7 @@ fun ControlsView(
                 BLEController.stopAudioFeedback()
             }
             if (stateChanged) break
-            delay(100)
+            delay(Delays.MISC_DELAY)
         }
     }
 
@@ -137,7 +156,7 @@ fun ControlsView(
             val volumeInt = (100 * volumeValue).toInt()
             val volumeChanged = BLEController.setAudioVolume(volumeInt)
             if (volumeChanged) break
-            delay(100)
+            delay(Delays.MISC_DELAY)
         }
     }
 
@@ -145,15 +164,23 @@ fun ControlsView(
         while (true) {
             Log.d("BLE Controller", "Setting feedback mode to $switchChecked")
             val feedbackModeChanged = if (switchChecked) {
-                BLEController.setFeedbackMode(FEEDBACK_MODES.VERBAL_FEEDBACK)
+                BLEController.setFeedbackMode(FeedbackModes.VERBAL_FEEDBACK)
             }
             else {
-                BLEController.setFeedbackMode(FEEDBACK_MODES.NON_VERBAL_FEEDBACK)
+                BLEController.setFeedbackMode(FeedbackModes.NON_VERBAL_FEEDBACK)
             }
             if (feedbackModeChanged) break
-            delay(100)
+            delay(Delays.MISC_DELAY)
         }
     }
+
+    AutoDismissDialog(
+        visible = showError,
+        title = errorTitle,
+        message = errorMessage,
+        dismissAfterMillis = errorTimeout,
+        onDismiss = onDismiss
+    )
 
     Scaffold(
         topBar = { TopBar(title = deviceName) }

@@ -36,12 +36,20 @@ const val DEVICE_NAME = "odafs"
 const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
 const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
 
-object FEEDBACK_MODES {
+object Delays {
+    const val MISC_DELAY = 100L
+    const val SERVICE_SCAN_DELAY = 5000L
+    const val AUDIO_DEVICE_SCAN_DELAY = 8000L
+    const val HEALTH_CHECK_DELAY = 2050L
+    const val AUDIO_HEALTH_CHECK_DELAY = 2350L
+}
+
+object FeedbackModes {
     const val NON_VERBAL_FEEDBACK = "non_verbal"
     const val VERBAL_FEEDBACK = "verbal"
 }
 
-object COMMANDS {
+object Commands {
     const val HEALTH_CHECK = "health_check"
     const val AUDIO_HEALTH_CHECK = "audio_health_check"
     const val START_DISCOVERY = "start_discovery"
@@ -61,7 +69,7 @@ data class BLEDevice(
     val serviceUUIDs: List<ParcelUuid>
 )
 
-data class BTDevice(
+data class BTAudioDevice(
     val name: String,
     val address: String
 )
@@ -89,17 +97,14 @@ object BLEController {
     private val _discovering = MutableStateFlow(false)
     val discovering: StateFlow<Boolean> = _discovering.asStateFlow()
 
-    private val _connectedAudioDevice = MutableStateFlow<BTDevice?>(null)
-    val connectedAudioDevice: StateFlow<BTDevice?> = _connectedAudioDevice.asStateFlow()
+    private val _connectedAudioDevice = MutableStateFlow<BTAudioDevice?>(null)
+    val connectedAudioDevice: StateFlow<BTAudioDevice?> = _connectedAudioDevice.asStateFlow()
 
-    fun init(context: Context) {
-        appContext = context.applicationContext as Application
+    private var pendingTransaction: CompletableDeferred<ByteArray?>? = null
 
-        val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = manager.adapter
-
-        bleScanner = bluetoothAdapter?.bluetoothLeScanner
-    }
+    private var failedHealthChecks = 0
+    private var failedAudioHealthChecks = 0
+    private var failedHealthChecksThreshold = 3
 
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
@@ -140,58 +145,6 @@ object BLEController {
         }
     }
 
-    private var pendingTransaction: CompletableDeferred<ByteArray?>? = null
-
-    private var failedHealthChecks = 0
-    private var failedAudioHealthChecks = 0
-    private var failedHealthChecksThreshold = 5
-
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun BluetoothGatt.writeAndReadCharacteristic(
-        characteristic: BluetoothGattCharacteristic,
-        value: ByteArray
-    ) : ByteArray? {
-        if (pendingTransaction != null) {
-            Log.e("BLE Controller", "Another transaction is pending")
-            return null
-        }
-
-        val pending = CompletableDeferred<ByteArray?>()
-        pendingTransaction = pending
-
-        val startedTransaction = writeCharacteristic(
-            characteristic,
-            value,
-            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-        )
-
-        if (startedTransaction != BluetoothStatusCodes.SUCCESS) {
-            pending.completeExceptionally(Exception("Characteristic write failed"))
-            pendingTransaction = null
-            return null
-        }
-
-        try {
-            return withTimeout(10000) {
-                pendingTransaction?.await()
-            }
-        }
-        catch (e: CancellationException) {
-            pendingTransaction?.cancel()
-            pendingTransaction = null
-            throw e
-        }
-        catch (e: Throwable) {
-            pendingTransaction?.completeExceptionally(e)
-            pendingTransaction = null
-            throw e
-        }
-        finally {
-            pendingTransaction = null
-        }
-    }
-
     private val gattCallback = object : BluetoothGattCallback() {
         @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
@@ -225,7 +178,7 @@ object BLEController {
 
                     service.characteristics.forEach { characteristic ->
                         if (characteristic.uuid.toString() == CHAR_UUID) {
-                        Log.d("BLE Controller", "\t\tCharacteristic discovered: ${characteristic.uuid}")
+                            Log.d("BLE Controller", "\t\tCharacteristic discovered: ${characteristic.uuid}")
                             characteristicFound = true
                             _characteristicConnection.value = characteristic
                         }
@@ -270,6 +223,61 @@ object BLEController {
                 pending.completeExceptionally(Exception("Characteristic read failed"))
             }
 
+            pendingTransaction = null
+        }
+    }
+
+    fun init(context: Context) {
+        appContext = context.applicationContext as Application
+
+        val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothAdapter = manager.adapter
+
+        bleScanner = bluetoothAdapter?.bluetoothLeScanner
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun BluetoothGatt.writeAndReadCharacteristic(
+        characteristic: BluetoothGattCharacteristic,
+        value: ByteArray
+    ) : ByteArray? {
+        if (pendingTransaction != null) {
+            Log.e("BLE Controller", "Another transaction is pending")
+            return null
+        }
+
+        val pending = CompletableDeferred<ByteArray?>()
+        pendingTransaction = pending
+
+        val startedTransaction = writeCharacteristic(
+            characteristic,
+            value,
+            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        )
+
+        if (startedTransaction != BluetoothStatusCodes.SUCCESS) {
+            pending.completeExceptionally(Exception("Characteristic write failed"))
+            pendingTransaction = null
+            return null
+        }
+
+        try {
+            return withTimeout(10000) {
+                pendingTransaction?.await()
+            }
+        }
+        catch (e: CancellationException) {
+            pendingTransaction?.cancel()
+            pendingTransaction = null
+            throw e
+        }
+        catch (e: Throwable) {
+            pendingTransaction?.completeExceptionally(e)
+            pendingTransaction = null
+            throw e
+        }
+        finally {
             pendingTransaction = null
         }
     }
@@ -368,7 +376,7 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun healthCheck() : Boolean {
-        val response = sendCommand("${COMMANDS.HEALTH_CHECK}!")
+        val response = sendCommand("${Commands.HEALTH_CHECK}!")
 
         if (response[0] != '#') {
             failedHealthChecks = 0
@@ -388,7 +396,7 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun audioHealthCheck() : Boolean {
-        val response = sendCommand("${COMMANDS.AUDIO_HEALTH_CHECK}!")
+        val response = sendCommand("${Commands.AUDIO_HEALTH_CHECK}!")
 
         if (response[0] != '#') {
             failedAudioHealthChecks = 0
@@ -407,11 +415,11 @@ object BLEController {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun scanForAudioDevices(scanningTime: Long = 10000) : List<BTDevice>{
+    suspend fun scanForAudioDevices(scanningTime: Long = 10000) : List<BTAudioDevice>{
         if (_discovering.value) return emptyList()
         _discovering.value = true
 
-        val startDiscoveryResponse = sendCommand("${COMMANDS.START_DISCOVERY}!")
+        val startDiscoveryResponse = sendCommand("${Commands.START_DISCOVERY}!")
         if (startDiscoveryResponse[0] == '#') {
             Log.e("BLE Controller", "Error starting audio device discovery: $startDiscoveryResponse")
             _discovering.value = false
@@ -420,7 +428,7 @@ object BLEController {
 
         delay(scanningTime)
 
-        val stopDiscoveryResponse = sendCommand("${COMMANDS.STOP_DISCOVERY}!")
+        val stopDiscoveryResponse = sendCommand("${Commands.STOP_DISCOVERY}!")
         if (stopDiscoveryResponse[0] == '#') {
             Log.e("BLE Controller", "Error stopping audio device discovery: $stopDiscoveryResponse")
             _discovering.value = false
@@ -429,13 +437,13 @@ object BLEController {
 
         delay(100)
 
-        val getDevicesResponse = sendCommand("${COMMANDS.GET_DEVICES}!")
+        val getDevicesResponse = sendCommand("${Commands.GET_DEVICES}!")
         if (getDevicesResponse[0] == '#') {
             Log.e("BLE Controller", "Error getting audio devices: $getDevicesResponse")
             return emptyList()
         }
 
-        val result = mutableListOf<BTDevice>()
+        val result = mutableListOf<BTAudioDevice>()
 
         val devicesString = getDevicesResponse.split('$')
         for (deviceString in devicesString) {
@@ -446,7 +454,7 @@ object BLEController {
             val deviceName = deviceInfo[0]
             val deviceAddress = deviceInfo[1]
 
-            result.add(BTDevice(deviceName, deviceAddress))
+            result.add(BTAudioDevice(deviceName, deviceAddress))
         }
 
         _discovering.value = false
@@ -457,20 +465,20 @@ object BLEController {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun pairAndConnectAudioDevice(device: BTDevice) : Boolean {
+    suspend fun pairAndConnectAudioDevice(device: BTAudioDevice) : Boolean {
         if (_connecting.value) return false
         _connecting.value = true
 
-        val pairResponse = sendCommand("${COMMANDS.PAIR_DEVICE}!${device.address}")
+        val pairResponse = sendCommand("${Commands.PAIR_DEVICE}!${device.address}")
         if (pairResponse[0] == '#') {
             Log.e("BLE Controller", "Error pairing device: $pairResponse")
             _connecting.value = false
             return false
         }
 
-        delay(6000)
+        delay(500)
 
-        val connectResponse = sendCommand("${COMMANDS.CONNECT_DEVICE}!${device.address}")
+        val connectResponse = sendCommand("${Commands.CONNECT_DEVICE}!${device.address}")
         if (connectResponse[0] == '#') {
             Log.e("BLE Controller", "Error connecting to device: $connectResponse")
             _connecting.value = false
@@ -487,7 +495,7 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun disconnectAudioDevice() : Boolean {
-        val response = sendCommand("${COMMANDS.DISCONNECT_DEVICE}!")
+        val response = sendCommand("${Commands.DISCONNECT_DEVICE}!")
 
         if (response[0] != '#') {
             _connectedAudioDevice.value = null
@@ -495,7 +503,6 @@ object BLEController {
             return true
         }
 
-        failedAudioHealthChecks++
         Log.e("BLE Controller", "Error disconnecting from device: $response")
         return false
     }
@@ -503,14 +510,13 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun startAudioFeedback() : Boolean {
-        val response = sendCommand("${COMMANDS.START_FEEDBACK}!")
+        val response = sendCommand("${Commands.START_FEEDBACK}!")
 
         if (response[0] != '#') {
             failedAudioHealthChecks = 0
             return true
         }
 
-        failedAudioHealthChecks++
         Log.e("BLE Controller", "Error starting feedback: $response")
         return false
     }
@@ -518,14 +524,13 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun stopAudioFeedback() : Boolean {
-        val response = sendCommand("${COMMANDS.STOP_FEEDBACK}!")
+        val response = sendCommand("${Commands.STOP_FEEDBACK}!")
 
         if (response[0] != '#') {
             failedAudioHealthChecks = 0
             return true
         }
 
-        failedAudioHealthChecks++
         Log.e("BLE Controller", "Error stopping feedback: $response")
         return false
     }
@@ -533,7 +538,7 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun setAudioVolume(volume: Int) : Boolean {
-        val response = sendCommand("${COMMANDS.SET_VOLUME}!${volume}")
+        val response = sendCommand("${Commands.SET_VOLUME}!${volume}")
 
         if (response[0] != '#') {
             failedAudioHealthChecks = 0
@@ -547,7 +552,7 @@ object BLEController {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun setFeedbackMode(mode: String) : Boolean {
-        val response = sendCommand("${COMMANDS.SET_FEEDBACK_MODE}!${mode}")
+        val response = sendCommand("${Commands.SET_FEEDBACK_MODE}!${mode}")
 
         if (response[0] != '#') {
             failedAudioHealthChecks = 0
