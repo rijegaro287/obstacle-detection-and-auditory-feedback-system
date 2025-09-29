@@ -41,7 +41,9 @@ import com.odafs.app.components.CommandButton
 import com.odafs.app.components.DeviceCard
 import com.odafs.app.components.TopBar
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.text.style.TextAlign
+import com.odafs.app.ble.BLEDeviceManager
 import com.odafs.app.ble.BTAudioDevice
 import com.odafs.app.ble.Delays
 import com.odafs.app.components.AutoDismissDialog
@@ -65,9 +67,9 @@ fun ScanningView(
 
     var reloadClicked by remember { mutableStateOf(false) }
 
-    var selectedDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
+    //var selectedDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
 
-    var foundDevices by remember { mutableStateOf(emptyList<BTAudioDevice>()) }
+    //var foundDevices by remember { mutableStateOf(emptyList<BTAudioDevice>()) }
 
     var showError by remember { mutableStateOf(false) }
     var errorTitle by remember { mutableStateOf("") }
@@ -98,7 +100,10 @@ fun ScanningView(
         if (!connecting && !discovering) {
             Log.d("BLE Controller", "Scanning for audio devices")
             discovering = true
-            foundDevices = BLEController.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
+            BLEDeviceManager.foundDevices.clear()
+            BLEDeviceManager.foundDevices.addAll(
+                BLEController.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
+            )
             discovering = false
         }
     }
@@ -107,36 +112,51 @@ fun ScanningView(
         if (!connecting && !discovering && reloadClicked) {
             Log.d("BLE Controller", "Reloading devices")
             discovering = true
-            foundDevices = BLEController.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
+            BLEDeviceManager.foundDevices.clear()
+            BLEDeviceManager.foundDevices.addAll(
+                BLEController.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
+            )
             discovering = false
             reloadClicked = false
-        }
-        else {
+        } else {
             reloadClicked = false
         }
     }
 
-    LaunchedEffect(selectedDevice) {
-        if (!connecting && selectedDevice != null) {
-            Log.d("BLE Controller", "Connecting to ${selectedDevice!!.name}")
+    LaunchedEffect(BLEDeviceManager.selectedDevice) {
+        val device = BLEDeviceManager.selectedDevice
+        if (!connecting && device != null) {
+            Log.d("BLE Controller", "Connecting to ${device.name}")
             connecting = true
-            val connectionEstablished = BLEController.pairAndConnectAudioDevice(selectedDevice!!)
+            val connectionEstablished = BLEController.pairAndConnectAudioDevice(device!!)
             if (connectionEstablished) {
                 connecting = false
-                navigateToControls(selectedDevice!!.name)
+                navigateToControls(device.name)
             }
             else {
                 connecting = false
                 errorTitle = "Conexión fallida"
                 errorMessage = "No se pudo establecer la conexión con el dispositivo de audio"
                 showError = true
-                selectedDevice = null
+                BLEDeviceManager.selectedDevice = null
             }
         }
         else {
-            selectedDevice = null
+            BLEDeviceManager.selectedDevice = null
         }
     }
+
+    // función interna que selecciona un dispositivo por número
+    fun selectDeviceByNumber(indexSpoken: Int): String {
+        val deviceIndex = indexSpoken - 1
+        if (BLEDeviceManager.foundDevices.isNotEmpty() && deviceIndex in BLEDeviceManager.foundDevices.indices) {
+            val device = BLEDeviceManager.foundDevices[deviceIndex]
+            BLEDeviceManager.selectedDevice = device
+            return device.name
+        }
+        return ""
+    }
+
 
     AutoDismissDialog(
         visible = showError,
@@ -200,7 +220,7 @@ fun ScanningView(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = if (connecting && selectedDevice != null) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
+                                text = if (connecting && BLEDeviceManager.selectedDevice != null) "Conectando a ${BLEDeviceManager.selectedDevice?.name}" else "Buscando Dispositivos de Audio",
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
@@ -211,7 +231,7 @@ fun ScanningView(
                 else {
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    if (foundDevices.isEmpty()) {
+                    if (BLEDeviceManager.foundDevices.isEmpty()) {
                         Text(
                             text = "No se encontraron dispositivos de audio disponibles",
                             style = MaterialTheme.typography.titleMedium,
@@ -221,8 +241,8 @@ fun ScanningView(
                     }
                     else {
                         LazyColumn {
-                            items(foundDevices) { device ->
-                                DeviceCard(device.name) { selectedDevice = device }
+                            items(BLEDeviceManager.foundDevices) { device ->
+                                DeviceCard(device.name) { BLEDeviceManager.selectedDevice = device }
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
                         }

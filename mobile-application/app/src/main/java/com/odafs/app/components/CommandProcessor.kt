@@ -1,12 +1,31 @@
 package com.odafs.app.logic
 
+import android.Manifest
 import android.content.Context
 import android.media.AudioManager
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
+import com.odafs.app.ble.BLEController.disconnectAudioDevice
+import com.odafs.app.ble.BLEController.disconnectFromDevice
+import com.odafs.app.ble.BLEController.foundDevices
+import com.odafs.app.ble.BLEController.scanForAudioDevices
+import com.odafs.app.ble.BLEController.setAudioVolume
+import com.odafs.app.ble.BLEController.setFeedbackMode
+import com.odafs.app.ble.BLEController.startAudioFeedback
+import com.odafs.app.ble.BLEController.stopAudioFeedback
+import com.odafs.app.ble.BLEDeviceManager
+import com.odafs.app.ble.FeedbackModes.NON_VERBAL_FEEDBACK
+import com.odafs.app.ble.FeedbackModes.VERBAL_FEEDBACK
+import com.odafs.app.components.DeviceCard
+import com.odafs.app.views.ScanningView
 import java.text.Normalizer
 import java.util.Locale
 
-fun processCommand(context: Context, command: String) {
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+suspend fun processCommand(context: Context, command: String) {
     // Pasar a minúsculas y quitar tildes
     val lowerCommand = Normalizer.normalize(
         command.lowercase(Locale.getDefault()),
@@ -18,7 +37,7 @@ fun processCommand(context: Context, command: String) {
         lowerCommand.contains("configurar volumen") -> {
             val percentage = extractPercentage(lowerCommand)
             if (percentage != null) {
-                setVolume(context, percentage)
+                setAudioVolume(percentage)
                 Toast.makeText(
                     context,
                     "🔊 Volumen configurado al $percentage%",
@@ -36,11 +55,13 @@ fun processCommand(context: Context, command: String) {
         // --- Pausar reproduccion de audio ---
         lowerCommand.contains("pausar") -> {
             Toast.makeText(context, "🔵 Pausando reproducción de audio...", Toast.LENGTH_SHORT).show()
+            stopAudioFeedback()
         }
 
         // --- Reanudar reproduccion de audio ---
         lowerCommand.contains("reanudar") -> {
             Toast.makeText(context, "🔵 Reanudando reproducción de audio...", Toast.LENGTH_SHORT).show()
+            startAudioFeedback()
         }
 
         // --- Apagar sistema ---
@@ -48,24 +69,53 @@ fun processCommand(context: Context, command: String) {
             Toast.makeText(context, "🔵 Apagando el sistema...", Toast.LENGTH_SHORT).show()
         }
 
-        // --- Reiniciar sistema ---
-        lowerCommand.contains("reiniciar") -> {
-            Toast.makeText(context, "🔵 Reiniciando sistema...", Toast.LENGTH_SHORT).show()
+        // --- Escanear dispositivos de audio ---
+        lowerCommand.contains("escanear dispositivos de audio") -> {
+            Toast.makeText(context, "🔵 Escaneando dispositivos de audio...", Toast.LENGTH_SHORT).show()
+            scanForAudioDevices()
         }
+
+        // --- Conectar dispositivo de audio ---
+        lowerCommand.contains("conectar dispositivo") -> {
+            val regex = Regex("""\d+""")
+            val match = regex.find(lowerCommand)
+
+            if (match != null) {
+                val indexSpoken = match.value.toInt()
+                val device = BLEDeviceManager.selectDevice(indexSpoken)
+
+                Toast.makeText(
+                    context,
+                    "🔵 Conectando al dispositivo $indexSpoken: ${device}...",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+            } else {
+                Toast.makeText(
+                    context,
+                    "⚠️ No se detectó número de dispositivo en el comando.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
 
         // --- Desconectar dispositivo de audio ---
         lowerCommand.contains("desconectar dispositivo de audio") -> {
             Toast.makeText(context, "🔵 Desconectando dispositivo de audio...", Toast.LENGTH_SHORT).show()
+            disconnectAudioDevice()
         }
 
         // --- Tipo de retroalimentacion NO verbal ---
         lowerCommand.contains("retroalimentacion no verbal") -> {
             Toast.makeText(context, "🔵 Cambiando a retroalimentación no verbal...", Toast.LENGTH_SHORT).show()
+            setFeedbackMode(NON_VERBAL_FEEDBACK)
         }
 
         // --- Tipo de retroalimentacion verbal ---
         lowerCommand.contains("retroalimentacion verbal") -> {
             Toast.makeText(context, "🔵 Cambiando a retroalimentación verbal...", Toast.LENGTH_SHORT).show()
+            setFeedbackMode(VERBAL_FEEDBACK)
         }
 
         // --- Ayuda ---
@@ -88,9 +138,3 @@ fun extractPercentage(text: String): Int? {
     return match?.value?.toIntOrNull()?.coerceIn(0, 100)
 }
 
-/**
- * Ajusta el volumen de la retroalimentación.
- */
-fun setVolume(context: Context, percentage: Int) {
-
-}

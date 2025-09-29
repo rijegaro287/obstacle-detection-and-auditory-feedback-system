@@ -1,11 +1,15 @@
 package com.odafs.app.components
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -17,17 +21,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.odafs.app.logic.processCommand
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 fun CommandButton(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val speechText = remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
 
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -38,7 +48,9 @@ fun CommandButton(modifier: Modifier = Modifier) {
             val spoken = matches?.get(0) ?: ""
             speechText.value = spoken
             Toast.makeText(context, "Dijiste: $spoken", Toast.LENGTH_LONG).show()
-            processCommand(context, spoken)
+            scope.launch {
+                processCommand(context, spoken)
+            }
         } else {
             Toast.makeText(context, "No se pudo reconocer tu voz", Toast.LENGTH_SHORT).show()
         }
