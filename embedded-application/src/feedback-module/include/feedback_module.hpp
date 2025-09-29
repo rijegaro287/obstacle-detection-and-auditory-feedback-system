@@ -15,7 +15,7 @@
 #define VERBAL_FEEDBACK_PATH "./src/feedback-module/dataset/verbal_feedback_signals.npy"
 
 #define NON_VERBAL_SAMPLE_RATE 48000
-#define VERBAL_SAMPLE_RATE 22050
+#define VERBAL_SAMPLE_RATE 48000
 
 #define TAP_N_SAMPLES 48000
 #define HRIR_N_TAPS 256
@@ -70,14 +70,22 @@ public:
 
   static FeedbackModule& get_instance();
 
+  void start_feedback();
+  void stop_feedback();
+  void set_volume(uint64_t volume);
   void set_feedback_mode(FEEDBACK_MODES mode);
+
   void start();
 private:
+  bool running;
+  float volume;
   FEEDBACK_MODES feedback_mode;
+
   kfr::univector<float, TAP_N_SAMPLES> tap_signal;
+  kfr::tensor<float, 2> verbal_feedback_tensor;
+  
   kfr::tensor<float, 3> hrir_tensor;
   kd_tree<3> position_tree;
-  kfr::tensor<float, 2> verbal_feedback_tensor;
 
   FeedbackModule();
   ~FeedbackModule() = default;
@@ -88,7 +96,7 @@ private:
   void init_verbal_feedback_tensor();
   kfr::univector<float, HRIR_N_TAPS> make_hrir_univector(uint64_t sample, uint64_t channel);
   uint8_t calculate_verbal_position(Obstacle obstacle);
-  void generate_non_verbal_feedback(Obstacle obstacle);
-  void generate_verbal_feedback(Obstacle obstacle);
-  void generate_feedback(Obstacle obstacle);
+  Audio generate_non_verbal_feedback(Obstacle obstacle);
+  Audio generate_verbal_feedback(Obstacle obstacle);
+  Audio generate_feedback(Obstacle obstacle);
 };

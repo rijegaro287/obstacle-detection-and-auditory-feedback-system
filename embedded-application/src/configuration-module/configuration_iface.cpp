@@ -12,3 +12,7 @@ string IConfiguration::get_response_buffer() {
 void IConfiguration::process_command(const string& command) {
   ConfigModule::get_instance().process_command(command);
 }
+
+void IConfiguration::disconnect_audio_device() {
+  ConfigModule::get_instance().disconnect_device_command();
+}

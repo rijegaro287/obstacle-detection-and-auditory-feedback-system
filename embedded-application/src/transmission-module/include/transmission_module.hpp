@@ -18,14 +18,18 @@ public:
 
   static TransmissionModule& get_instance();
 
+  void start_transmission();
+  void stop_transmission();
+
 	void start();
 private:
+  bool running;
 	snd_pcm_t *pcm_handle;
 
   TransmissionModule();
   ~TransmissionModule();
 
-	void convert_to_pcm(const vector<float>& interleaved, vector<int16_t>& pcm, float max_value);
+	void convert_to_pcm(const vector<float>& interleaved, vector<int16_t>& pcm, float max_value, float gain);
 	void interleave_audio(const vector<float>& left_channel, const vector<float>& right_channel, vector<float>& interleaved);
 	void preprocess_audio(Audio& signal, vector<int16_t>& pcm, float max_value, uint64_t start_idx, uint64_t end_idx);
 	void send_pcm_data(vector<int16_t>& pcm, uint64_t sample_rate);

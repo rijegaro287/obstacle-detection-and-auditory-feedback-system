@@ -42,7 +42,9 @@ import com.odafs.app.components.DeviceCard
 import com.odafs.app.components.TopBar
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.text.style.TextAlign
-import com.odafs.app.ble.BTDevice
+import com.odafs.app.ble.BTAudioDevice
+import com.odafs.app.ble.Delays
+import com.odafs.app.components.AutoDismissDialog
 import kotlinx.coroutines.delay
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -63,45 +65,86 @@ fun ScanningView(
 
     var reloadClicked by remember { mutableStateOf(false) }
 
-    var selectedDevice by remember { mutableStateOf<BTDevice?>(null) }
+    var selectedDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
 
-    var foundDevices by remember { mutableStateOf(emptyList<BTDevice>()) }
+    var foundDevices by remember { mutableStateOf(emptyList<BTAudioDevice>()) }
+
+    var showError by remember { mutableStateOf(false) }
+    var errorTitle by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    var onDismiss : () -> Unit by remember { mutableStateOf({}) }
+    val errorTimeout = 5000L
 
     LaunchedEffect(connected) {
-        if (!connected) navigateToConnecting()
+        if (!connected) {
+            errorTitle = "Conexión perdida"
+            errorMessage = "Se perdió la conexión con el dispositivo de procesamiento"
+            showError = true
+            onDismiss = {
+                showError = false
+                navigateToConnecting()
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(2050)
+            delay(Delays.HEALTH_CHECK_DELAY)
             BLEController.healthCheck()
         }
     }
 
     LaunchedEffect(Unit) {
-        foundDevices = BLEController.scanForAudioDevices(7000)
-        reloadClicked = false
+        if (!connecting && !discovering) {
+            Log.d("BLE Controller", "Scanning for audio devices")
+            discovering = true
+            foundDevices = BLEController.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
+            discovering = false
+        }
     }
 
     LaunchedEffect(reloadClicked) {
-        Log.d("BLE Controller", "Reloading devices")
         if (!connecting && !discovering && reloadClicked) {
-            foundDevices = BLEController.scanForAudioDevices(7000)
+            Log.d("BLE Controller", "Reloading devices")
+            discovering = true
+            foundDevices = BLEController.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
+            discovering = false
+            reloadClicked = false
+        }
+        else {
             reloadClicked = false
         }
     }
 
     LaunchedEffect(selectedDevice) {
         if (!connecting && selectedDevice != null) {
+            Log.d("BLE Controller", "Connecting to ${selectedDevice!!.name}")
+            connecting = true
             val connectionEstablished = BLEController.pairAndConnectAudioDevice(selectedDevice!!)
             if (connectionEstablished) {
+                connecting = false
                 navigateToControls(selectedDevice!!.name)
             }
             else {
+                connecting = false
+                errorTitle = "Conexión fallida"
+                errorMessage = "No se pudo establecer la conexión con el dispositivo de audio"
+                showError = true
                 selectedDevice = null
             }
         }
+        else {
+            selectedDevice = null
+        }
     }
+
+    AutoDismissDialog(
+        visible = showError,
+        title = errorTitle,
+        message = errorMessage,
+        dismissAfterMillis = errorTimeout,
+        onDismiss = onDismiss
+    )
 
     Scaffold(
         topBar = { TopBar(title = "Conéctate a un dispositivo") }
@@ -157,7 +200,7 @@ fun ScanningView(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = if (connecting) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
+                                text = if (connecting && selectedDevice != null) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()

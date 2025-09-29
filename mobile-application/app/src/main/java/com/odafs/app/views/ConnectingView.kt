@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.odafs.app.ble.BLEController
 import com.odafs.app.ble.BLEDevice
 import com.odafs.app.ble.DEVICE_NAME
+import com.odafs.app.ble.Delays
 import com.odafs.app.ble.SERVICE_UUID
 import com.odafs.app.components.TopBar
 import kotlinx.coroutines.delay
@@ -52,12 +51,12 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
 
         while (true) {
             if (connecting) {
-                delay(100)
+                delay(Delays.MISC_DELAY)
                 continue
             }
 
             BLEController.startScan()
-            delay(5000)
+            delay(Delays.SERVICE_SCAN_DELAY)
             BLEController.stopScan()
 
             bleDevices@ for (bleDevice in bleDevices) {
@@ -68,7 +67,8 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
                     }
                 }
             }
-            delay(1000)
+
+            delay(Delays.MISC_DELAY)
         }
     }
 
@@ -104,12 +104,6 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-
-//                LazyColumn {
-//                    items(bleDevices) { device ->
-//                        Text(text = "${device.device.name}@${device.device.address}")
-//                    }
-//                }
             }
         }
     }

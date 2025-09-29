@@ -2,6 +2,7 @@ package com.odafs.app.views
 
 import android.Manifest
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
@@ -32,6 +33,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,29 +46,141 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.odafs.app.ble.BLEController
+import com.odafs.app.ble.BTAudioDevice
+import com.odafs.app.ble.Delays
+import com.odafs.app.ble.FeedbackModes
+import com.odafs.app.components.AutoDismissDialog
 import com.odafs.app.components.CommandButton
 import com.odafs.app.components.TopBar
 import kotlinx.coroutines.delay
+import java.lang.Math.clamp
 import kotlin.math.roundToInt
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
-fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(2050)
-            BLEController.healthCheck()
+fun ControlsView(
+    deviceName: String,
+    navigateToConnecting: () -> Unit,
+    navigateToScanning: () -> Unit
+) {
+    var connected by remember { mutableStateOf(false) }
+    connected = BLEController.connected.collectAsState().value
+
+    var connectedAudioDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
+    connectedAudioDevice = BLEController.connectedAudioDevice.collectAsState().value
+
+    var isPlaying by remember { mutableStateOf(false) }
+    var disconnectClicked by remember { mutableStateOf(false) }
+    var volumeValue by remember { mutableFloatStateOf(0.5f) }
+    var switchChecked by remember { mutableStateOf(false) }
+
+    var showError by remember { mutableStateOf(false) }
+    var errorTitle by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    var onDismiss : () -> Unit by remember { mutableStateOf({}) }
+    val errorTimeout = 5000L
+
+    LaunchedEffect(connected) {
+        if (!connected) {
+            errorTitle = "Conexión perdida"
+            errorMessage = "Se perdió la conexión con el dispositivo de procesamiento"
+            showError = true
+            onDismiss = {
+                showError = false
+                navigateToConnecting()
+            }
         }
     }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(2550)
-            if (!BLEController.audioHealthCheck()) {
+
+    LaunchedEffect(connectedAudioDevice) {
+        if (connectedAudioDevice == null) {
+            errorTitle = "Conexión perdida"
+            errorMessage = "Se perdió la conexión con el dispositivo de audio"
+            showError = true
+            onDismiss = {
+                showError = false
                 navigateToScanning()
             }
         }
     }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(Delays.HEALTH_CHECK_DELAY)
+            BLEController.healthCheck()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(Delays.AUDIO_HEALTH_CHECK_DELAY)
+            BLEController.audioHealthCheck()
+        }
+    }
+
+    LaunchedEffect(disconnectClicked) {
+        while (true) {
+            if (disconnectClicked) {
+                Log.d("BLE Controller", "Disconnecting from audio device")
+                val disconnectSuccess = BLEController.disconnectAudioDevice()
+                if (disconnectSuccess) {
+                    disconnectClicked = false
+                    navigateToScanning()
+                }
+            }
+            else {
+                break
+            }
+            delay(Delays.MISC_DELAY)
+        }
+    }
+
+    LaunchedEffect(isPlaying) {
+        while (true) {
+            Log.d("BLE Controller", "Setting feedback state to $isPlaying")
+            val stateChanged = if (isPlaying) {
+                BLEController.startAudioFeedback()
+            }
+            else {
+                BLEController.stopAudioFeedback()
+            }
+            if (stateChanged) break
+            delay(Delays.MISC_DELAY)
+        }
+    }
+
+    LaunchedEffect(volumeValue) {
+        while (true) {
+            Log.d("BLE Controller", "Setting volume to $volumeValue")
+            val volumeInt = (100 * volumeValue).toInt()
+            val volumeChanged = BLEController.setAudioVolume(volumeInt)
+            if (volumeChanged) break
+            delay(Delays.MISC_DELAY)
+        }
+    }
+
+    LaunchedEffect(switchChecked) {
+        while (true) {
+            Log.d("BLE Controller", "Setting feedback mode to $switchChecked")
+            val feedbackModeChanged = if (switchChecked) {
+                BLEController.setFeedbackMode(FeedbackModes.VERBAL_FEEDBACK)
+            }
+            else {
+                BLEController.setFeedbackMode(FeedbackModes.NON_VERBAL_FEEDBACK)
+            }
+            if (feedbackModeChanged) break
+            delay(Delays.MISC_DELAY)
+        }
+    }
+
+    AutoDismissDialog(
+        visible = showError,
+        title = errorTitle,
+        message = errorMessage,
+        dismissAfterMillis = errorTimeout,
+        onDismiss = onDismiss
+    )
 
     Scaffold(
         topBar = { TopBar(title = deviceName) }
@@ -93,8 +207,7 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                             .fillMaxWidth()
                             .padding(vertical = 50.dp)
                         ) {
-                            var isPlaying by remember { mutableStateOf(false) }
-
+                            val volumeStep = 5f / 100f
                             val volumeButtonSize = 65
                             val volumeIconSize = 55
 
@@ -102,7 +215,7 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                             val playIconSize = 80
 
                             IconButton(
-                                onClick = {},
+                                onClick = { volumeValue = clamp(volumeValue - volumeStep, 0f, 1.0f) },
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
                                     .background(
@@ -138,7 +251,7 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                             }
 
                             IconButton(
-                                onClick = {},
+                                onClick = { volumeValue = clamp(volumeValue + volumeStep, 0f, 1.0f) },
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
                                     .background(
@@ -157,7 +270,6 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                         }
 
                         Column {
-                            var volumeSliderValue by remember { mutableFloatStateOf(0.5f) }
                             Box (modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = "Volumen",
@@ -166,7 +278,7 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                                 )
 
                                 Text(
-                                    text = "${(100 * volumeSliderValue).roundToInt()}%",
+                                    text = "${(100 * volumeValue).roundToInt()}%",
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.align(Alignment.CenterEnd),
                                     color = Color.Gray
@@ -176,8 +288,8 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Slider(
-                                value = volumeSliderValue,
-                                onValueChange = {volumeSliderValue = it}
+                                value = volumeValue,
+                                onValueChange = {volumeValue = it}
                             )
                         }
                     }
@@ -194,16 +306,15 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                                 horizontal = surfaceHorizontalPadding.dp
                             )
                     ) {
-                        var checked by remember { mutableStateOf(true) }
                         Text(
-                            text = "Modo",
+                            text = "Modo Verbal",
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.align(Alignment.CenterStart)
                         )
 
                         Switch(
-                            checked = checked,
-                            onCheckedChange = { checked = it },
+                            checked = switchChecked,
+                            onCheckedChange = { switchChecked = it },
                             modifier = Modifier.align(Alignment.CenterEnd)
                         )
                     }
@@ -221,25 +332,7 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
                             )
                     ) {
                         Button(
-                            onClick = {},
-                            shape = RoundedCornerShape(6.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                contentColor = MaterialTheme.colorScheme.inverseSurface
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Reiniciar",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(surfaceVerticalPadding.dp))
-
-                        Button(
-                            onClick = {},
+                            onClick = { disconnectClicked = true },
                             shape = RoundedCornerShape(6.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -262,8 +355,14 @@ fun ControlsView(deviceName: String, navigateToScanning: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Preview
 @Composable
 fun ControlsViewPreview() {
-    ControlsView ("Device Name") { }
+    ControlsView (
+        deviceName = "Device Name",
+        navigateToConnecting = { },
+        navigateToScanning = { }
+    )
 }

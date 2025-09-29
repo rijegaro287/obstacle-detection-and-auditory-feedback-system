@@ -3,7 +3,10 @@ import wave
 import numpy as np
 import soundfile as sf
 import sounddevice as sd
+import librosa
 from piper import PiperVoice
+
+TARGET_FS = 48000
 
 signals = [
     'Obstáculo al frente',
@@ -27,6 +30,7 @@ signal_audio_data = []
 max_length = 0
 for signal in signals:
     audio_data, sample_rate = sf.read(f'./{signal}.wav', dtype='float32')
+    audio_data = librosa.resample(audio_data, orig_sr=sample_rate, target_sr=TARGET_FS)
     signal_audio_data.append(audio_data)
     max_length = max(max_length, len(audio_data))
 
@@ -38,5 +42,5 @@ np.save('./verbal_feedback_signals.npy', signal_audio_data_padded)
 
 verbal_signals = np.load('./verbal_feedback_signals.npy')
 for i, signal in enumerate(signals):
-    sd.play(verbal_signals[i], samplerate=sample_rate)
+    sd.play(verbal_signals[i], samplerate=TARGET_FS)
     sd.wait()

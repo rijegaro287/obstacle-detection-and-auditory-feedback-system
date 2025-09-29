@@ -1,19 +1,26 @@
+#include "obstacle_detection_module.hpp"
+
 #include <iostream>
-#include "obstacle_detection_module.h"
 #include <thread>
 #include <chrono>
 
+ObstacleDetectionModule& ObstacleDetectionModule::get_instance() {
+    static ObstacleDetectionModule instance;
+    return instance;
+}
+
 // Contructor: asigna los rangos de rojo para la detección
 ObstacleDetectionModule::ObstacleDetectionModule():
-      // Rango 1 - Tonos (H) del 0 al 10, para todas las saturaciones (S) y brillos (V)
-      lowerRed1_(0, 0, 0),
-      upperRed1_(10, 255, 255),
-      // Rango 2 – Tonos (H) del 160 al 180, para todas las saturaciones (S) y brillos (V)
-      lowerRed2_(160, 0, 0),
-      upperRed2_(180, 255, 255),
-      // Rango 3 - Naranja
-      lowerOrange_(11, 0, 0),
-      upperOrange_(13, 255, 255)
+    // Rango 1 - Tonos (H) del 0 al 10, para todas las saturaciones (S) y brillos (V)
+    lowerRed1_(0, 0, 0),
+    upperRed1_(10, 255, 255),
+    // Rango 2 – Tonos (H) del 160 al 180, para todas las saturaciones (S) y brillos (V)
+    lowerRed2_(160, 0, 0),
+    upperRed2_(180, 255, 255),
+    // Rango 3 - Naranja
+    lowerOrange_(11, 0, 0),
+    upperOrange_(13, 255, 255),
+    running(false)
 {}
 
 // Método segmentRed: segmenta los rangos de rojo en las imagenes usando una mascara de color
@@ -147,7 +154,6 @@ ObstacleDetectionModule::Components ObstacleDetectionModule::divideComponents(co
 
     return comp;
 }
-
 
 // Metodo selectObstacle: selecciona el obstaculo mas importante bajo un criterio matematico 
 Obstacle ObstacleDetectionModule::selectObstacle(
@@ -373,9 +379,23 @@ Obstacle ObstacleDetectionModule::detect(cv::Mat& image, cv::Mat& depthMap){
     return obs;
 }
 
-void ObstacleDetectionModule::start(){ 
+void ObstacleDetectionModule::start_detection() {
+    this->running = true;
+}
+
+void ObstacleDetectionModule::stop_detection() {
+    this->running = false;
+}
+
+void ObstacleDetectionModule::start() { 
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        printf("==========> DETECTION =====================================================\n");
+        if (!this->running) {
+            printf("Obstacle detection paused...\n");
+            std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
+            continue;
+        }
+
         Frame frame = IControl::get_frame();
         cv::Mat depth = frame.depthMap;
         cv::Mat img = frame.image;
@@ -401,6 +421,6 @@ void ObstacleDetectionModule::start(){
 
         /*int key = cv::waitKey(1);
         if (key == 27 || key == 'q') break;*/
+        std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
     }
-
 }

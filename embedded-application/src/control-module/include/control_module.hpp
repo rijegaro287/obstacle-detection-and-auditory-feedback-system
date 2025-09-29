@@ -17,16 +17,26 @@ public:
 
   static ControlModule& get_instance();
   Frame get_frame();
-  Obstacle get_obstacle();
-  Audio get_audio_data();
   void set_frame(const Frame frame);
+  
+  Obstacle get_obstacle();
   void set_obstacle(const Obstacle obstacle);
+  
+  Audio get_audio_data();
   void set_audio_data(const Audio& data);
+  
+  void start_feedback();
+  void stop_feedback();
+  void set_volume(uint64_t volume);
+  void set_feedback_mode(FEEDBACK_MODES mode);
 
+  void set_received_commands(bool status);
   void unlock_mutexes();
 
   void start();
 private:
+  bool received_commands;
+
   Frame frame;
   Obstacle obstacle;
   Audio audio_data;

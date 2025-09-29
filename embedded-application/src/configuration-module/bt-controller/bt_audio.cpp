@@ -79,7 +79,7 @@ int64_t BTAudioController::stop_discovery() {
 	if (adapter_proxy) g_object_unref(adapter_proxy);
 	if (result) g_variant_unref(result);
 	if (error) {
-		printf("Error starting discovery: %s\n", error->message);
+		printf("Error stopping discovery: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
@@ -217,8 +217,8 @@ int64_t BTAudioController::disconnect_device(BlueZDevice& device) {
 
 	result = g_dbus_proxy_call_sync(
 		device_proxy,
-		"DisconnectProfile",
-		g_variant_new("(s)", A2DP_SINK_UUID),
+		"Disconnect",
+		nullptr,
 		G_DBUS_CALL_FLAGS_NONE,
 		10000,
 		nullptr,
@@ -229,7 +229,7 @@ int64_t BTAudioController::disconnect_device(BlueZDevice& device) {
 	if (device_proxy) g_object_unref(device_proxy);
 	if (result) g_variant_unref(result);
 	if (found_error || error) {
-		printf("Error connecting to device: %s\n", error->message);
+		printf("Error disconnecting from device: %s\n", error->message);
 		g_error_free(error);
 		return -1;
 	}
@@ -351,12 +351,12 @@ void BTAudioController::start() {
 }
 
 void BTAudioController::cleanup(vector<BlueZDevice>& devices) {
-	devices.clear();
-
 	if (this->main_loop) {
 		g_main_loop_quit(this->main_loop);
 		g_main_loop_unref(this->main_loop);
 		this->main_loop = nullptr;
-		this->connected_device = nullptr;
 	}
+
+	devices.clear();
+	this->connected_device = nullptr;
 }

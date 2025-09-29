@@ -41,26 +41,40 @@ fun NavigationController() {
             composable<Connecting> {
                 BackHandler (enabled = true) {  }
                 ConnectingView (
-                    navigateToScanning = { navController.navigate(Scanning) }
+                    navigateToScanning = {
+                        navController.navigate(Scanning)
+                    }
                 )
             }
 
             composable<Scanning> {
                 BackHandler (enabled = true) {  }
                 ScanningView (
-                    navigateToConnecting = { navController.navigate(Connecting) },
-                    navigateToControls = { deviceName -> navController.navigate(Controls(deviceName = deviceName)) }
+                    navigateToConnecting = {
+                        navController.navigate(Connecting)
+                    },
+                    navigateToControls = { deviceName ->
+                        navController.navigate(Controls(deviceName = deviceName))
+                    }
                 )
             }
 
             composable<Controls> { backStackEntry ->
                 val controls = backStackEntry.toRoute<Controls>()
                 BackHandler (enabled = true) {  }
-                ControlsView (deviceName = controls.deviceName) {
-                    navController.navigate(Scanning) {
-                        popUpTo(Connecting) { inclusive = true }
+                ControlsView (
+                    deviceName = controls.deviceName,
+                    navigateToConnecting = {
+                        navController.navigate(Connecting) {
+                            popUpTo(Connecting) { inclusive = true }
+                        }
+                    },
+                    navigateToScanning = {
+                        navController.navigate(Scanning) {
+                            popUpTo(Scanning) { inclusive = true }
+                        }
                     }
-                }
+                )
             }
         }
     }

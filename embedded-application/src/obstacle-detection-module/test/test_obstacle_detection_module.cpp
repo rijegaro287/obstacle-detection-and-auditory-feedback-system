@@ -1,12 +1,12 @@
 #include <iostream>
 
-#include "obstacle_detection_module.h"
-#include "image_capture_module.h"
+#include "obstacle_detection_module.hpp"
+#include "image_capture_module.hpp"
 #include "obstacle_detection_iface.hpp"
 
 int main() {
-    ImageCaptureModule capturemod;
-    ObstacleDetectionModule detmod;
+    ImageCaptureModule& capturemod = ImageCaptureModule::get_instance();
+    ObstacleDetectionModule& detmod = ObstacleDetectionModule::get_instance();
 
     // Inicializar ToF camera
     if (!capturemod.initialize()) {
