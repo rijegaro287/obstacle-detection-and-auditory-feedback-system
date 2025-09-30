@@ -15,6 +15,7 @@ import com.odafs.app.ble.BLEClient.startAudioFeedback
 import com.odafs.app.ble.BLEClient.stopAudioFeedback
 import com.odafs.app.ble.FeedbackModes.NON_VERBAL_FEEDBACK
 import com.odafs.app.ble.FeedbackModes.VERBAL_FEEDBACK
+import kotlinx.coroutines.flow.first
 import java.text.Normalizer
 import java.util.Locale
 
@@ -70,6 +71,27 @@ suspend fun processCommand(context: Context, command: String) {
         lowerCommand.contains("escanear dispositivos de audio") -> {
             Toast.makeText(context, "🔵 Escaneando dispositivos de audio...", Toast.LENGTH_SHORT).show()
             scanForAudioDevices()
+        }
+        
+        // --- Mostrar dispositivos de audio encontrados ---
+        lowerCommand.contains("mostrar dispositivos de audio") -> {
+            // Obtener los dispositivos encontrados
+            val devices = BLEClient.GATTConnection.foundAudioDevices.first()
+
+            if (devices.isNotEmpty()) {
+                val deviceNames = devices.joinToString(", ") { it.name }
+                Toast.makeText(
+                    context,
+                    "📡 Dispositivos encontrados: $deviceNames",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                Toast.makeText(
+                    context,
+                    "⚠️ No se encontraron dispositivos de audio",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
         // --- Conectar dispositivo de audio ---
