@@ -128,7 +128,7 @@ fun ScanningView(
 
     LaunchedEffect(connectedAudioDevice) {
         if (connectedAudioDevice != null) {
-            navigateToControls(selectedDevice!!.name)
+            navigateToControls(connectedAudioDevice!!.name)
         }
     }
 

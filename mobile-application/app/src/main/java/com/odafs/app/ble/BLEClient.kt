@@ -74,6 +74,21 @@ object Commands {
 object FeedbackModes {
     const val NON_VERBAL_FEEDBACK = "non_verbal"
     const val VERBAL_FEEDBACK = "verbal"
+
+    const val NON_VERBAL_FEEDBACK_CODE = 0
+    const val VERBAL_FEEDBACK_CODE = 1
+
+    fun map_feedback_mode(mode: String) : Int {
+        if (mode == NON_VERBAL_FEEDBACK) {
+            return NON_VERBAL_FEEDBACK_CODE
+        }
+        else if (mode == VERBAL_FEEDBACK) {
+            return VERBAL_FEEDBACK_CODE
+        }
+        else {
+            return -1
+        }
+    }
 }
 
 object BLEClient {
@@ -379,6 +394,17 @@ object BLEClient {
         }
     }
 
+    object Controls {
+        internal val _playingFeedback = MutableStateFlow<Boolean>(false)
+        val playingFeedback: StateFlow<Boolean> = _playingFeedback.asStateFlow()
+
+        internal val _volume = MutableStateFlow(0.5f)
+        val volume: StateFlow<Float> = _volume.asStateFlow()
+
+        internal val _feedbackMode = MutableStateFlow(FeedbackModes.NON_VERBAL_FEEDBACK)
+        val feedbackMode: StateFlow<String> = _feedbackMode.asStateFlow()
+    }
+
     private val failedHealthChecksThreshold = 3
     private var failedHealthChecks = 0
     private var failedAudioHealthChecks = 0
@@ -399,6 +425,26 @@ object BLEClient {
             Log.e("BLE Controller", "Health check failed $failedHealthChecks times in a row")
             failedHealthChecks = 0
             disconnect()
+        }
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun audioHealthCheck() : Boolean {
+        val response = GATTConnection.sendCommand("${Commands.AUDIO_HEALTH_CHECK}!")
+
+        if (response[0] != '#') {
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Audio health check failed: $response")
+        failedAudioHealthChecks++
+        if (failedAudioHealthChecks >= failedHealthChecksThreshold) {
+            Log.e("BLE Controller", "Audio health check failed $failedAudioHealthChecks times in a row")
+            failedAudioHealthChecks = 0
+            GATTConnection._connectedAudioDevice.value = null
         }
         return false
     }
@@ -482,5 +528,81 @@ object BLEClient {
         failedHealthChecks = 0
 
         return true
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun startAudioFeedback() : Boolean {
+        val response = GATTConnection.sendCommand("${Commands.START_FEEDBACK}!")
+
+        if (response[0] != '#') {
+            Controls._playingFeedback.value = true
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Error starting feedback: $response")
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun stopAudioFeedback() : Boolean {
+        val response = GATTConnection.sendCommand("${Commands.STOP_FEEDBACK}!")
+
+        if (response[0] != '#') {
+            Controls._playingFeedback.value = false
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Error stopping feedback: $response")
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun setAudioVolume(volume: Float) : Boolean {
+        val volumeInt = (100 * volume).toInt()
+        val response = GATTConnection.sendCommand("${Commands.SET_VOLUME}!${volumeInt}")
+
+        if (response[0] != '#') {
+            Controls._volume.value = volume
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Error setting volume: $response")
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun setFeedbackMode(mode: String) : Boolean {
+        val response = GATTConnection.sendCommand("${Commands.SET_FEEDBACK_MODE}!${mode}")
+
+        if (response[0] != '#') {
+            Controls._feedbackMode.value = mode
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Error setting feedback mode: $response")
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun disconnectAudioDevice() : Boolean {
+        val response = GATTConnection.sendCommand("${Commands.DISCONNECT_DEVICE}!")
+
+        if (response[0] != '#') {
+            GATTConnection._connectedAudioDevice.value = null
+            failedAudioHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Error disconnecting from device: $response")
+        return false
     }
 }
