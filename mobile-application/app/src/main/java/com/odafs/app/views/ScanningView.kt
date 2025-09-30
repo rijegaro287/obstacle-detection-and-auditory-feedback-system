@@ -229,7 +229,6 @@ fun ScanningView(
                     }
                 }
             }
-
             CommandButton(modifier = Modifier.align(Alignment.BottomCenter))
         }
     }

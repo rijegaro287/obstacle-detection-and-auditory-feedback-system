@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -26,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.odafs.app.ble.BLEController
+import com.odafs.app.ble.BLEClient
 import com.odafs.app.ble.BLEDevice
 import com.odafs.app.ble.DEVICE_NAME
 import com.odafs.app.ble.Delays
@@ -38,13 +39,13 @@ import kotlinx.coroutines.delay
 @Composable
 fun ConnectingView(navigateToScanning: () -> Unit) {
     var bleDevices by remember { mutableStateOf(emptyList<BLEDevice>()) }
-    bleDevices = BLEController.foundDevices.collectAsState().value
+    bleDevices = BLEClient.DeviceConnection.foundDevices.collectAsState().value
 
     var connected by remember { mutableStateOf(false) }
-    connected = BLEController.connected.collectAsState().value
+    connected = BLEClient.DeviceConnection.connected.collectAsState().value
 
     var connecting by remember { mutableStateOf(false) }
-    connecting = BLEController.connecting.collectAsState().value
+    connecting = BLEClient.DeviceConnection.connecting.collectAsState().value
 
     LaunchedEffect(connected) {
         if (connected) navigateToScanning()
@@ -55,14 +56,14 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
                 continue
             }
 
-            BLEController.startScan()
+            BLEClient.DeviceConnection.startScan()
             delay(Delays.SERVICE_SCAN_DELAY)
-            BLEController.stopScan()
+            BLEClient.DeviceConnection.stopScan()
 
             bleDevices@ for (bleDevice in bleDevices) {
                 for (uuid in bleDevice.serviceUUIDs) {
                     if (bleDevice.device.name == DEVICE_NAME && uuid.toString() == SERVICE_UUID) {
-                        BLEController.connectToDevice(bleDevice.device)
+                        BLEClient.DeviceConnection.connectToDevice(bleDevice.device)
                         break@bleDevices
                     }
                 }
@@ -72,6 +73,7 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
         }
     }
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     Scaffold (topBar = { TopBar(title = "Conectando") }) { innerPadding ->
         Box(modifier = Modifier
             .fillMaxSize()
@@ -104,6 +106,10 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                bleDevices.forEach { device ->
+                    Text(text = device.device.address)
+                }
             }
         }
     }

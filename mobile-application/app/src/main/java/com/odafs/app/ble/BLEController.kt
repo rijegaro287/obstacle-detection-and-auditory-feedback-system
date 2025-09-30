@@ -32,17 +32,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.cancellation.CancellationException
 
-const val DEVICE_NAME = "odafs"
-const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
-const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
+//const val DEVICE_NAME = "odafs"
+//const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
+//const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
 
-object Delays {
-    const val MISC_DELAY = 100L
-    const val SERVICE_SCAN_DELAY = 5000L
-    const val AUDIO_DEVICE_SCAN_DELAY = 8000L
-    const val HEALTH_CHECK_DELAY = 2050L
-    const val AUDIO_HEALTH_CHECK_DELAY = 2350L
-}
+
 
 object FeedbackModes {
     const val NON_VERBAL_FEEDBACK = "non_verbal"
@@ -64,10 +58,10 @@ object Commands {
     const val SET_FEEDBACK_MODE = "set_feedback_mode"
 }
 
-data class BLEDevice(
-    val device: BluetoothDevice,
-    val serviceUUIDs: List<ParcelUuid>
-)
+//data class BLEDevice(
+//    val device: BluetoothDevice,
+//    val serviceUUIDs: List<ParcelUuid>
+//)
 
 data class BTAudioDevice(
     val name: String,
@@ -106,135 +100,135 @@ object BLEController {
     private var failedAudioHealthChecks = 0
     private var failedHealthChecksThreshold = 3
 
-    private val scanCallback = object : ScanCallback() {
-        @SuppressLint("MissingPermission")
-        override fun onScanResult(callbackType: Int, result: ScanResult?) {
-            result.let {
-                val device = it?.device
-                val serviceUUIDs = it?.scanRecord?.serviceUuids
+//    private val scanCallback = object : ScanCallback() {
+//        @SuppressLint("MissingPermission")
+//        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+//            result.let {
+//                val device = it?.device
+//                val serviceUUIDs = it?.scanRecord?.serviceUuids
+//
+//                if (device != null && serviceUUIDs != null) {
+//                    if (seenAddresses.add(device.address)) {
+//                        val bleDevice = BLEDevice(device, serviceUUIDs)
+//                        _foundDevices.value = _foundDevices.value + bleDevice
+//                    }
+//                }
+//            }
+//        }
+//
+//        @SuppressLint("MissingPermission")
+//        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
+//            Log.d("BLE Controller", "BLE Batch Scan Results: $results")
+//            results?.forEach { device ->
+//                device.let {
+//                    val device = it.device
+//                    val serviceUUIDs = it.scanRecord?.serviceUuids
+//
+//                    if (device != null && serviceUUIDs != null) {
+//                        if (seenAddresses.add(device.address)) {
+//                            val bleDevice = BLEDevice(device, serviceUUIDs)
+//                            _foundDevices.value = _foundDevices.value + bleDevice
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        override fun onScanFailed(errorCode: Int) {
+//            Log.e("BLE", "Scan failed: $errorCode")
+//        }
+//    }
 
-                if (device != null && serviceUUIDs != null) {
-                    if (seenAddresses.add(device.address)) {
-                        val bleDevice = BLEDevice(device, serviceUUIDs)
-                        _foundDevices.value = _foundDevices.value + bleDevice
-                    }
-                }
-            }
-        }
+//    private val gattCallback = object : BluetoothGattCallback() {
+//        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+//        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+//            when (newState) {
+//                BluetoothGatt.STATE_CONNECTED -> {
+//                    Log.d("BLE Controller", "Gatt connection state changed: Connected")
+//                    _gattConnection.value = gatt
+//                    gatt.discoverServices()
+//                }
+//                BluetoothGatt.STATE_DISCONNECTED -> {
+//                    Log.d("BLE Controller", "Gatt connection state changed: Disconnected")
+//                    disconnectFromDevice()
+//                }
+//                else -> {
+//                    Log.d("BLE Controller", "Gatt connection state changed: $newState")
+//                    disconnectFromDevice()
+//                }
+//            }
+//        }
+//
+//        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+//        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+//            var serviceFound = false
+//            var characteristicFound = false
+//
+//            gatt.services.forEach { service ->
+//                if (service.uuid.toString() == SERVICE_UUID) {
+//                    Log.d("BLE Controller", "\tService discovered: ${service.uuid}")
+//                    serviceFound = true
+//                    _serviceConnection.value = service
+//
+//                    service.characteristics.forEach { characteristic ->
+//                        if (characteristic.uuid.toString() == CHAR_UUID) {
+//                            Log.d("BLE Controller", "\t\tCharacteristic discovered: ${characteristic.uuid}")
+//                            characteristicFound = true
+//                            _characteristicConnection.value = characteristic
+//                        }
+//                    }
+//                }
+//            }
+//
+//            if (!serviceFound || !characteristicFound) disconnectFromDevice()
+//            else _connected.value = true
+//            _connecting.value = false
+//        }
+//
+//        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+//        override fun onCharacteristicWrite(
+//            gatt: BluetoothGatt,
+//            characteristic: BluetoothGattCharacteristic,
+//            status: Int
+//        ) {
+//            val pending = pendingTransaction ?: return
+//
+//            if (status == BluetoothGatt.GATT_SUCCESS) {
+//                gatt.readCharacteristic(characteristic)
+//            }
+//            else {
+//                pending.completeExceptionally(Exception("Characteristic write failed"))
+//                pendingTransaction = null
+//            }
+//        }
+//
+//        override fun onCharacteristicRead(
+//            gatt: BluetoothGatt,
+//            characteristic: BluetoothGattCharacteristic,
+//            status: Int
+//        ) {
+//            val pending = pendingTransaction ?: return
+//
+//            if (status == BluetoothGatt.GATT_SUCCESS) {
+//                @Suppress("DEPRECATION")
+//                pending.complete(characteristic.value)
+//            }
+//            else {
+//                pending.completeExceptionally(Exception("Characteristic read failed"))
+//            }
+//
+//            pendingTransaction = null
+//        }
+//    }
 
-        @SuppressLint("MissingPermission")
-        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-            Log.d("BLE Controller", "BLE Batch Scan Results: $results")
-            results?.forEach { device ->
-                device.let {
-                    val device = it.device
-                    val serviceUUIDs = it.scanRecord?.serviceUuids
-
-                    if (device != null && serviceUUIDs != null) {
-                        if (seenAddresses.add(device.address)) {
-                            val bleDevice = BLEDevice(device, serviceUUIDs)
-                            _foundDevices.value = _foundDevices.value + bleDevice
-                        }
-                    }
-                }
-            }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            Log.e("BLE", "Scan failed: $errorCode")
-        }
-    }
-
-    private val gattCallback = object : BluetoothGattCallback() {
-        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            when (newState) {
-                BluetoothGatt.STATE_CONNECTED -> {
-                    Log.d("BLE Controller", "Gatt connection state changed: Connected")
-                    _gattConnection.value = gatt
-                    gatt.discoverServices()
-                }
-                BluetoothGatt.STATE_DISCONNECTED -> {
-                    Log.d("BLE Controller", "Gatt connection state changed: Disconnected")
-                    disconnectFromDevice()
-                }
-                else -> {
-                    Log.d("BLE Controller", "Gatt connection state changed: $newState")
-                    disconnectFromDevice()
-                }
-            }
-        }
-
-        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            var serviceFound = false
-            var characteristicFound = false
-
-            gatt.services.forEach { service ->
-                if (service.uuid.toString() == SERVICE_UUID) {
-                    Log.d("BLE Controller", "\tService discovered: ${service.uuid}")
-                    serviceFound = true
-                    _serviceConnection.value = service
-
-                    service.characteristics.forEach { characteristic ->
-                        if (characteristic.uuid.toString() == CHAR_UUID) {
-                            Log.d("BLE Controller", "\t\tCharacteristic discovered: ${characteristic.uuid}")
-                            characteristicFound = true
-                            _characteristicConnection.value = characteristic
-                        }
-                    }
-                }
-            }
-
-            if (!serviceFound || !characteristicFound) disconnectFromDevice()
-            else _connected.value = true
-            _connecting.value = false
-        }
-
-        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-        override fun onCharacteristicWrite(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int
-        ) {
-            val pending = pendingTransaction ?: return
-
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                gatt.readCharacteristic(characteristic)
-            }
-            else {
-                pending.completeExceptionally(Exception("Characteristic write failed"))
-                pendingTransaction = null
-            }
-        }
-
-        override fun onCharacteristicRead(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int
-        ) {
-            val pending = pendingTransaction ?: return
-
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                @Suppress("DEPRECATION")
-                pending.complete(characteristic.value)
-            }
-            else {
-                pending.completeExceptionally(Exception("Characteristic read failed"))
-            }
-
-            pendingTransaction = null
-        }
-    }
-
-    fun init(context: Context) {
-        appContext = context.applicationContext as Application
-
-        val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = manager.adapter
-
-        bleScanner = bluetoothAdapter?.bluetoothLeScanner
-    }
+//    fun init(context: Context) {
+//        appContext = context.applicationContext as Application
+//
+//        val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+//        bluetoothAdapter = manager.adapter
+//
+//        bleScanner = bluetoothAdapter?.bluetoothLeScanner
+//    }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -282,48 +276,48 @@ object BLEController {
         }
     }
 
-    @RequiresPermission(BLUETOOTH_SCAN)
-    fun startScan() {
-        bluetoothAdapter?.isEnabled?.let {
-            if (!it) {
-                Log.e("BLE Controller", "Bluetooth is not enabled")
-                return
-            }
-        }
+//    @RequiresPermission(BLUETOOTH_SCAN)
+//    fun startScan() {
+//        bluetoothAdapter?.isEnabled?.let {
+//            if (!it) {
+//                Log.e("BLE Controller", "Bluetooth is not enabled")
+//                return
+//            }
+//        }
+//
+//        if (bleScanner == null) {
+//            Log.e("BLE Controller", "Bluetooth scanner is not available")
+//            return
+//        }
+//
+//        seenAddresses.clear()
+//        _foundDevices.value = emptyList()
+//
+//        val filters = listOf<ScanFilter>()
+//        val settings = ScanSettings.Builder()
+//            .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+//            .build()
+//
+//        try {
+//            bleScanner?.startScan(filters, settings, scanCallback)
+//            Log.d("BLE Controller", "BLE Scan Started")
+//        }
+//        catch (e: Exception) {
+//            Log.e("BLE Controller", "BLE Scan Failed: ${e.message}")
+//        }
+//    }
+//
+//    @RequiresPermission(BLUETOOTH_SCAN)
+//    fun stopScan() {
+//        bleScanner?.stopScan(scanCallback)
+//    }
 
-        if (bleScanner == null) {
-            Log.e("BLE Controller", "Bluetooth scanner is not available")
-            return
-        }
-
-        seenAddresses.clear()
-        _foundDevices.value = emptyList()
-
-        val filters = listOf<ScanFilter>()
-        val settings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
-            .build()
-
-        try {
-            bleScanner?.startScan(filters, settings, scanCallback)
-            Log.d("BLE Controller", "BLE Scan Started")
-        }
-        catch (e: Exception) {
-            Log.e("BLE Controller", "BLE Scan Failed: ${e.message}")
-        }
-    }
-
-    @RequiresPermission(BLUETOOTH_SCAN)
-    fun stopScan() {
-        bleScanner?.stopScan(scanCallback)
-    }
-
-    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    fun connectToDevice(device: BluetoothDevice) {
-        Log.d("BLE Controller", "Connecting to device: ${device.name}@${device.address}")
-        _connecting.value = true
-        device.connectGatt(appContext, false, gattCallback, TRANSPORT_LE)
-    }
+//    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+//    fun connectToDevice(device: BluetoothDevice) {
+//        Log.d("BLE Controller", "Connecting to device: ${device.name}@${device.address}")
+//        _connecting.value = true
+//        device.connectGatt(appContext, false, gattCallback, TRANSPORT_LE)
+//    }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun disconnectFromDevice() {

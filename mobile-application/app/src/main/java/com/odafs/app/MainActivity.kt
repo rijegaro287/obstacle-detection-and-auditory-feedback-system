@@ -17,6 +17,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import com.odafs.app.ble.BLEClient
+import com.odafs.app.ble.BLEConnection
 import com.odafs.app.ble.BLEController
 import com.odafs.app.ui.theme.ODAFSTheme
 
@@ -67,7 +69,9 @@ class MainActivity : ComponentActivity() {
         ))
         showEnableBluetoothDialog()
 
-        BLEController.init(applicationContext)
+        //BLEConnection.init(applicationContext)
+
+        BLEClient.init(applicationContext)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
