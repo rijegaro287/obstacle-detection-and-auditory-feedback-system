@@ -19,9 +19,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
-import androidx.compose.ui.Modifier
-import com.odafs.app.ble.BLEController
-import com.odafs.app.components.CommandButton
+import com.odafs.app.ble.BLEClient
 import com.odafs.app.ui.theme.ODAFSTheme
 import java.util.Locale
 
@@ -70,9 +68,8 @@ class MainActivity : ComponentActivity() {
             BLUETOOTH_CONNECT,
             ACCESS_FINE_LOCATION
         ))
-        //showEnableBluetoothDialog()
-
-        BLEController.init(applicationContext)
+        showEnableBluetoothDialog()
+        BLEClient.init(applicationContext)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)

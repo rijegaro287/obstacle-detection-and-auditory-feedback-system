@@ -45,7 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.odafs.app.ble.BLEController
+import com.odafs.app.ble.BLEClient
 import com.odafs.app.ble.BTAudioDevice
 import com.odafs.app.ble.Delays
 import com.odafs.app.ble.FeedbackModes
@@ -65,21 +65,29 @@ fun ControlsView(
     navigateToScanning: () -> Unit
 ) {
     var connected by remember { mutableStateOf(false) }
-    connected = BLEController.connected.collectAsState().value
+    connected = BLEClient.DeviceConnection.connected.collectAsState().value
 
     var connectedAudioDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
-    connectedAudioDevice = BLEController.connectedAudioDevice.collectAsState().value
+    connectedAudioDevice = BLEClient.GATTConnection.connectedAudioDevice.collectAsState().value
 
-    var isPlaying by remember { mutableStateOf(false) }
-    var disconnectClicked by remember { mutableStateOf(false) }
+    var playingFeedback by remember { mutableStateOf(false) }
+    playingFeedback = BLEClient.Controls.playingFeedback.collectAsState().value
+
     var volumeValue by remember { mutableFloatStateOf(0.5f) }
+    volumeValue = BLEClient.Controls.volume.collectAsState().value
+
+    var feedbackMode by remember { mutableStateOf("") }
+    feedbackMode = BLEClient.Controls.feedbackMode.collectAsState().value
+
+    var playClicked by remember { mutableStateOf(false) }
+    var newVolume by remember { mutableFloatStateOf(0.5f) }
     var switchChecked by remember { mutableStateOf(false) }
+    var disconnectClicked by remember { mutableStateOf(false) }
 
     var showError by remember { mutableStateOf(false) }
     var errorTitle by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var onDismiss : () -> Unit by remember { mutableStateOf({}) }
-    val errorTimeout = 5000L
 
     LaunchedEffect(connected) {
         if (!connected) {
@@ -108,14 +116,61 @@ fun ControlsView(
     LaunchedEffect(Unit) {
         while (true) {
             delay(Delays.HEALTH_CHECK_DELAY)
-            BLEController.healthCheck()
+            BLEClient.healthCheck()
         }
     }
 
     LaunchedEffect(Unit) {
         while (true) {
             delay(Delays.AUDIO_HEALTH_CHECK_DELAY)
-            BLEController.audioHealthCheck()
+            BLEClient.audioHealthCheck()
+        }
+    }
+
+    LaunchedEffect(playClicked) {
+        if (playClicked) {
+            while (true) {
+                Log.d("BLE Controller", "Setting feedback state to $playingFeedback")
+                val stateChanged = if (!playingFeedback) {
+                    BLEClient.startAudioFeedback()
+                }
+                else {
+                    BLEClient.stopAudioFeedback()
+                }
+                if (stateChanged) break
+                delay(Delays.MISC_DELAY)
+            }
+            playClicked = false
+        }
+    }
+
+    LaunchedEffect(newVolume) {
+        while (true) {
+            Log.d("BLE Controller", "Setting volume to $volumeValue")
+            val volumeChanged = BLEClient.setAudioVolume(volumeValue)
+            if (volumeChanged) break
+            delay(Delays.MISC_DELAY)
+        }
+    }
+
+    LaunchedEffect(switchChecked) {
+        if (switchChecked) {
+            while (true) {
+                Log.d("BLE Controller", "Setting feedback mode to $switchChecked")
+                val feedbackModeChanged = when (feedbackMode) {
+                    FeedbackModes.VERBAL_FEEDBACK -> {
+                        BLEClient.setFeedbackMode(FeedbackModes.VERBAL_FEEDBACK)
+                    }
+                    FeedbackModes.NON_VERBAL_FEEDBACK -> {
+                        BLEClient.setFeedbackMode(FeedbackModes.NON_VERBAL_FEEDBACK)
+                    }
+                    else -> {
+                        false
+                    }
+                }
+                if (feedbackModeChanged) break
+                delay(Delays.MISC_DELAY)
+            }
         }
     }
 
@@ -123,7 +178,7 @@ fun ControlsView(
         while (true) {
             if (disconnectClicked) {
                 Log.d("BLE Controller", "Disconnecting from audio device")
-                val disconnectSuccess = BLEController.disconnectAudioDevice()
+                val disconnectSuccess = BLEClient.disconnectAudioDevice()
                 if (disconnectSuccess) {
                     disconnectClicked = false
                     navigateToScanning()
@@ -136,49 +191,11 @@ fun ControlsView(
         }
     }
 
-    LaunchedEffect(isPlaying) {
-        while (true) {
-            Log.d("BLE Controller", "Setting feedback state to $isPlaying")
-            val stateChanged = if (isPlaying) {
-                BLEController.startAudioFeedback()
-            }
-            else {
-                BLEController.stopAudioFeedback()
-            }
-            if (stateChanged) break
-            delay(Delays.MISC_DELAY)
-        }
-    }
-
-    LaunchedEffect(volumeValue) {
-        while (true) {
-            Log.d("BLE Controller", "Setting volume to $volumeValue")
-            val volumeInt = (100 * volumeValue).toInt()
-            val volumeChanged = BLEController.setAudioVolume(volumeInt)
-            if (volumeChanged) break
-            delay(Delays.MISC_DELAY)
-        }
-    }
-
-    LaunchedEffect(switchChecked) {
-        while (true) {
-            Log.d("BLE Controller", "Setting feedback mode to $switchChecked")
-            val feedbackModeChanged = if (switchChecked) {
-                BLEController.setFeedbackMode(FeedbackModes.VERBAL_FEEDBACK)
-            }
-            else {
-                BLEController.setFeedbackMode(FeedbackModes.NON_VERBAL_FEEDBACK)
-            }
-            if (feedbackModeChanged) break
-            delay(Delays.MISC_DELAY)
-        }
-    }
-
     AutoDismissDialog(
         visible = showError,
         title = errorTitle,
         message = errorMessage,
-        dismissAfterMillis = errorTimeout,
+        dismissAfterMillis = Delays.ERROR_TIMEOUT,
         onDismiss = onDismiss
     )
 
@@ -215,7 +232,7 @@ fun ControlsView(
                             val playIconSize = 80
 
                             IconButton(
-                                onClick = { volumeValue = clamp(volumeValue - volumeStep, 0f, 1.0f) },
+                                onClick = { newVolume = clamp(volumeValue - volumeStep, 0f, 1.0f) },
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
                                     .background(
@@ -233,7 +250,7 @@ fun ControlsView(
                             }
 
                             IconButton(
-                                onClick = { isPlaying = !isPlaying },
+                                onClick = { playClicked = true },
                                 modifier = Modifier
                                     .align(Alignment.Center)
                                     .background(
@@ -243,7 +260,7 @@ fun ControlsView(
                                     .size(playButtonSize.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Default.PlayArrow,
+                                    imageVector = if (playingFeedback) Icons.Filled.Pause else Icons.Default.PlayArrow,
                                     contentDescription = "Botón para pausar o reanudar la retroalimentación",
                                     tint = MaterialTheme.colorScheme.inverseSurface,
                                     modifier = Modifier.size(playIconSize.dp)
@@ -251,7 +268,7 @@ fun ControlsView(
                             }
 
                             IconButton(
-                                onClick = { volumeValue = clamp(volumeValue + volumeStep, 0f, 1.0f) },
+                                onClick = { newVolume = clamp(volumeValue + volumeStep, 0f, 1.0f) },
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
                                     .background(
@@ -289,7 +306,7 @@ fun ControlsView(
 
                             Slider(
                                 value = volumeValue,
-                                onValueChange = {volumeValue = it}
+                                onValueChange = { newVolume = it}
                             )
                         }
                     }
@@ -313,7 +330,7 @@ fun ControlsView(
                         )
 
                         Switch(
-                            checked = switchChecked,
+                            checked = feedbackMode == FeedbackModes.VERBAL_FEEDBACK,
                             onCheckedChange = { switchChecked = it },
                             modifier = Modifier.align(Alignment.CenterEnd)
                         )
