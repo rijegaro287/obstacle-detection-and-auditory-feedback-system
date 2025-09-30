@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -62,8 +61,8 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
 
             bleDevices@ for (bleDevice in bleDevices) {
                 for (uuid in bleDevice.serviceUUIDs) {
-                    if (bleDevice.device.name == DEVICE_NAME && uuid.toString() == SERVICE_UUID) {
-                        BLEClient.DeviceConnection.connectToDevice(bleDevice.device)
+                    if (bleDevice.info.name == DEVICE_NAME && uuid.toString() == SERVICE_UUID) {
+                        BLEClient.DeviceConnection.connectToDevice(bleDevice.info)
                         break@bleDevices
                     }
                 }
@@ -106,10 +105,6 @@ fun ConnectingView(navigateToScanning: () -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-
-                bleDevices.forEach { device ->
-                    Text(text = device.device.address)
-                }
             }
         }
     }

@@ -9,38 +9,72 @@ import android.bluetooth.BluetoothDevice.TRANSPORT_LE
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothStatusCodes
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
+import android.os.Build
 import android.os.ParcelUuid
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.cancellation.CancellationException
 
 const val DEVICE_NAME = "odafs"
 const val SERVICE_UUID = "9b19df40-4042-4479-0000-131cd24590be"
 const val CHAR_UUID = "9b19df40-4042-4479-0001-131cd24590be"
 
+data class BLEDevice(
+    val info: BluetoothDevice,
+    val serviceUUIDs: List<ParcelUuid>
+)
+
+data class BTAudioDevice(
+    val name: String,
+    val address: String
+)
+
 object Delays {
+    const val READ_WRITE_CHAR_TIMEOUT = 10000L
+    const val ERROR_TIMEOUT = 5000L
     const val MISC_DELAY = 100L
     const val SERVICE_SCAN_DELAY = 5000L
     const val AUDIO_DEVICE_SCAN_DELAY = 8000L
     const val HEALTH_CHECK_DELAY = 2050L
     const val AUDIO_HEALTH_CHECK_DELAY = 2350L
+
+    const val PAIR_AND_CONNECT_DELAY = 500L
 }
 
-data class BLEDevice(
-    val device: BluetoothDevice,
-    val serviceUUIDs: List<ParcelUuid>
-)
+object Commands {
+    const val HEALTH_CHECK = "health_check"
+    const val AUDIO_HEALTH_CHECK = "audio_health_check"
+    const val START_DISCOVERY = "start_discovery"
+    const val STOP_DISCOVERY = "stop_discovery"
+    const val GET_DEVICES = "get_devices"
+    const val PAIR_DEVICE = "pair_device"
+    const val CONNECT_DEVICE = "connect_device"
+    const val DISCONNECT_DEVICE = "disconnect_device"
+    const val START_FEEDBACK = "start_feedback"
+    const val STOP_FEEDBACK = "stop_feedback"
+    const val SET_VOLUME = "set_volume"
+    const val SET_FEEDBACK_MODE = "set_feedback_mode"
+}
+
+object FeedbackModes {
+    const val NON_VERBAL_FEEDBACK = "non_verbal"
+    const val VERBAL_FEEDBACK = "verbal"
+}
 
 object BLEClient {
     private var appContext: Application? = null
@@ -54,6 +88,23 @@ object BLEClient {
         bluetoothAdapter = manager.adapter
 
         bleScanner = bluetoothAdapter?.bluetoothLeScanner
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun disconnect() {
+        if (GATTConnection._gattConnection.value != null) {
+            GATTConnection._gattConnection.value?.disconnect()
+            GATTConnection._gattConnection.value?.close()
+            GATTConnection._gattConnection.value = null
+        }
+        GATTConnection._characteristicConnection.value = null
+
+        DeviceConnection._connected.value = false
+        DeviceConnection._connecting.value = false
+
+        GATTConnection._discovering.value = false
+        GATTConnection._connecting.value = false
+        GATTConnection._connectedAudioDevice.value = null
     }
 
     private val deviceScanCallback = object : ScanCallback() {
@@ -99,16 +150,16 @@ object BLEClient {
             when (newState) {
                 BluetoothGatt.STATE_CONNECTED -> {
                     Log.d("BLE Controller", "Gatt connection state changed: Connected")
-                    // _gattConnection.value = gatt
+                    GATTConnection._gattConnection.value = gatt
                     gatt.discoverServices()
                 }
                 BluetoothGatt.STATE_DISCONNECTED -> {
                     Log.d("BLE Controller", "Gatt connection state changed: Disconnected")
-                    // disconnectFromDevice()
+                    disconnect()
                 }
                 else -> {
                     Log.d("BLE Controller", "Gatt connection state changed: $newState")
-                    // disconnectFromDevice()
+                    disconnect()
                 }
             }
         }
@@ -133,7 +184,7 @@ object BLEClient {
             }
 
             if (!serviceFound || !characteristicFound) {
-                // disconnectFromDevice()
+                disconnect()
             }
             else {
                 DeviceConnection._connected.value = true
@@ -233,9 +284,203 @@ object BLEClient {
     }
 
     object GATTConnection {
-        // private val _gattConnection = MutableStateFlow<BluetoothGatt?>(null)
+        internal val _gattConnection = MutableStateFlow<BluetoothGatt?>(null)
         internal val _characteristicConnection = MutableStateFlow<BluetoothGattCharacteristic?>(null)
 
+        internal val _connectedAudioDevice = MutableStateFlow<BTAudioDevice?>(null)
+        val connectedAudioDevice: StateFlow<BTAudioDevice?> = _connectedAudioDevice.asStateFlow()
+
+        internal var _foundAudioDevices = MutableStateFlow<List<BTAudioDevice>>(emptyList())
+        val foundAudioDevices: StateFlow<List<BTAudioDevice>> = _foundAudioDevices.asStateFlow()
+
+        internal val _discovering = MutableStateFlow(false)
+        val discovering: StateFlow<Boolean> = _discovering.asStateFlow()
+
+        internal val _connecting = MutableStateFlow(false)
+        val connecting: StateFlow<Boolean> = _connecting.asStateFlow()
+
         internal var _pendingTransaction: CompletableDeferred<ByteArray?>? = null
+
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        suspend fun BluetoothGatt.writeAndReadCharacteristic(
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) : ByteArray? {
+            if (_pendingTransaction != null) {
+                Log.e("BLE Controller", "Another transaction is pending")
+                return null
+            }
+
+            val pending = CompletableDeferred<ByteArray?>()
+            _pendingTransaction = pending
+
+            val startedTransaction = writeCharacteristic(
+                characteristic,
+                value,
+                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            )
+
+            if (startedTransaction != BluetoothStatusCodes.SUCCESS) {
+                pending.completeExceptionally(Exception("Characteristic write failed"))
+                _pendingTransaction = null
+                return null
+            }
+
+            try {
+                return withTimeout(Delays.READ_WRITE_CHAR_TIMEOUT) {
+                    _pendingTransaction?.await()
+                }
+            }
+            catch (e: CancellationException) {
+                _pendingTransaction?.cancel()
+                _pendingTransaction = null
+                throw e
+            }
+            catch (e: Throwable) {
+                _pendingTransaction?.completeExceptionally(e)
+                _pendingTransaction = null
+                throw e
+            }
+            finally {
+                _pendingTransaction = null
+            }
+        }
+
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        suspend fun sendCommand(command: String) : String {
+            if (_gattConnection.value == null ||
+                _characteristicConnection.value == null
+            ) {
+                Log.e("BLE Controller", "Gatt connection is not established")
+                return "#No connection established"
+            }
+
+            Log.d("BLE Controller", "Sending command: $command")
+
+            try {
+                val result = _gattConnection.value!!.writeAndReadCharacteristic(
+                    _characteristicConnection.value!!,
+                    command.toByteArray()
+                )
+
+                if (result == null) {
+                    return "#Error sending command $command"
+                }
+
+                val resultString = String(result)
+                Log.d("BLE Controller", "Received response: $resultString")
+                return resultString
+            }
+            catch (e: Exception) {
+                return "#${e.message}"
+            }
+        }
+    }
+
+    private val failedHealthChecksThreshold = 3
+    private var failedHealthChecks = 0
+    private var failedAudioHealthChecks = 0
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun healthCheck() : Boolean {
+        val response = GATTConnection.sendCommand("${Commands.HEALTH_CHECK}!")
+
+        if (response[0] != '#') {
+            failedHealthChecks = 0
+            return true
+        }
+
+        Log.e("BLE Controller", "Health check failed: $response")
+        failedHealthChecks++
+        if (failedHealthChecks >= failedHealthChecksThreshold) {
+            Log.e("BLE Controller", "Health check failed $failedHealthChecks times in a row")
+            failedHealthChecks = 0
+            disconnect()
+        }
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun scanForAudioDevices(scanningTime: Long = 10000) {
+        if (GATTConnection._discovering.value) return
+        GATTConnection._discovering.value = true
+
+        val startDiscoveryResponse = GATTConnection.sendCommand("${Commands.START_DISCOVERY}!")
+        if (startDiscoveryResponse[0] == '#') {
+            Log.e("BLE Controller", "Error starting audio device discovery: $startDiscoveryResponse")
+            GATTConnection._discovering.value = false
+            return
+        }
+
+        delay(scanningTime)
+
+        val stopDiscoveryResponse = GATTConnection.sendCommand("${Commands.STOP_DISCOVERY}!")
+        if (stopDiscoveryResponse[0] == '#') {
+            Log.e("BLE Controller", "Error stopping audio device discovery: $stopDiscoveryResponse")
+            GATTConnection._discovering.value = false
+            return
+        }
+
+        delay(Delays.MISC_DELAY)
+
+        val getDevicesResponse = GATTConnection.sendCommand("${Commands.GET_DEVICES}!")
+        if (getDevicesResponse[0] == '#') {
+            Log.e("BLE Controller", "Error getting audio devices: $getDevicesResponse")
+            return
+        }
+
+        val result = mutableListOf<BTAudioDevice>()
+
+        val devicesString = getDevicesResponse.split('$')
+        for (deviceString in devicesString) {
+            val deviceInfo = deviceString.split('@')
+
+            if (deviceInfo.size != 2) continue
+
+            val deviceName = deviceInfo[0]
+            val deviceAddress = deviceInfo[1]
+
+            result.add(BTAudioDevice(deviceName, deviceAddress))
+        }
+
+        GATTConnection._foundAudioDevices.value = result
+
+        GATTConnection._discovering.value = false
+        failedHealthChecks = 0
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun pairAndConnectAudioDevice(device: BTAudioDevice) : Boolean {
+        if (GATTConnection._connecting.value) return false
+        GATTConnection._connecting.value = true
+
+        val pairResponse = GATTConnection.sendCommand("${Commands.PAIR_DEVICE}!${device.address}")
+        if (pairResponse[0] == '#') {
+            Log.e("BLE Controller", "Error pairing device: $pairResponse")
+            GATTConnection._connectedAudioDevice.value = null
+            GATTConnection._connecting.value = false
+            return false
+        }
+
+        delay(Delays.PAIR_AND_CONNECT_DELAY)
+
+        val connectResponse = GATTConnection.sendCommand("${Commands.CONNECT_DEVICE}!${device.address}")
+        if (connectResponse[0] == '#') {
+            Log.e("BLE Controller", "Error connecting to device: $connectResponse")
+            GATTConnection._connectedAudioDevice.value = null
+            GATTConnection._connecting.value = false
+            return false
+        }
+
+        GATTConnection._connectedAudioDevice.value = device
+        GATTConnection._connecting.value = false
+        failedHealthChecks = 0
+
+        return true
     }
 }
