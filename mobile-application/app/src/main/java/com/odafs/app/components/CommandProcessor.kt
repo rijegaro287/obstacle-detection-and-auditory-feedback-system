@@ -2,24 +2,19 @@ package com.odafs.app.logic
 
 import android.Manifest
 import android.content.Context
-import android.media.AudioManager
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
-import com.odafs.app.ble.BLEController.disconnectAudioDevice
-import com.odafs.app.ble.BLEController.disconnectFromDevice
-import com.odafs.app.ble.BLEController.foundDevices
-import com.odafs.app.ble.BLEController.scanForAudioDevices
-import com.odafs.app.ble.BLEController.setAudioVolume
-import com.odafs.app.ble.BLEController.setFeedbackMode
-import com.odafs.app.ble.BLEController.startAudioFeedback
-import com.odafs.app.ble.BLEController.stopAudioFeedback
-import com.odafs.app.ble.BLEDeviceManager
+import com.odafs.app.ble.BLEClient
+import com.odafs.app.ble.BLEClient.disconnectAudioDevice
+import com.odafs.app.ble.BLEClient.scanForAudioDevices
+import com.odafs.app.ble.BLEClient.setAudioVolume
+import com.odafs.app.ble.BLEClient.setFeedbackMode
+import com.odafs.app.ble.BLEClient.startAudioFeedback
+import com.odafs.app.ble.BLEClient.stopAudioFeedback
 import com.odafs.app.ble.FeedbackModes.NON_VERBAL_FEEDBACK
 import com.odafs.app.ble.FeedbackModes.VERBAL_FEEDBACK
-import com.odafs.app.components.DeviceCard
-import com.odafs.app.views.ScanningView
 import java.text.Normalizer
 import java.util.Locale
 
@@ -37,7 +32,8 @@ suspend fun processCommand(context: Context, command: String) {
         lowerCommand.contains("configurar volumen") -> {
             val percentage = extractPercentage(lowerCommand)
             if (percentage != null) {
-                setAudioVolume(percentage)
+                val volume = (percentage.toFloat() / 100f)
+                setAudioVolume(volume)
                 Toast.makeText(
                     context,
                     "🔊 Volumen configurado al $percentage%",
@@ -62,6 +58,7 @@ suspend fun processCommand(context: Context, command: String) {
         lowerCommand.contains("reanudar") -> {
             Toast.makeText(context, "🔵 Reanudando reproducción de audio...", Toast.LENGTH_SHORT).show()
             startAudioFeedback()
+
         }
 
         // --- Apagar sistema ---
@@ -82,14 +79,35 @@ suspend fun processCommand(context: Context, command: String) {
 
             if (match != null) {
                 val indexSpoken = match.value.toInt()
-                val device = BLEDeviceManager.selectDevice(indexSpoken)
+                val devices = BLEClient.GATTConnection.foundAudioDevices.value
 
-                Toast.makeText(
-                    context,
-                    "🔵 Conectando al dispositivo $indexSpoken: ${device}...",
-                    Toast.LENGTH_SHORT
-                ).show()
+                if (devices.isNotEmpty() && indexSpoken in 1..devices.size) {
+                    val device = devices[indexSpoken - 1]
 
+                    // lanzar corrutina para conectar (si pairAndConnectAudioDevice es suspend)
+                    val connected = BLEClient.pairAndConnectAudioDevice(device)
+                    if (connected) {
+                        Toast.makeText(
+                            context,
+                            "✅ Conectado a ${device.name}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "❌ No se pudo conectar a ${device.name}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+
+                } else {
+                    Toast.makeText(
+                        context,
+                        "⚠️ Número de dispositivo inválido. Solo hay ${devices.size} disponibles.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             } else {
                 Toast.makeText(
                     context,
@@ -100,10 +118,12 @@ suspend fun processCommand(context: Context, command: String) {
         }
 
 
+
         // --- Desconectar dispositivo de audio ---
         lowerCommand.contains("desconectar dispositivo de audio") -> {
             Toast.makeText(context, "🔵 Desconectando dispositivo de audio...", Toast.LENGTH_SHORT).show()
             disconnectAudioDevice()
+
         }
 
         // --- Tipo de retroalimentacion NO verbal ---

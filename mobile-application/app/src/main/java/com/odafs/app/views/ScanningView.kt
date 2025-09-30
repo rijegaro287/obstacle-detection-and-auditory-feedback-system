@@ -134,7 +134,7 @@ fun ScanningView(
     }
 
     // función interna que selecciona un dispositivo por número
-    fun selectDeviceByNumber(indexSpoken: Int): String {
+    /**fun selectDeviceByNumber(indexSpoken: Int): String {
         val deviceIndex = indexSpoken - 1
         if (BLEDeviceManager.foundDevices.isNotEmpty() && deviceIndex in BLEDeviceManager.foundDevices.indices) {
             val device = BLEDeviceManager.foundDevices[deviceIndex]
@@ -142,7 +142,7 @@ fun ScanningView(
             return device.name
         }
         return ""
-    }
+    }**/
 
 
     AutoDismissDialog(
@@ -207,7 +207,7 @@ fun ScanningView(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = if (connecting && BLEDeviceManager.selectedDevice != null) "Conectando a ${BLEDeviceManager.selectedDevice?.name}" else "Buscando Dispositivos de Audio",
+                                text = if (connecting && selectedDevice != null) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()

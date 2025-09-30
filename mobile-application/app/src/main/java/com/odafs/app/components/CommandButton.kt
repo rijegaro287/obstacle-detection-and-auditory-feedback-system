@@ -84,6 +84,8 @@ fun CommandButton(modifier: Modifier = Modifier) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Preview
 @Composable
 fun CommandButtonPreview() {
