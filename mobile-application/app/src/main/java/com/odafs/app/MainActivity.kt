@@ -20,8 +20,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.odafs.app.ble.BLEClient
 import com.odafs.app.components.CommandButton
+import com.odafs.app.components.initTTS
 import com.odafs.app.ui.theme.ODAFSTheme
 import java.util.Locale
 
@@ -78,6 +80,7 @@ class MainActivity : ComponentActivity() {
     @RequiresPermission(BLUETOOTH_CONNECT)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initTTS(this)
 
         enableEdgeToEdge()
         setContent {

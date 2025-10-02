@@ -2,9 +2,12 @@ package com.odafs.app.components
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,19 +32,32 @@ import androidx.compose.ui.unit.dp
 import com.odafs.app.logic.processCommand
 import kotlinx.coroutines.launch
 import java.util.Locale
+import android.os.VibrationEffect
+import android.os.Vibrator
+
+private var textToSpeech: TextToSpeech? = null
 
 @Composable
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+@RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.VIBRATE])
 fun CommandButton(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val speechText = remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val view = (context as? Activity)?.window?.decorView
+    view?.isHapticFeedbackEnabled = true
+    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
+    fun vibrate(duration: Long = 150) {
+        vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+    }
 
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        // Vibración que indica que el micrófono dejó de escuchar
+        view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
             val matches = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
@@ -58,6 +74,10 @@ fun CommandButton(modifier: Modifier = Modifier) {
 
     IconButton(
         onClick = {
+            // Vibración que indica que el micrófono está escuchando
+            vibrate(500)
+
+
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(
                     RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -84,8 +104,22 @@ fun CommandButton(modifier: Modifier = Modifier) {
     }
 }
 
+fun initTTS(context: Context) {
+    textToSpeech = TextToSpeech(context) { status ->
+        if (status == TextToSpeech.SUCCESS) {
+            textToSpeech?.language = Locale.getDefault()
+        }
+    }
+}
+
+fun speak(text: String) {
+    textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+}
+
+
+
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+@RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.VIBRATE])
 @Preview
 @Composable
 fun CommandButtonPreview() {

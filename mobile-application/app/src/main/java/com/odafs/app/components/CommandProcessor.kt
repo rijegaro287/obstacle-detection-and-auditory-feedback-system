@@ -3,9 +3,12 @@ package com.odafs.app.logic
 import android.Manifest
 import android.content.Context
 import android.os.Build
+import android.speech.tts.TextToSpeech
+import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import androidx.compose.ui.platform.LocalView
 import com.odafs.app.ble.BLEClient
 import com.odafs.app.ble.BLEClient.disconnectAudioDevice
 import com.odafs.app.ble.BLEClient.scanForAudioDevices
@@ -15,13 +18,15 @@ import com.odafs.app.ble.BLEClient.startAudioFeedback
 import com.odafs.app.ble.BLEClient.stopAudioFeedback
 import com.odafs.app.ble.FeedbackModes.NON_VERBAL_FEEDBACK
 import com.odafs.app.ble.FeedbackModes.VERBAL_FEEDBACK
+import com.odafs.app.components.speak
 import kotlinx.coroutines.flow.first
 import java.text.Normalizer
 import java.util.Locale
-
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 suspend fun processCommand(context: Context, command: String) {
+    val view = (context as? android.app.Activity)?.window?.decorView
+
     // Pasar a minúsculas y quitar tildes
     val lowerCommand = Normalizer.normalize(
         command.lowercase(Locale.getDefault()),
@@ -72,25 +77,39 @@ suspend fun processCommand(context: Context, command: String) {
             Toast.makeText(context, "🔵 Escaneando dispositivos de audio...", Toast.LENGTH_SHORT).show()
             scanForAudioDevices()
         }
-        
+
         // --- Mostrar dispositivos de audio encontrados ---
         lowerCommand.contains("mostrar dispositivos de audio") -> {
             // Obtener los dispositivos encontrados
             val devices = BLEClient.GATTConnection.foundAudioDevices.first()
 
             if (devices.isNotEmpty()) {
-                val deviceNames = devices.joinToString(", ") { it.name }
+                val deviceList = devices.mapIndexed { index, device ->
+                    "Dispositivo ${index + 1}: ${device.name}"
+                }.joinToString(", ")
+
+                val message = "Se encontraron ${devices.size} dispositivos. $deviceList"
+
                 Toast.makeText(
                     context,
-                    "📡 Dispositivos encontrados: $deviceNames",
+                    "📡 Dispositivos encontrados: $deviceList",
                     Toast.LENGTH_LONG
                 ).show()
+
+                view?.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                speak(message)
+
             } else {
+                val message = "No se encontraron dispositivos de audio, intente escanear dispositivos de audio nuevamente"
+
                 Toast.makeText(
                     context,
                     "⚠️ No se encontraron dispositivos de audio",
                     Toast.LENGTH_SHORT
                 ).show()
+
+                view?.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                speak(message)
             }
         }
 
