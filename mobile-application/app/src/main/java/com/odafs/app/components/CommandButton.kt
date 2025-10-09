@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
@@ -45,18 +47,13 @@ fun CommandButton(modifier: Modifier = Modifier) {
     val speechText = remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val view = (context as? Activity)?.window?.decorView
-    view?.isHapticFeedbackEnabled = true
-    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-
-    fun vibrate(duration: Long = 150) {
-        vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
-    }
 
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         // Vibración que indica que el micrófono dejó de escuchar
-        view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        vibrate(context, HapticType.DOUBLE_TAP)
+        //playTone(ToneType.STOP_LISTEN)
 
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
@@ -68,6 +65,8 @@ fun CommandButton(modifier: Modifier = Modifier) {
                 processCommand(context, spoken)
             }
         } else {
+            vibrate(context, HapticType.ERROR)
+            playTone(ToneType.ERROR)
             Toast.makeText(context, "No se pudo reconocer tu voz", Toast.LENGTH_SHORT).show()
         }
     }
@@ -75,7 +74,8 @@ fun CommandButton(modifier: Modifier = Modifier) {
     IconButton(
         onClick = {
             // Vibración que indica que el micrófono está escuchando
-            vibrate(500)
+            vibrate(context, HapticType.TAP)
+            playTone(ToneType.START_LISTEN)
 
 
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -103,6 +103,41 @@ fun CommandButton(modifier: Modifier = Modifier) {
         )
     }
 }
+
+enum class HapticType { SUCCESS, ERROR, WARNING, INFO, TAP, LONG_PRESS, DOUBLE_TAP }
+@RequiresApi(Build.VERSION_CODES.O)
+fun vibrate(context: Context, type: HapticType) {
+    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    val pattern = when (type) {
+        HapticType.SUCCESS -> longArrayOf(0, 50, 50, 50)
+        HapticType.ERROR -> longArrayOf(0, 100, 50, 200)
+        HapticType.WARNING -> longArrayOf(0, 80, 40, 80, 40, 80)
+        HapticType.INFO -> longArrayOf(0, 150)
+        HapticType.TAP -> longArrayOf(0, 30)
+        HapticType.LONG_PRESS -> longArrayOf(0, 250)
+        HapticType.DOUBLE_TAP -> longArrayOf(0, 40, 60, 40)
+    }
+    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+}
+
+enum class ToneType { SUCCESS, ERROR, START_LISTEN, STOP_LISTEN, NOTIFICATION, DISCONNECT, TAP }
+
+fun playTone(type: ToneType) {
+    val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+
+    val (tone, duration) = when (type) {
+        ToneType.SUCCESS -> ToneGenerator.TONE_PROP_ACK to 150
+        ToneType.ERROR -> ToneGenerator.TONE_PROP_NACK to 200
+        ToneType.START_LISTEN -> ToneGenerator.TONE_PROP_BEEP to 120
+        ToneType.STOP_LISTEN -> ToneGenerator.TONE_PROP_BEEP2 to 150
+        ToneType.NOTIFICATION -> ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD to 250
+        ToneType.DISCONNECT -> ToneGenerator.TONE_PROP_BEEP2 to 200
+        ToneType.TAP -> ToneGenerator.TONE_PROP_BEEP to 80
+    }
+
+    toneGen.startTone(tone, duration)
+}
+
 
 fun initTTS(context: Context) {
     textToSpeech = TextToSpeech(context) { status ->
