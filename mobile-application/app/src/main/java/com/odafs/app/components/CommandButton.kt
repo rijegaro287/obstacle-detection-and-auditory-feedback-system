@@ -53,7 +53,7 @@ fun CommandButton(modifier: Modifier = Modifier) {
     ) { result ->
         // Vibración que indica que el micrófono dejó de escuchar
         vibrate(context, HapticType.DOUBLE_TAP)
-        //playTone(ToneType.STOP_LISTEN)
+        playTone(ToneType.STOP_LISTEN)
 
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
@@ -120,7 +120,7 @@ fun vibrate(context: Context, type: HapticType) {
     vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
 }
 
-enum class ToneType { SUCCESS, ERROR, START_LISTEN, STOP_LISTEN, NOTIFICATION, DISCONNECT, TAP }
+enum class ToneType { SUCCESS, ERROR, WARNING, START_LISTEN, STOP_LISTEN, NOTIFICATION, DISCONNECT, TAP }
 
 fun playTone(type: ToneType) {
     val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
@@ -128,6 +128,7 @@ fun playTone(type: ToneType) {
     val (tone, duration) = when (type) {
         ToneType.SUCCESS -> ToneGenerator.TONE_PROP_ACK to 150
         ToneType.ERROR -> ToneGenerator.TONE_PROP_NACK to 200
+        ToneType.WARNING -> ToneGenerator.TONE_PROP_BEEP2 to 150
         ToneType.START_LISTEN -> ToneGenerator.TONE_PROP_BEEP to 120
         ToneType.STOP_LISTEN -> ToneGenerator.TONE_PROP_BEEP2 to 150
         ToneType.NOTIFICATION -> ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD to 250

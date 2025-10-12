@@ -30,6 +30,7 @@ import java.util.Locale
 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 suspend fun processCommand(context: Context, command: String) {
     var isSuccess = true
+    var isCommandValid = true
     var message = ""
 
     // Pasar a minúsculas y quitar tildes
@@ -40,11 +41,11 @@ suspend fun processCommand(context: Context, command: String) {
 
     when {
         // --- Configurar volumen ---
-        lowerCommand.contains("configurar volumen") -> {
+        lowerCommand.contains("configurar volumen" ) || lowerCommand.contains("configurar el volumen") -> {
             val percentage = extractPercentage(lowerCommand)
             if (percentage != null) {
                 val volume = (percentage.toFloat() / 100f)
-                setAudioVolume(volume)
+                isSuccess = setAudioVolume(volume)
                 Toast.makeText(
                     context,
                     "🔊 Volumen configurado al $percentage%",
@@ -52,6 +53,7 @@ suspend fun processCommand(context: Context, command: String) {
                 ).show()
                 message = "Volumen configurado al $percentage%"
             } else {
+                isCommandValid = false
                 message = "Lo siento, no entendí el porcentaje de volumen."
                 Toast.makeText(
                     context,
@@ -63,14 +65,16 @@ suspend fun processCommand(context: Context, command: String) {
 
         // --- Pausar reproduccion de audio ---
         lowerCommand.contains("pausar") -> {
+            message = "Pausando reproducción de audio"
             Toast.makeText(context, "🔵 Pausando reproducción de audio...", Toast.LENGTH_SHORT).show()
-            stopAudioFeedback()
+            isSuccess = stopAudioFeedback()
         }
 
         // --- Reanudar reproduccion de audio ---
         lowerCommand.contains("reanudar") -> {
+            message = "Reanundando reproducción de audio"
             Toast.makeText(context, "🔵 Reanudando reproducción de audio...", Toast.LENGTH_SHORT).show()
-            startAudioFeedback()
+            isSuccess = startAudioFeedback()
 
         }
 
@@ -81,6 +85,7 @@ suspend fun processCommand(context: Context, command: String) {
 
         // --- Escanear dispositivos de audio ---
         lowerCommand.contains("escanear dispositivos de audio") -> {
+            message = "Escaneando dispositivos de audio"
             Toast.makeText(context, "🔵 Escaneando dispositivos de audio...", Toast.LENGTH_SHORT).show()
             scanForAudioDevices()
         }
@@ -117,7 +122,8 @@ suspend fun processCommand(context: Context, command: String) {
         }
 
         // --- Conectar dispositivo de audio ---
-        lowerCommand.contains("conectar dispositivo de audio") -> {
+        lowerCommand.contains("conectar dispositivo de audio") ||
+            lowerCommand.contains("conectarse al dispositivo de audio")-> {
             val regex = Regex("""\d+""")
             val match = regex.find(lowerCommand)
 
@@ -130,6 +136,7 @@ suspend fun processCommand(context: Context, command: String) {
 
                     // lanzar corrutina para conectar (si pairAndConnectAudioDevice es suspend)
                     val connected = BLEClient.pairAndConnectAudioDevice(device)
+                    isSuccess = connected
                     if (connected) {
                         message = "Conectado a ${device.name}"
                         Toast.makeText(
@@ -147,6 +154,7 @@ suspend fun processCommand(context: Context, command: String) {
                     }
 
                 } else {
+                    isCommandValid = false
                     message = "Número de dispositivo inválido. Solo hay ${devices.size} disponibles."
                     Toast.makeText(
                         context,
@@ -155,6 +163,7 @@ suspend fun processCommand(context: Context, command: String) {
                     ).show()
                 }
             } else {
+                isCommandValid = false
                 message = "No entendí el número de dispositivo seleccionado."
                 Toast.makeText(
                     context,
@@ -166,27 +175,28 @@ suspend fun processCommand(context: Context, command: String) {
 
         // --- Desconectar dispositivo de audio ---
         lowerCommand.contains("desconectar dispositivo de audio") -> {
+            message = "Desconectando dispositivo de audio"
             Toast.makeText(context, "🔵 Desconectando dispositivo de audio...", Toast.LENGTH_SHORT).show()
-            disconnectAudioDevice()
+            isSuccess = disconnectAudioDevice()
 
         }
 
         // --- Tipo de retroalimentacion NO verbal ---
         lowerCommand.contains("retroalimentacion no verbal") -> {
+            message = "Cambiando a retroalimentación no verbal"
             Toast.makeText(context, "🔵 Cambiando a retroalimentación no verbal...", Toast.LENGTH_SHORT).show()
-            setFeedbackMode(NON_VERBAL_FEEDBACK)
+            isSuccess = setFeedbackMode(NON_VERBAL_FEEDBACK)
         }
 
         // --- Tipo de retroalimentacion verbal ---
         lowerCommand.contains("retroalimentacion verbal") -> {
+            message = "Cambiando a retroalimentación verbal"
             Toast.makeText(context, "🔵 Cambiando a retroalimentación verbal...", Toast.LENGTH_SHORT).show()
-            setFeedbackMode(VERBAL_FEEDBACK)
+            isSuccess = setFeedbackMode(VERBAL_FEEDBACK)
         }
 
         // --- Ayuda ---
         lowerCommand.contains("ayuda") -> {
-            vibrate(context, HapticType.SUCCESS)
-            playTone(ToneType.SUCCESS)
             Toast.makeText(context, "🔵 Información de ayuda", Toast.LENGTH_SHORT).show()
             message = "Te damos la bienvenida a nuestra aplicación de control, puedes interactuar por medio " +
                     "de comandos de voz al presionar el centro de la pantalla, escucharás un tono que indica que " +
@@ -199,21 +209,24 @@ suspend fun processCommand(context: Context, command: String) {
         }
 
         else -> {
-            isSuccess = false
             message = "Lo siento, no entendí el comando."
             Toast.makeText(context, "❓ No entendí el comando: $command", Toast.LENGTH_SHORT).show()
         }
     }
     speak(message)
 
-    if(isSuccess){
-        vibrate(context, HapticType.SUCCESS)
-        playTone(ToneType.SUCCESS)
-    }
-
-    else{
-        vibrate(context, HapticType.ERROR)
-        playTone(ToneType.ERROR)
+    if (isCommandValid) {
+        if (isSuccess) {
+            vibrate(context, HapticType.SUCCESS)
+            playTone(ToneType.SUCCESS)
+        } else {
+            vibrate(context, HapticType.ERROR)
+            playTone(ToneType.ERROR)
+            speak("Lo siento, la operación no se pudo completar. Por favor inténtalo de nuevo.")
+        }
+    } else {
+        vibrate(context, HapticType.WARNING)
+        playTone(ToneType.WARNING)
     }
 }
 
