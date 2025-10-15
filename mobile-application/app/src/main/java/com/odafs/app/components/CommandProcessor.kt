@@ -79,15 +79,15 @@ suspend fun processCommand(context: Context, command: String) {
         }
 
         // --- Apagar sistema ---
-        lowerCommand.contains("apagar") -> {
+        /** lowerCommand.contains("apagar") -> {
             Toast.makeText(context, "🔵 Apagando el sistema...", Toast.LENGTH_SHORT).show()
-        }
+        }**/
 
         // --- Escanear dispositivos de audio ---
         lowerCommand.contains("escanear dispositivos de audio") -> {
             message = "Escaneando dispositivos de audio"
             Toast.makeText(context, "🔵 Escaneando dispositivos de audio...", Toast.LENGTH_SHORT).show()
-            scanForAudioDevices()
+            isSuccess = scanForAudioDevices()
         }
 
         // --- Mostrar dispositivos de audio encontrados ---

@@ -451,15 +451,15 @@ object BLEClient {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun scanForAudioDevices(scanningTime: Long = 10000) {
-        if (GATTConnection._discovering.value) return
+    suspend fun scanForAudioDevices(scanningTime: Long = 10000): Boolean {
+        if (GATTConnection._discovering.value) return false
         GATTConnection._discovering.value = true
 
         val startDiscoveryResponse = GATTConnection.sendCommand("${Commands.START_DISCOVERY}!")
         if (startDiscoveryResponse[0] == '#') {
             Log.e("BLE Controller", "Error starting audio device discovery: $startDiscoveryResponse")
             GATTConnection._discovering.value = false
-            return
+            return false
         }
 
         delay(scanningTime)
@@ -468,7 +468,7 @@ object BLEClient {
         if (stopDiscoveryResponse[0] == '#') {
             Log.e("BLE Controller", "Error stopping audio device discovery: $stopDiscoveryResponse")
             GATTConnection._discovering.value = false
-            return
+            return false
         }
 
         delay(Delays.MISC_DELAY)
@@ -476,7 +476,7 @@ object BLEClient {
         val getDevicesResponse = GATTConnection.sendCommand("${Commands.GET_DEVICES}!")
         if (getDevicesResponse[0] == '#') {
             Log.e("BLE Controller", "Error getting audio devices: $getDevicesResponse")
-            return
+            return false
         }
 
         val result = mutableListOf<BTAudioDevice>()
@@ -497,6 +497,7 @@ object BLEClient {
 
         GATTConnection._discovering.value = false
         failedHealthChecks = 0
+        return true
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
