@@ -83,7 +83,7 @@ fun CommandButton(modifier: Modifier = Modifier) {
                     RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                     RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
                 )
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-419")
                 putExtra(RecognizerIntent.EXTRA_PROMPT, "Habla ahora…")
             }
             speechLauncher.launch(intent)
@@ -143,7 +143,7 @@ fun playTone(type: ToneType) {
 fun initTTS(context: Context) {
     textToSpeech = TextToSpeech(context) { status ->
         if (status == TextToSpeech.SUCCESS) {
-            textToSpeech?.language = Locale.getDefault()
+            textToSpeech?.language = Locale.forLanguageTag("es-419")
         }
     }
 }

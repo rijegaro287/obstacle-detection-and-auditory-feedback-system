@@ -35,7 +35,7 @@ suspend fun processCommand(context: Context, command: String) {
 
     // Pasar a minúsculas y quitar tildes
     val lowerCommand = Normalizer.normalize(
-        command.lowercase(Locale.getDefault()),
+        command.lowercase(Locale.forLanguageTag("es-419")),
         Normalizer.Form.NFD
     ).replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
 

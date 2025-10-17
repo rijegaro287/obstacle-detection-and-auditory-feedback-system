@@ -85,8 +85,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ODAFSTheme {
-                //NavigationController()
-                CommandButton(modifier = Modifier)
+                NavigationController()
+                // CommandButton(modifier = Modifier)
             }
         }
     }
