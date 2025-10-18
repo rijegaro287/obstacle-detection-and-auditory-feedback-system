@@ -15,12 +15,14 @@ FetchContent_Declare(kfr
   GIT_REPOSITORY https://github.com/kfrlib/kfr.git
   GIT_TAG        38c3205277a49a08d8eca13d11d4d7b7cf15e38e
 )
-
 FetchContent_MakeAvailable(kfr)
 
+find_package(GTest REQUIRED)
+include(GoogleTest)
+
 # AddressSanitizer configuration
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
-# set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
+set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Define the library
 add_library(feedback_module STATIC
@@ -39,17 +41,17 @@ add_library(feedback_iface STATIC
 target_include_directories(feedback_iface PUBLIC include)
 target_link_libraries(feedback_iface PUBLIC feedback_module)
 
-# # Define the test executable using the library
-# add_executable(test_feedback_module
-#   test/test_feedback_module.cpp
-# )
-# target_link_libraries(test_feedback_module PUBLIC feedback_module)
-
-
-# # Enable testing for this module
-# enable_testing()
-
-# # Add the test
-# add_test(NAME test_feedback_module 
-#          COMMAND test_feedback_module
-#          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# Define the test executable
+add_executable(test_feedback_module 
+  test/test_feedback_module.cpp
+)
+target_link_libraries(test_feedback_module PRIVATE 
+  GTest::gtest_main
+  feedback_module
+)
+# Use gtest_discover_tests with proper working directory
+# This ensures tests run from build root where dataset paths are correct
+gtest_discover_tests(test_feedback_module
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DISCOVERY_TIMEOUT 30
+)

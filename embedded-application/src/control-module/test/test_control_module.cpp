@@ -1,11 +1,9 @@
-
-#include <thread>
-#include <mutex>
-
 #include "control_module.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace std;
 
-int main() {
-
+TEST(ControlModuleTest, BasicFunctionality) {
+  ControlModule& cm = ControlModule::get_instance();
 }

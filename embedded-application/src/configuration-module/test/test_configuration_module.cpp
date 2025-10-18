@@ -1,7 +1,9 @@
-#include <iostream>
-
 #include "configuration_module.hpp"
 
-int main() {
-  return 0;
+#include <gtest/gtest.h>
+
+using namespace std;
+
+TEST(ConfigModuleTest, BasicFunctionality) {
+  ConfigModule& cm = ConfigModule::get_instance();
 }

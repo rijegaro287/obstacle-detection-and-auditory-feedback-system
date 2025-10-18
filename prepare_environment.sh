@@ -5,6 +5,9 @@ set -o pipefail
 sudo apt update
 sudo apt full-upgrade -y
 
+# GTest
+sudo apt install libgtest-dev
+
 # Python3 venv
 sudo apt install python3-venv
 python3 -m venv venv

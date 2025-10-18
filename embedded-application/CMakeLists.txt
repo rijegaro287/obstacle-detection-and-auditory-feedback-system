@@ -6,8 +6,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(ObstacleDetectionAndAuditoryFeedbackSystem)
 
 # AddressSanitizer configuration
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
-# set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
+set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Add all modules as subdirectories
 add_subdirectory(src/configuration-module)
@@ -16,7 +16,6 @@ add_subdirectory(src/image-capture-module)
 add_subdirectory(src/obstacle-detection-module)
 add_subdirectory(src/feedback-module)
 add_subdirectory(src/transmission-module)
-
 
 add_executable(main
   src/main.cpp
@@ -30,5 +29,3 @@ target_link_libraries(main PUBLIC
   transmission_module
 )
 
-# Enable testing at the top level
-enable_testing()

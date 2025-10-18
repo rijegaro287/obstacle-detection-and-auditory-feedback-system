@@ -7,9 +7,12 @@ project(TransmissionModule)
 
 find_package(ALSA REQUIRED)
 
+find_package(GTest REQUIRED)
+include(GoogleTest)
+
 # AddressSanitizer configuration
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
-# set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
+set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 # Define the library
 add_library(transmission_module STATIC
@@ -31,21 +34,12 @@ add_library(transmission_iface STATIC
 target_include_directories(transmission_iface PUBLIC include)
 target_link_libraries(transmission_iface PUBLIC transmission_module)
 
-# # Define the test executable using the library
-# add_executable(test_transmission_module 
-#   test/test_transmission_module.cpp
-# )
-# target_include_directories(test_transmission_module PUBLIC
-#   include
-#   ${ALSA_INCLUDE_DIRS}
-# )
-# target_link_libraries(test_transmission_module transmission_module)
-
-
-# # Enable testing for this module
-# enable_testing()
-
-# # Add the test
-# add_test(NAME test_transmission_module 
-#          COMMAND test_transmission_module
-#          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# Define the test executable
+add_executable(test_transmission_module 
+    test/test_transmission_module.cpp
+)
+target_link_libraries(test_transmission_module PRIVATE 
+    GTest::gtest_main
+    control_module
+)
+gtest_discover_tests(test_transmission_module)
