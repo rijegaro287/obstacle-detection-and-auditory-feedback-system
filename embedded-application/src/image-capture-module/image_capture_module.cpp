@@ -147,9 +147,9 @@ void ImageCaptureModule::start() {
 
     // Capturar frames (loop)
     while (true) {
-		printf("==========> CAPTURE =======================================================\n");
+		// printf("==========> CAPTURE =======================================================\n");
         if (!this->running) {
-            printf("Image Capture module is paused...\n");
+            // printf("Image Capture module is paused...\n");
             std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
             continue;
         }

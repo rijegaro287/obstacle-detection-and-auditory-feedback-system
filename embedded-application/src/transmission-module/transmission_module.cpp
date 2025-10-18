@@ -159,9 +159,9 @@ void TransmissionModule::stop_transmission() {
 
 void TransmissionModule::start() {
 	while (true) {
-		printf("==========> TRANSMISSION ==================================================\n");
+		// printf("==========> TRANSMISSION ==================================================\n");
 		if (!this->running) {
-			printf("Transmission module is paused...\n");
+			// printf("Transmission module is paused...\n");
 			std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
 			continue;
 		}

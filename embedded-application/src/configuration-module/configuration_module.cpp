@@ -221,8 +221,8 @@ string ConfigModule::set_feedback_mode_command(vector<string>& args) {
 }
 
 void ConfigModule::process_command(const string& command) {
-	printf("==========> CONFIG =========================================================\n");
-	printf("Processing command: %s\n", command.c_str());
+	// printf("==========> CONFIG =========================================================\n");
+	// printf("Processing command: %s\n", command.c_str());
 
 	vector<string> tokens;
 	uint64_t command_code;
@@ -237,33 +237,39 @@ void ConfigModule::process_command(const string& command) {
 
 	command_code = this->map_command_to_code(tokens[0]);
 	tokens.erase(tokens.begin());
+	
 	switch (command_code) {
 		case HEALTH_CHECK_CODE: {
 			response = this->health_check_command();
 			break;
 		}
 		case AUDIO_HEALTH_CHECK_CODE: {
-			IControl::set_received_commands(true);
+			IControl::set_received_audio_commands(true);
 			response = this->audio_health_check_command();
 			break;
 		}
 		case START_DISCOVERY_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->start_discovery_command();
 			break;
 		}
 		case STOP_DISCOVERY_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->stop_discovery_command();
 			break;
 		}
 		case GET_DEVICES_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->get_devices_command();
 			break;
 		}
 		case PAIR_DEVICE_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->pair_device_command(tokens);
 			break;
 		}
 		case CONNECT_DEVICE_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->connect_device_command(tokens);
 			break;
 		}
@@ -272,18 +278,22 @@ void ConfigModule::process_command(const string& command) {
 			break;
 		}
 		case START_FEEDBACK_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->start_feedback_command();
 			break;
 		}
 		case STOP_FEEDBACK_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->stop_feedback_command();
 			break;
 		}
 		case SET_VOLUME_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->set_volume_command(tokens);
 			break;
 		}
 		case SET_FEEDBACK_MODE_CODE: {
+			IControl::set_received_audio_commands(true);
 			response = this->set_feedback_mode_command(tokens);
 			break;
 		}
@@ -299,8 +309,8 @@ void ConfigModule::process_command(const string& command) {
 }
 
 void ConfigModule::start() {
-	printf("==========> CONFIG ========================================================\n");
-	printf("Starting configuration module...\n");
+	// printf("==========> CONFIG ========================================================\n");
+	// printf("Starting configuration module...\n");
 
 	BLEServer& ble_server = BLEServer::get_instance();
 	BTAudioController& bt_audio_controller = BTAudioController::get_instance();

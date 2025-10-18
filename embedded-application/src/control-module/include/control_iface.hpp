@@ -5,7 +5,7 @@
 
 #define TARGET_FPS 5
 #define THREAD_SLEEP_MS 10
-#define CONTROL_THREAD_SLEEP_MS 7500
+#define CONTROL_THREAD_SLEEP_MS 7000
 #define COMMAND_RETURN_SLEEP_MS 50
 #define PAUSED_SLEEP_MS 500
 
@@ -59,7 +59,7 @@ public:
   static void set_volume(uint64_t volume);
   static void set_feedback_mode(FEEDBACK_MODES mode);
 
-  static void set_received_commands(bool status);
+  static void set_received_audio_commands(bool status);
   
   static void unlock_mutexes();
 };
