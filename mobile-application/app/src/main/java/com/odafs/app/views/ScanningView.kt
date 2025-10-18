@@ -40,6 +40,7 @@ import com.odafs.app.components.CommandButton
 import com.odafs.app.components.DeviceCard
 import com.odafs.app.components.TopBar
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.text.style.TextAlign
 import com.odafs.app.ble.BLEClient
 import com.odafs.app.ble.BTAudioDevice
@@ -131,6 +132,18 @@ fun ScanningView(
             navigateToControls(connectedAudioDevice!!.name)
         }
     }
+
+    // función interna que selecciona un dispositivo por número
+    /**fun selectDeviceByNumber(indexSpoken: Int): String {
+        val deviceIndex = indexSpoken - 1
+        if (BLEDeviceManager.foundDevices.isNotEmpty() && deviceIndex in BLEDeviceManager.foundDevices.indices) {
+            val device = BLEDeviceManager.foundDevices[deviceIndex]
+            BLEDeviceManager.selectedDevice = device
+            return device.name
+        }
+        return ""
+    }**/
+
 
     AutoDismissDialog(
         visible = showError,
