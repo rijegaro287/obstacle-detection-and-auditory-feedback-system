@@ -99,9 +99,10 @@ fun ScanningView(
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (!connecting && !discovering) {
+    LaunchedEffect(foundAudioDevices) {
+        if (foundAudioDevices.isEmpty() && !connecting && !discovering) {
             Log.d("BLE Controller", "Scanning for audio devices")
+            delay(Delays.RESCAN_AUDIO_DEVICES_DELAY)
             BLEClient.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
         }
     }

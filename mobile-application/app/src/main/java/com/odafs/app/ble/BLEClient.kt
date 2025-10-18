@@ -52,7 +52,7 @@ object Delays {
     const val AUDIO_DEVICE_SCAN_DELAY = 8000L
     const val HEALTH_CHECK_DELAY = 3001L
     const val AUDIO_HEALTH_CHECK_DELAY = 4000L
-
+    const val RESCAN_AUDIO_DEVICES_DELAY = 3000L
     const val PAIR_AND_CONNECT_DELAY = 500L
 }
 
@@ -74,21 +74,6 @@ object Commands {
 object FeedbackModes {
     const val NON_VERBAL_FEEDBACK = "non_verbal"
     const val VERBAL_FEEDBACK = "verbal"
-
-    const val NON_VERBAL_FEEDBACK_CODE = 0
-    const val VERBAL_FEEDBACK_CODE = 1
-
-    fun map_feedback_mode(mode: String) : Int {
-        if (mode == NON_VERBAL_FEEDBACK) {
-            return NON_VERBAL_FEEDBACK_CODE
-        }
-        else if (mode == VERBAL_FEEDBACK) {
-            return VERBAL_FEEDBACK_CODE
-        }
-        else {
-            return -1
-        }
-    }
 }
 
 object BLEClient {
@@ -398,7 +383,7 @@ object BLEClient {
     }
 
     object Controls {
-        internal val _playingFeedback = MutableStateFlow<Boolean>(false)
+        internal val _playingFeedback = MutableStateFlow(false)
         val playingFeedback: StateFlow<Boolean> = _playingFeedback.asStateFlow()
 
         internal val _volume = MutableStateFlow(0.5f)
@@ -610,6 +595,10 @@ object BLEClient {
 
         if (response[0] != '#') {
             GATTConnection._connectedAudioDevice.value = null
+            GATTConnection._selectedAudioDevice.value = null
+            GATTConnection._foundAudioDevices.value = emptyList()
+            GATTConnection._discovering.value = false
+            GATTConnection._connecting.value = false
             failedAudioHealthChecks = 0
             return true
         }

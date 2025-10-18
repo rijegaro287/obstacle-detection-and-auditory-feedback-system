@@ -70,14 +70,14 @@ fun ControlsView(
     var connectedAudioDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
     connectedAudioDevice = BLEClient.GATTConnection.connectedAudioDevice.collectAsState().value
 
-    var playingFeedback by remember { mutableStateOf(false) }
-    playingFeedback = BLEClient.Controls.playingFeedback.collectAsState().value
+    var playingFeedbackState by remember { mutableStateOf(false) }
+    playingFeedbackState = BLEClient.Controls.playingFeedback.collectAsState().value
 
-    var volumeValue by remember { mutableFloatStateOf(0.5f) }
-    volumeValue = BLEClient.Controls.volume.collectAsState().value
+    var volumeValueState by remember { mutableFloatStateOf(0.5f) }
+    volumeValueState = BLEClient.Controls.volume.collectAsState().value
 
-    var feedbackMode by remember { mutableStateOf("") }
-    feedbackMode = BLEClient.Controls.feedbackMode.collectAsState().value
+    var feedbackModeState by remember { mutableStateOf("") }
+    feedbackModeState = BLEClient.Controls.feedbackMode.collectAsState().value
 
     var playClicked by remember { mutableStateOf(false) }
     var newVolume by remember { mutableFloatStateOf(0.5f) }
@@ -129,48 +129,70 @@ fun ControlsView(
 
     LaunchedEffect(playClicked) {
         if (playClicked) {
-            while (true) {
-                Log.d("BLE Controller", "Setting feedback state to $playingFeedback")
-                val stateChanged = if (!playingFeedback) {
+            var stateChanged = false
+            while (!stateChanged) {
+                Log.d("BLE Controller", "Setting feedback state to $playingFeedbackState")
+                stateChanged = if (!playingFeedbackState) {
                     BLEClient.startAudioFeedback()
                 }
                 else {
                     BLEClient.stopAudioFeedback()
                 }
-                if (stateChanged) break
                 delay(Delays.MISC_DELAY)
             }
             playClicked = false
         }
     }
 
+    LaunchedEffect(volumeValueState) {
+        if (newVolume == volumeValueState) {
+            return@LaunchedEffect
+        }
+
+        newVolume = volumeValueState
+    }
+
     LaunchedEffect(newVolume) {
-        while (true) {
-            Log.d("BLE Controller", "Setting volume to $volumeValue")
-            val volumeChanged = BLEClient.setAudioVolume(volumeValue)
-            if (volumeChanged) break
+        if (newVolume == volumeValueState) {
+            return@LaunchedEffect
+        }
+
+        var volumeChanged = false;
+        while (!volumeChanged) {
+            Log.d("BLE Controller", "Setting volume to $volumeValueState")
+            volumeChanged = BLEClient.setAudioVolume(newVolume)
             delay(Delays.MISC_DELAY)
         }
     }
 
+    LaunchedEffect(feedbackModeState) {
+        Log.d("BLE Controller", "feedbackMode changed to $feedbackModeState")
+        if (switchChecked && feedbackModeState == FeedbackModes.VERBAL_FEEDBACK ||
+            !switchChecked && feedbackModeState == FeedbackModes.NON_VERBAL_FEEDBACK
+        ) {
+            return@LaunchedEffect
+        }
+
+        switchChecked = feedbackModeState == FeedbackModes.VERBAL_FEEDBACK
+    }
+
     LaunchedEffect(switchChecked) {
-        if (switchChecked) {
-            while (true) {
-                Log.d("BLE Controller", "Setting feedback mode to $switchChecked")
-                val feedbackModeChanged = when (feedbackMode) {
-                    FeedbackModes.VERBAL_FEEDBACK -> {
-                        BLEClient.setFeedbackMode(FeedbackModes.VERBAL_FEEDBACK)
-                    }
-                    FeedbackModes.NON_VERBAL_FEEDBACK -> {
-                        BLEClient.setFeedbackMode(FeedbackModes.NON_VERBAL_FEEDBACK)
-                    }
-                    else -> {
-                        false
-                    }
-                }
-                if (feedbackModeChanged) break
-                delay(Delays.MISC_DELAY)
+        if (switchChecked && feedbackModeState == FeedbackModes.VERBAL_FEEDBACK ||
+            !switchChecked && feedbackModeState == FeedbackModes.NON_VERBAL_FEEDBACK
+        ) {
+            return@LaunchedEffect
+        }
+
+        var feedbackModeChanged = false
+        while (!feedbackModeChanged) {
+            Log.d("BLE Controller", "Setting feedback mode to $switchChecked")
+            feedbackModeChanged = if (switchChecked) {
+                BLEClient.setFeedbackMode(FeedbackModes.VERBAL_FEEDBACK)
             }
+            else {
+                BLEClient.setFeedbackMode(FeedbackModes.NON_VERBAL_FEEDBACK)
+            }
+            delay(Delays.MISC_DELAY)
         }
     }
 
@@ -232,7 +254,7 @@ fun ControlsView(
                             val playIconSize = 80
 
                             IconButton(
-                                onClick = { newVolume = clamp(volumeValue - volumeStep, 0f, 1.0f) },
+                                onClick = { newVolume = clamp(newVolume - volumeStep, 0f, 1.0f) },
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
                                     .background(
@@ -260,7 +282,7 @@ fun ControlsView(
                                     .size(playButtonSize.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (playingFeedback) Icons.Filled.Pause else Icons.Default.PlayArrow,
+                                    imageVector = if (playingFeedbackState) Icons.Filled.Pause else Icons.Default.PlayArrow,
                                     contentDescription = "Botón para pausar o reanudar la retroalimentación",
                                     tint = MaterialTheme.colorScheme.inverseSurface,
                                     modifier = Modifier.size(playIconSize.dp)
@@ -268,7 +290,7 @@ fun ControlsView(
                             }
 
                             IconButton(
-                                onClick = { newVolume = clamp(volumeValue + volumeStep, 0f, 1.0f) },
+                                onClick = { newVolume = clamp(newVolume + volumeStep, 0f, 1.0f) },
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
                                     .background(
@@ -295,7 +317,7 @@ fun ControlsView(
                                 )
 
                                 Text(
-                                    text = "${(100 * volumeValue).roundToInt()}%",
+                                    text = "${(100 * newVolume).roundToInt()}%",
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.align(Alignment.CenterEnd),
                                     color = Color.Gray
@@ -305,7 +327,7 @@ fun ControlsView(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Slider(
-                                value = volumeValue,
+                                value = volumeValueState,
                                 onValueChange = { newVolume = it}
                             )
                         }
@@ -330,8 +352,10 @@ fun ControlsView(
                         )
 
                         Switch(
-                            checked = feedbackMode == FeedbackModes.VERBAL_FEEDBACK,
-                            onCheckedChange = { switchChecked = it },
+                            checked = switchChecked,
+                            onCheckedChange = {
+                                switchChecked = feedbackModeState != FeedbackModes.VERBAL_FEEDBACK
+                            },
                             modifier = Modifier.align(Alignment.CenterEnd)
                         )
                     }
@@ -366,7 +390,6 @@ fun ControlsView(
                     }
                 }
             }
-
             CommandButton(modifier = Modifier.align(Alignment.BottomCenter))
         }
     }
