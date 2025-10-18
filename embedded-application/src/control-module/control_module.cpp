@@ -10,7 +10,7 @@
 #include <thread>
 #include <chrono>
 
-static bool received_commands = false;
+static bool received_audio_commands = false;
 
 ControlModule& ControlModule::get_instance() {
 	static ControlModule instance;
@@ -84,6 +84,10 @@ void ControlModule::stop_feedback() {
   IObstacleDetection::stop_detection();
   IFeedback::stop_feedback();
   ITransmission::stop_transmission();
+
+  this->frame = Frame();
+  this->obstacle = Obstacle();
+  this->audio_data = Audio();
 }
 
 void ControlModule::set_volume(uint64_t volume) {
@@ -94,8 +98,8 @@ void ControlModule::set_feedback_mode(FEEDBACK_MODES mode) {
   IFeedback::set_feedback_mode(mode);
 }
 
-void ControlModule::set_received_commands(bool status) {
-  received_commands = status;
+void ControlModule::set_received_audio_commands(bool status) {
+  received_audio_commands = status;
 }
 
 void ControlModule::unlock_mutexes() {
@@ -108,17 +112,13 @@ void ControlModule::start() {
   this->unlock_mutexes();
 
   while (true) {
-	  printf("==========> CONTROL =======================================================\n");
-    if (received_commands) {
-      received_commands = false;
+	  // printf("==========> CONTROL =======================================================\n");
+    if (received_audio_commands) {
+      received_audio_commands = false;
     }
     else {
-      printf("No commands received in the last %d seconds. Stopping feedback...\n", CONTROL_THREAD_SLEEP_MS / 1000);
+      printf("No commands received in the last %.1f seconds. Stopping feedback...\n", CONTROL_THREAD_SLEEP_MS / 1000.0);
       this->stop_feedback();
-      this->frame = Frame();
-      this->obstacle = Obstacle();
-      this->audio_data = Audio();
-      IConfiguration::disconnect_audio_device();
     }
     this_thread::sleep_for(chrono::milliseconds(CONTROL_THREAD_SLEEP_MS));
   }

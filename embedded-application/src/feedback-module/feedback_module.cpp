@@ -233,7 +233,7 @@ void FeedbackModule::start() {
 	while (true) {
 		// printf("==========> FEEDBACK ======================================================\n");
 		if (!this->running) {
-			printf("Feedback module is paused...\n");
+			// printf("Feedback module is paused...\n");
 			std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
 			continue;
 		}

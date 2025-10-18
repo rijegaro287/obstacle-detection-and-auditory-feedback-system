@@ -13,7 +13,7 @@ include(FetchContent)
 
 FetchContent_Declare(kfr
   GIT_REPOSITORY https://github.com/kfrlib/kfr.git
-  GIT_TAG        origin/main
+  GIT_TAG        38c3205277a49a08d8eca13d11d4d7b7cf15e38e
 )
 
 FetchContent_MakeAvailable(kfr)

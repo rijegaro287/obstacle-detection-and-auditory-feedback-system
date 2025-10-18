@@ -44,8 +44,8 @@ void IControl::set_feedback_mode(FEEDBACK_MODES mode) {
   ControlModule::get_instance().set_feedback_mode(mode);
 }
 
-void IControl::set_received_commands(bool status) {
-  ControlModule::get_instance().set_received_commands(status);
+void IControl::set_received_audio_commands(bool status) {
+  ControlModule::get_instance().set_received_audio_commands(status);
 }
 
 void IControl::unlock_mutexes() {
