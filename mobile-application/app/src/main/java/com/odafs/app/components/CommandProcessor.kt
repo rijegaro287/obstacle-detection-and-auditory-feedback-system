@@ -178,7 +178,6 @@ suspend fun processCommand(context: Context, command: String) {
             message = "Desconectando dispositivo de audio"
             Toast.makeText(context, "🔵 Desconectando dispositivo de audio...", Toast.LENGTH_SHORT).show()
             isSuccess = disconnectAudioDevice()
-
         }
 
         // --- Tipo de retroalimentacion NO verbal ---
@@ -213,6 +212,7 @@ suspend fun processCommand(context: Context, command: String) {
             Toast.makeText(context, "❓ No entendí el comando: $command", Toast.LENGTH_SHORT).show()
         }
     }
+
     speak(message)
 
     if (isCommandValid) {
