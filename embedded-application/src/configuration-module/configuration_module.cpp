@@ -51,6 +51,8 @@ string ConfigModule::health_check_command() {
 }
 
 string ConfigModule::audio_health_check_command() {
+	return "OK";
+
 	BlueZDevice *connected_device = BTAudioController::get_instance().connected_device;
 	
 	if (connected_device == nullptr) {

@@ -12,14 +12,14 @@ ObstacleDetectionModule& ObstacleDetectionModule::get_instance() {
 // Contructor: asigna los rangos de rojo para la detección
 ObstacleDetectionModule::ObstacleDetectionModule():
     // Rango 1 - Tonos (H) del 0 al 10, para todas las saturaciones (S) y brillos (V)
-    lowerRed1_(0, 0, 0),
+    lowerRed1_(0, 0, 100),
     upperRed1_(10, 255, 255),
     // Rango 2 – Tonos (H) del 160 al 180, para todas las saturaciones (S) y brillos (V)
-    lowerRed2_(160, 0, 0),
+    lowerRed2_(160, 0, 100),
     upperRed2_(180, 255, 255),
     // Rango 3 - Naranja
     lowerOrange_(11, 0, 0),
-    upperOrange_(13, 255, 255),
+    upperOrange_(12, 255, 255),
     running(false)
 {}
 
@@ -214,6 +214,10 @@ Obstacle ObstacleDetectionModule::selectObstacle(
         if (count == 0) continue;
         
         double meanDepth = (sumDepth / count)/ 1000.0;
+
+        if(meanDepth > 2){
+            continue;
+        }
         
         // centroide
         cv::Point centroid(
@@ -230,7 +234,7 @@ Obstacle ObstacleDetectionModule::selectObstacle(
         double normDepth  = 1.0 - std::min(1.0, (meanDepth - depthMin) / (depthMax - depthMin));
 
         // calcular score
-        double score = 0.3*normArea + 0.3*normDist + 0.4*normDepth;
+        double score = 0.3*normArea + 0.3*(1 / normDist) + 0.4*(1 / normDepth);
 
         if (score > mainObstacle.score) {
             mainObstacle.label = i;
@@ -302,6 +306,9 @@ void ObstacleDetectionModule::previewDepth(cv::Mat& image){
 
 // Método viewDetection: muestra el resultado de la deteccion de obstáculos
 void ObstacleDetectionModule::viewDetection(Obstacle& obstacle){
+    if(obstacle.image.empty()){
+        return;
+    }
     cv::Mat display;
     cv::cvtColor(obstacle.image, display, cv::COLOR_GRAY2BGR);
 

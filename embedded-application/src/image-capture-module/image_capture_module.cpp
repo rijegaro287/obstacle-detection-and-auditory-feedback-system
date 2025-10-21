@@ -72,8 +72,19 @@ bool ImageCaptureModule::captureFrame() {
     // Ver la imagen de profundidad original
     if (!depth_frame_.empty()) {
         cv::Mat depth_vis;
-        depth_frame_.convertTo(depth_vis, CV_8U, 255.0 / 7000);
-        cv::applyColorMap(depth_vis, result_frame_, cv::COLORMAP_RAINBOW);
+
+        depth_frame_.convertTo(depth_vis, CV_8U, 255.0 / 4000);
+
+        for(int i = 0; i < result_frame_.rows; i++){
+            for(int j = 0; j < result_frame_.cols; j++){
+                uint8_t val = result_frame_.at<uint8_t>(i,j);
+                if(val < 20){
+                    result_frame_.at<uint8_t>(i, j) = 240;
+                }
+            }
+        }
+
+        cv::applyColorMap(depth_vis, result_frame_, cv::COLORMAP_HOT);
         //cv::imshow("Original Depth Frame", result_frame_);
     }
 
@@ -103,7 +114,7 @@ Frame ImageCaptureModule::preprocessDepth() {
     depth_normalized.convertTo(depth_8u, CV_8U, 255);
 
     // Aplicar mapa de colores
-    cv::applyColorMap(depth_8u, result_frame_, cv::COLORMAP_RAINBOW);
+    cv::applyColorMap(depth_8u, result_frame_, cv::COLORMAP_HOT);
 
     // Convertir a HSV para filtrar brillo (canal V)
     cv::Mat hsv_image;

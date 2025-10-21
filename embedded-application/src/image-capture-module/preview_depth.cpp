@@ -118,7 +118,7 @@ int main()
         return -1;
     }
     //  Modify the range also to modify the MAX_DISTANCE
-    tof.setControl(Control::RANGE, MAX_DISTANCE);
+    tof.setControl(Control::RANGE, 4000);
     tof.getControl(Control::RANGE, &max_range);
     auto info = tof.getCameraInfo();
     std::cout << "open camera with (" << info.width << "x" << info.height << ")" << std::endl;
@@ -146,13 +146,25 @@ int main()
         cv::Mat depth_frame(format.height, format.width, CV_32F, depth_ptr);   // Mapa de profundidad
         cv::Mat confidence_frame(format.height, format.width, CV_32F, confidence_ptr); // Confianza
 
+
+    
         // depth_frame = matRotateClockWise180(depth_frame);
         // result_frame = matRotateClockWise180(result_frame);
         // confidence_frame = matRotateClockWise180(confidence_frame);
-        depth_frame.convertTo(result_frame, CV_8U, 255.0 / 7000, 0);
+        float x = 255.0 / 4000;
+        depth_frame.convertTo(result_frame, CV_8U, x, 0);
 
-        // Aplicar mapa de color
-        cv::applyColorMap(result_frame, result_frame, cv::COLORMAP_RAINBOW);
+        
+        for(int i = 0; i < result_frame.rows; i++){
+            for(int j = 0; j < result_frame.cols; j++){
+                uint8_t val = result_frame.at<uint8_t>(i,j);
+                if(val < 20){
+                    result_frame.at<uint8_t>(i, j) = 240;
+                }
+            }
+        }
+
+        cv::applyColorMap(result_frame, result_frame, cv::COLORMAP_HOT);
         getPreviewRGB(result_frame, confidence_frame);
 
         confidence_frame.convertTo(confidence_frame, CV_8U, 255.0 / 1024, 0);
@@ -162,7 +174,7 @@ int main()
         cv::rectangle(result_frame, followRect, cv::Scalar(255, 255, 255), 1);
 
         std::cout << "select Rect distance: " << cv::mean(depth_frame(seletRect)).val[0] << std::endl;
-
+        //std::cout << result_frame << std::endl;
         cv::imshow("preview", result_frame);
 
         auto key = cv::waitKey(1);

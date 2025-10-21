@@ -29,6 +29,8 @@ public:
   void stop_feedback();
   void set_volume(uint64_t volume);
   void set_feedback_mode(FEEDBACK_MODES mode);
+  
+  void viewDetection(Obstacle& obstacle);
 
   void set_received_audio_commands(bool status);
   void unlock_mutexes();

@@ -55,6 +55,7 @@ void ControlModule::set_obstacle(const Obstacle obstacle) {
   this->obstacle.azimuth = obstacle.azimuth;
   this->obstacle.elevation = obstacle.elevation;
   this->obstacle.meanDepth = obstacle.meanDepth;
+  this->obstacle.image = obstacle.image;
 }
 
 Audio ControlModule::get_audio_data() {
@@ -108,12 +109,61 @@ void ControlModule::unlock_mutexes() {
   this->audio_mtx.unlock();
 }
 
+// Método viewDetection: muestra el resultado de la deteccion de obstáculos
+void ControlModule::viewDetection(Obstacle& obstacle){
+    lock_guard<mutex> guard(this->obstacle_mtx);
+    cv::Mat display;
+
+    if(obstacle.image.empty()){
+      return;
+    }
+
+    cv::cvtColor(obstacle.image, display, cv::COLOR_GRAY2BGR);
+
+    std::ostringstream oss;
+    /**oss << std::fixed << std::setprecision(2)
+        << obstacle.meanDepth << " m | "
+        << "Az: " << mapAzimuth(obstacle.azimuth) << " | "
+        << "El: " << obstacle.elevation;**/
+
+    std::string infoText = oss.str();
+
+    // Dibujar la profundidad promedio 
+    cv::putText(
+        display,
+        infoText,
+        cv::Point(10, 30),
+        cv::FONT_HERSHEY_SIMPLEX,
+        0.4,
+        cv::Scalar(255, 255, 0), // celeste
+        2
+    );
+
+    // Centro de la imagen
+    cv::Point center(display.cols/2, display.rows/2);
+
+    // FOV de la cámara
+    const double FOV_X_DEG = 62.8;
+    const double FOV_Y_DEG = 37.9;
+
+    // Calcular posición del punto que indica la dirección del obstáculo
+    cv::Point tip(
+        center.x + static_cast<int>(obstacle.azimuth   / (FOV_X_DEG/2.0) * center.x),
+        center.y - static_cast<int>(obstacle.elevation / (FOV_Y_DEG/2.0) * center.y)
+    );
+
+    // Dibujar un punto morado en la dirección del obstáculo
+    cv::circle(display, tip, 5, cv::Scalar(255,0,255), cv::FILLED); // morado
+
+    cv::imshow("Distancia y Angulo del obstaculo seleccionado", display);
+}
+
 void ControlModule::start() {
   this->unlock_mutexes();
 
   while (true) {
 	  // printf("==========> CONTROL =======================================================\n");
-    if (received_audio_commands) {
+    /**if (received_audio_commands) {
       received_audio_commands = false;
     }
     else {
@@ -121,5 +171,9 @@ void ControlModule::start() {
       this->stop_feedback();
     }
     this_thread::sleep_for(chrono::milliseconds(CONTROL_THREAD_SLEEP_MS));
-  }
+  }**/
+  
+  //viewDetection(this->obstacle);
+  this_thread::sleep_for(chrono::milliseconds(1000));
+ }
 }
