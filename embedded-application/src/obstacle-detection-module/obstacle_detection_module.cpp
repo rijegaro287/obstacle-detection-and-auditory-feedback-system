@@ -215,7 +215,7 @@ Obstacle ObstacleDetectionModule::selectObstacle(
         
         double meanDepth = (sumDepth / count)/ 1000.0;
 
-        if(meanDepth > 2){
+        if(meanDepth > 3){
             continue;
         }
         
@@ -234,7 +234,8 @@ Obstacle ObstacleDetectionModule::selectObstacle(
         double normDepth  = 1.0 - std::min(1.0, (meanDepth - depthMin) / (depthMax - depthMin));
 
         // calcular score
-        double score = 0.3*normArea + 0.3*(1 / normDist) + 0.4*(1 / normDepth);
+        double score = 0.3 * area + 0.3 * (1 / distToCenter) + 0.4*(1 / meanDepth);
+        std::cout <<"SCORE:" << area << ", " << score;
 
         if (score > mainObstacle.score) {
             mainObstacle.label = i;
@@ -244,8 +245,10 @@ Obstacle ObstacleDetectionModule::selectObstacle(
             mainObstacle.centroid = cv::Point(
                 static_cast<int>(centroids.at<double>(i,0)),
                 static_cast<int>(centroids.at<double>(i,1))
-            );
+            ); 
         }
+
+        
     }
     
     // dibujar mascara del obstaculo seleccionado como main
@@ -255,6 +258,7 @@ Obstacle ObstacleDetectionModule::selectObstacle(
             for (int x = 0; x < labels.cols; x++) {
                 if (labels.at<int>(y,x) == mainObstacle.label) {
                     mainObstacle.image.at<uchar>(y,x) = 255; // pixeles del obstaculo
+
                 }
             }
         }

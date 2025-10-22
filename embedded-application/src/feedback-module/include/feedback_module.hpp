@@ -20,7 +20,7 @@
 #define TAP_N_SAMPLES 48000
 #define HRIR_N_TAPS 256
 
-#define TOF_AZ_FOV 56
+#define TOF_AZ_FOV 63
 #define TOF_EL_FOV 42
 
 #define VERBAL_AZIMUTH_THRESHOLD TOF_AZ_FOV/3

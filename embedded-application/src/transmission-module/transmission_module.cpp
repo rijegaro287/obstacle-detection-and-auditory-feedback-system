@@ -4,7 +4,7 @@
 #include <thread>
 #include <math.h>
 
-#define AUDIO_CHUNK_N_SAMPLES 1024
+#define AUDIO_CHUNK_N_SAMPLES 256
 #define OUTPUT_CHUNK_N_SAMPLES 2*AUDIO_CHUNK_N_SAMPLES
 #define PCM_LATENCY 0
 
@@ -138,15 +138,37 @@ void TransmissionModule::send_audio(Audio& signal) {
 		return;
 	}
 
-	printf("Sending audio...\n");
-  float max_value = max(get_max_value(signal.left_signal),
-												 get_max_value(signal.right_signal));
+	if (signal.left_signal.empty() || signal.sample_rate == 0) {
+		printf("Error: Audio signal is empty or sample rate is invalid.\n");
+		return;
+	}
+
+	printf("Sending audio (chunked)...\n");
+
+	// find global max for scaling
+	float max_value = std::max(get_max_value(signal.left_signal),
+	                           get_max_value(signal.right_signal));
 
 	uint64_t signal_size = signal.left_signal.size();
-	vector<int16_t> processed(2 * signal_size);
+	const uint64_t chunk_n = AUDIO_CHUNK_N_SAMPLES;
 
-	this->preprocess_audio(signal, processed, max_value, 0, signal_size);
-	this->send_pcm_data(processed, signal.sample_rate);
+	// send in chunks of chunk_n samples per channel
+	for (uint64_t start_idx = 0; start_idx < signal_size; start_idx += chunk_n) {
+		uint64_t end_idx = start_idx + chunk_n;
+		if (end_idx > signal_size) end_idx = signal_size;
+
+		uint64_t current_chunk_samples = end_idx - start_idx;
+		if (current_chunk_samples == 0) break;
+
+		// processed buffer length must be 2 * samples (interleaved stereo)
+		vector<int16_t> processed(2 * current_chunk_samples);
+
+		// preprocess this chunk (interleave + convert to PCM)
+		this->preprocess_audio(signal, processed, max_value, start_idx, end_idx);
+
+		// send the PCM chunk to the device
+		this->send_pcm_data(processed, signal.sample_rate);
+	}
 }
 
 void TransmissionModule::start_transmission() {

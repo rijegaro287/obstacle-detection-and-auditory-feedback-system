@@ -3,7 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-#define TARGET_FPS 5
+#define TARGET_FPS 1
 #define THREAD_SLEEP_MS 10
 #define CONTROL_THREAD_SLEEP_MS 7000
 #define COMMAND_RETURN_SLEEP_MS 50
