@@ -61,6 +61,9 @@ fun ScanningView(
     var foundAudioDevices by remember { mutableStateOf(emptyList<BTAudioDevice>()) }
     foundAudioDevices = BLEClient.GATTConnection.foundAudioDevices.collectAsState().value
 
+    var selectedDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
+    selectedDevice = BLEClient.GATTConnection.selectedAudioDevice.collectAsState().value
+
     var connected by remember { mutableStateOf(false) }
     connected = BLEClient.DeviceConnection.connected.collectAsState().value
 
@@ -71,7 +74,6 @@ fun ScanningView(
     connecting = BLEClient.GATTConnection.connecting.collectAsState().value
 
     var reloadClicked by remember { mutableStateOf(false) }
-    var selectedDevice by remember { mutableStateOf<BTAudioDevice?>(null) }
 
     var showError by remember { mutableStateOf(false) }
     var errorTitle by remember { mutableStateOf("") }
@@ -97,9 +99,10 @@ fun ScanningView(
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (!connecting && !discovering) {
+    LaunchedEffect(foundAudioDevices) {
+        if (foundAudioDevices.isEmpty() && !connecting && !discovering) {
             Log.d("BLE Controller", "Scanning for audio devices")
+            delay(Delays.RESCAN_AUDIO_DEVICES_DELAY)
             BLEClient.scanForAudioDevices(Delays.AUDIO_DEVICE_SCAN_DELAY)
         }
     }
@@ -121,10 +124,8 @@ fun ScanningView(
                 errorMessage = "No se pudo establecer la conexión con el dispositivo de audio"
                 showError = true
                 onDismiss = { showError = false }
-                selectedDevice = null
             }
         }
-        selectedDevice = null
     }
 
     LaunchedEffect(connectedAudioDevice) {
@@ -207,7 +208,7 @@ fun ScanningView(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = if (connecting && selectedDevice != null) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
+                                text = if (connecting) "Conectando a ${selectedDevice?.name}" else "Buscando Dispositivos de Audio",
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
@@ -229,7 +230,7 @@ fun ScanningView(
                     else {
                         LazyColumn {
                             items(foundAudioDevices) { device ->
-                                DeviceCard(device.name) { selectedDevice = device }
+                                DeviceCard(device.name) { BLEClient.setSelectedAudioDevice(device) }
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
                         }

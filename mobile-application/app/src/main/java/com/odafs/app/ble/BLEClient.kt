@@ -50,9 +50,9 @@ object Delays {
     const val MISC_DELAY = 100L
     const val SERVICE_SCAN_DELAY = 5000L
     const val AUDIO_DEVICE_SCAN_DELAY = 8000L
-    const val HEALTH_CHECK_DELAY = 2050L
-    const val AUDIO_HEALTH_CHECK_DELAY = 2350L
-
+    const val HEALTH_CHECK_DELAY = 3001L
+    const val AUDIO_HEALTH_CHECK_DELAY = 4000L
+    const val RESCAN_AUDIO_DEVICES_DELAY = 3000L
     const val PAIR_AND_CONNECT_DELAY = 500L
 }
 
@@ -74,21 +74,6 @@ object Commands {
 object FeedbackModes {
     const val NON_VERBAL_FEEDBACK = "non_verbal"
     const val VERBAL_FEEDBACK = "verbal"
-
-    const val NON_VERBAL_FEEDBACK_CODE = 0
-    const val VERBAL_FEEDBACK_CODE = 1
-
-    fun map_feedback_mode(mode: String) : Int {
-        if (mode == NON_VERBAL_FEEDBACK) {
-            return NON_VERBAL_FEEDBACK_CODE
-        }
-        else if (mode == VERBAL_FEEDBACK) {
-            return VERBAL_FEEDBACK_CODE
-        }
-        else {
-            return -1
-        }
-    }
 }
 
 object BLEClient {
@@ -305,6 +290,9 @@ object BLEClient {
         internal val _connectedAudioDevice = MutableStateFlow<BTAudioDevice?>(null)
         val connectedAudioDevice: StateFlow<BTAudioDevice?> = _connectedAudioDevice.asStateFlow()
 
+        internal val _selectedAudioDevice = MutableStateFlow<BTAudioDevice?>(null)
+        val selectedAudioDevice: StateFlow<BTAudioDevice?> = _selectedAudioDevice.asStateFlow()
+
         internal var _foundAudioDevices = MutableStateFlow<List<BTAudioDevice>>(emptyList())
         val foundAudioDevices: StateFlow<List<BTAudioDevice>> = _foundAudioDevices.asStateFlow()
 
@@ -395,7 +383,7 @@ object BLEClient {
     }
 
     object Controls {
-        internal val _playingFeedback = MutableStateFlow<Boolean>(false)
+        internal val _playingFeedback = MutableStateFlow(false)
         val playingFeedback: StateFlow<Boolean> = _playingFeedback.asStateFlow()
 
         internal val _volume = MutableStateFlow(0.5f)
@@ -408,6 +396,10 @@ object BLEClient {
     private val failedHealthChecksThreshold = 3
     private var failedHealthChecks = 0
     private var failedAudioHealthChecks = 0
+
+    fun setSelectedAudioDevice(device: BTAudioDevice) {
+        GATTConnection._selectedAudioDevice.value = device
+    }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -476,6 +468,7 @@ object BLEClient {
         val getDevicesResponse = GATTConnection.sendCommand("${Commands.GET_DEVICES}!")
         if (getDevicesResponse[0] == '#') {
             Log.e("BLE Controller", "Error getting audio devices: $getDevicesResponse")
+            GATTConnection._discovering.value = false
             return false
         }
 
@@ -505,12 +498,14 @@ object BLEClient {
     suspend fun pairAndConnectAudioDevice(device: BTAudioDevice) : Boolean {
         if (GATTConnection._connecting.value) return false
         GATTConnection._connecting.value = true
+        GATTConnection._selectedAudioDevice.value = device
 
         val pairResponse = GATTConnection.sendCommand("${Commands.PAIR_DEVICE}!${device.address}")
         if (pairResponse[0] == '#') {
             Log.e("BLE Controller", "Error pairing device: $pairResponse")
             GATTConnection._connectedAudioDevice.value = null
             GATTConnection._connecting.value = false
+            GATTConnection._selectedAudioDevice.value = null
             return false
         }
 
@@ -521,13 +516,14 @@ object BLEClient {
             Log.e("BLE Controller", "Error connecting to device: $connectResponse")
             GATTConnection._connectedAudioDevice.value = null
             GATTConnection._connecting.value = false
+            GATTConnection._selectedAudioDevice.value = null
             return false
         }
 
         GATTConnection._connectedAudioDevice.value = device
         GATTConnection._connecting.value = false
+        GATTConnection._selectedAudioDevice.value = null
         failedHealthChecks = 0
-
         return true
     }
 
@@ -599,6 +595,10 @@ object BLEClient {
 
         if (response[0] != '#') {
             GATTConnection._connectedAudioDevice.value = null
+            GATTConnection._selectedAudioDevice.value = null
+            GATTConnection._foundAudioDevices.value = emptyList()
+            GATTConnection._discovering.value = false
+            GATTConnection._connecting.value = false
             failedAudioHealthChecks = 0
             return true
         }
