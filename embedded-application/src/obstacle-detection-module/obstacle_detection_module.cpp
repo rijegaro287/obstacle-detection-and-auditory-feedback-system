@@ -1,4 +1,5 @@
 #include "obstacle_detection_module.hpp"
+#include "control_iface.hpp"
 
 #include <iostream>
 #include <thread>
@@ -235,7 +236,6 @@ Obstacle ObstacleDetectionModule::selectObstacle(
 
         // calcular score
         double score = 0.3 * area + 0.3 * (1 / distToCenter) + 0.4*(1 / meanDepth);
-        std::cout <<"SCORE:" << area << ", " << score;
 
         if (score > mainObstacle.score) {
             mainObstacle.label = i;
@@ -400,9 +400,7 @@ void ObstacleDetectionModule::stop_detection() {
 
 void ObstacleDetectionModule::start() { 
     while (true) {
-        // printf("==========> DETECTION =====================================================\n");
         if (!this->running) {
-            // printf("Obstacle detection paused...\n");
             std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
             continue;
         }
@@ -415,6 +413,8 @@ void ObstacleDetectionModule::start() {
             // Visualizar resultado del preprocesamiento
             //previewDepth(img);
             
+            IControl::add_detection_sample_start();
+
             // Iniciar deteccion 
             Obstacle obs;
             obs = detect(img, depth);  
@@ -425,7 +425,12 @@ void ObstacleDetectionModule::start() {
             // Mapear angulo horizontal
             double mapped_azimuth = mapAzimuth(obs.azimuth);
             obs.azimuth = mapped_azimuth;
-            std::cout << "Distancia: " << obs.meanDepth << ", Azimuth: " << obs.azimuth << ", Elevacion: " << obs.elevation << std::endl;
+            
+            IControl::add_detection_sample_end();
+            
+            // printf("Obstáculo Detectado:\n\tDistancia: %.2f m\n\tAzimuth: %.2f°\n\tElevación: %.2f°\n",
+            //        obs.meanDepth, obs.azimuth, obs.elevation);
+            
             //Set obstaculo
             IControl::set_obstacle(obs);
         }

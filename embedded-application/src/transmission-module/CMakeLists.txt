@@ -24,8 +24,8 @@ target_include_directories(transmission_module PUBLIC
   ${ALSA_INCLUDE_DIRS}
 )
 target_link_libraries(transmission_module PUBLIC
-  control_iface
   ${ALSA_LIBRARIES}
+  control_iface
 )
 
 add_library(transmission_iface STATIC

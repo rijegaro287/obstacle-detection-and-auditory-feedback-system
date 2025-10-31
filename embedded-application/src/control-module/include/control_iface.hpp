@@ -62,4 +62,16 @@ public:
   static void set_received_audio_commands(bool status);
   
   static void unlock_mutexes();
+
+  static void add_capture_sample_start();
+  static void add_capture_sample_end();
+
+  static void add_detection_sample_start();
+  static void add_detection_sample_end();
+
+  static void add_feedback_sample_start();
+  static void add_feedback_sample_end();
+
+  static void add_transmission_sample_start();
+  static void add_transmission_sample_end(uint64_t signal_duration_ms);
 };

@@ -17,7 +17,9 @@ ControlModule& ControlModule::get_instance() {
 	return instance;
 }
 
-ControlModule::ControlModule() {
+ControlModule::ControlModule()
+  : performance_monitor(PerformanceMonitor::get_instance(true)) {
+
   this->frame_mtx.lock();
   this->obstacle_mtx.lock();
   this->audio_mtx.lock();
@@ -160,6 +162,7 @@ void ControlModule::viewDetection(Obstacle& obstacle){
 
 void ControlModule::start() {
   this->unlock_mutexes();
+  this->start_feedback();
 
   while (true) {
 	  // printf("==========> CONTROL =======================================================\n");

@@ -1,4 +1,5 @@
 #include "feedback_module.hpp"
+#include "control_iface.hpp"
 
 #include <iostream>
 #include <thread>
@@ -12,7 +13,7 @@ FeedbackModule& FeedbackModule::get_instance() {
 FeedbackModule::FeedbackModule() {
 	this->running = false;
 	this->volume = 0.5f;
-  this->feedback_mode = NON_VERBAL_MODE;
+  this->feedback_mode = VERBAL_MODE;
 	this->init_tap_signal();
 	this->init_verbal_feedback_tensor();
 	this->init_hrir_tensor();
@@ -157,7 +158,6 @@ Audio FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
 		signal.right_signal[i] = output_r[i];
 	}
 
-	printf("Non-verbal feedback generated\n");
 	return signal;
 }
 
@@ -211,18 +211,15 @@ Audio FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
 		signal.right_signal[i] = this->verbal_feedback_tensor(position_idx, i);
 	}
 
-	printf("Verbal feedback generated\n");
 	return signal;
 }
 
 Audio FeedbackModule::generate_feedback(Obstacle obstacle) {
 	Audio output_signal;
 	if (this->feedback_mode == NON_VERBAL_MODE) {
-		printf("Generating non-verbal feedback...\n");
 		output_signal = this->generate_non_verbal_feedback(obstacle);
 	} 
 	else if (this->feedback_mode == VERBAL_MODE) {
-		printf("Generating verbal feedback...\n");
 		output_signal = this->generate_verbal_feedback(obstacle);
 	}
 	else {
@@ -233,9 +230,7 @@ Audio FeedbackModule::generate_feedback(Obstacle obstacle) {
 
 void FeedbackModule::start() {
 	while (true) {
-		// printf("==========> FEEDBACK ======================================================\n");
 		if (!this->running) {
-			// printf("Feedback module is paused...\n");
 			std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
 			continue;
 		}
@@ -246,10 +241,10 @@ void FeedbackModule::start() {
 			continue;
 		}
 
-		printf("Obstacle Position - Azimuth: %.2f, Elevation: %.2f, Distance: %.2f\n", 
-					 obstacle.azimuth, obstacle.elevation, obstacle.meanDepth);
-
+		IControl::add_feedback_sample_start();
 		Audio output_signal = this->generate_feedback(obstacle);
+		IControl::add_feedback_sample_end();
+
 		IControl::set_audio_data(output_signal);
 		std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
 	}

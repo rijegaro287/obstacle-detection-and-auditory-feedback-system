@@ -1,6 +1,7 @@
 #pragma once
 
 #include "control_iface.hpp"
+#include "performance_monitor.hpp"
 
 #include <vector>
 #include <mutex>
@@ -16,6 +17,9 @@ public:
   ControlModule& operator=(ControlModule&&) = delete;
 
   static ControlModule& get_instance();
+
+  PerformanceMonitor& performance_monitor;
+
   Frame get_frame();
   void set_frame(const Frame frame);
   

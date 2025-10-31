@@ -31,6 +31,7 @@ target_include_directories(image_capture_module PUBLIC
 target_link_libraries(image_capture_module PUBLIC
   ${CXXLIBS}
   ${OpenCV_LIBS}
+  control_iface
 )
 target_link_libraries(image_capture_module PRIVATE control_iface)
 

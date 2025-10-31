@@ -17,6 +17,7 @@ set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 # Control module library
 add_library(control_module STATIC
     control_module.cpp
+    performance_monitor.cpp
 )
 target_include_directories(control_module PUBLIC
     include

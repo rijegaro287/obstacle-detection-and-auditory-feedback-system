@@ -33,7 +33,11 @@ target_include_directories(feedback_module PUBLIC
   include
   ../control-module/include
 )
-target_link_libraries(feedback_module PUBLIC control_iface kfr kfr_dft)
+target_link_libraries(feedback_module PUBLIC 
+  kfr 
+  kfr_dft
+  control_iface 
+)
 
 add_library(feedback_iface STATIC 
   feedback_iface.cpp

@@ -158,12 +158,13 @@ void ImageCaptureModule::start() {
 
     // Capturar frames (loop)
     while (true) {
-		// printf("==========> CAPTURE =======================================================\n");
         if (!this->running) {
             // printf("Image Capture module is paused...\n");
             std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
             continue;
         }
+
+        IControl::add_capture_sample_start();
 
         // si la captura NO fue exitosa vuelve a intentarlo en la siguiente iteracion/captura
         if (!captureFrame()) {
@@ -175,11 +176,14 @@ void ImageCaptureModule::start() {
         if (!frame.image.empty()) {
             IControl::set_frame(frame);
             //cv::imshow("Preprocessed Depth Preview", frame.image);
+
+            IControl::add_capture_sample_end();
         }
 
         // int key = cv::waitKey(1);
         // if (key == 27 || key == 'q') break;
         
-        std::this_thread::sleep_for(std::chrono::milliseconds(1/TARGET_FPS)); // ajustar frecuencia de captura
+        // std::this_thread::sleep_for(std::chrono::milliseconds(1/TARGET_FPS)); // ajustar frecuencia de captura
+        std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
     }
 }

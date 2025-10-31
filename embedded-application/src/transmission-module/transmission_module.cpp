@@ -143,16 +143,12 @@ void TransmissionModule::send_audio(Audio& signal) {
 		return;
 	}
 
-	printf("Sending audio (chunked)...\n");
-
-	// find global max for scaling
 	float max_value = std::max(get_max_value(signal.left_signal),
 	                           get_max_value(signal.right_signal));
 
 	uint64_t signal_size = signal.left_signal.size();
 	const uint64_t chunk_n = AUDIO_CHUNK_N_SAMPLES;
 
-	// send in chunks of chunk_n samples per channel
 	for (uint64_t start_idx = 0; start_idx < signal_size; start_idx += chunk_n) {
 		uint64_t end_idx = start_idx + chunk_n;
 		if (end_idx > signal_size) end_idx = signal_size;
@@ -160,13 +156,9 @@ void TransmissionModule::send_audio(Audio& signal) {
 		uint64_t current_chunk_samples = end_idx - start_idx;
 		if (current_chunk_samples == 0) break;
 
-		// processed buffer length must be 2 * samples (interleaved stereo)
 		vector<int16_t> processed(2 * current_chunk_samples);
 
-		// preprocess this chunk (interleave + convert to PCM)
 		this->preprocess_audio(signal, processed, max_value, start_idx, end_idx);
-
-		// send the PCM chunk to the device
 		this->send_pcm_data(processed, signal.sample_rate);
 	}
 }
@@ -181,28 +173,29 @@ void TransmissionModule::stop_transmission() {
 
 void TransmissionModule::start() {
 	while (true) {
-		// printf("==========> TRANSMISSION ==================================================\n");
 		if (!this->running) {
-			// printf("Transmission module is paused...\n");
 			std::this_thread::sleep_for(std::chrono::milliseconds(PAUSED_SLEEP_MS));
 			continue;
 		}
 
 		Audio signal = IControl::get_audio_data();
-			if (signal.left_signal.empty() ||
-					signal.right_signal.empty() ||
-					signal.sample_rate == 0) {
+		if (signal.left_signal.empty() ||
+				signal.right_signal.empty() ||
+				signal.sample_rate == 0
+		) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
 			continue;
 		}
 
-		printf("Audio Data - Sample Rate: %lu, Left Channel Size: %zu, Right Channel Size: %zu\n", 
-					 signal.sample_rate, signal.left_signal.size(), signal.right_signal.size());
-
-		send_audio(signal);
-
 		uint64_t n_samples = signal.left_signal.size();
-		uint64_t sleep_ms = ((n_samples * 1000) / signal.sample_rate) / 10;
+		uint64_t sample_rate = signal.sample_rate;
+		uint64_t signal_duration_ms = (n_samples * 1000) / sample_rate;
+
+		IControl::add_transmission_sample_start();
+		send_audio(signal);
+		// IControl::add_transmission_sample_end(signal_duration_ms);
+
+		uint64_t sleep_ms = signal_duration_ms / 10;
 		std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
 	}
 }

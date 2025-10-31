@@ -31,6 +31,7 @@ target_include_directories(obstacle_detection_module PUBLIC
 target_link_libraries(obstacle_detection_module PUBLIC
   ${CXXLIBS}
   ${OpenCV_LIBS}
+  control_iface
 )
 target_link_libraries(obstacle_detection_module PRIVATE control_iface)
 
