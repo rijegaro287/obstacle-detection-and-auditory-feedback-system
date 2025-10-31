@@ -13,7 +13,7 @@ FeedbackModule& FeedbackModule::get_instance() {
 FeedbackModule::FeedbackModule() {
 	this->running = false;
 	this->volume = 0.5f;
-  this->feedback_mode = VERBAL_MODE;
+  this->feedback_mode = NON_VERBAL_MODE;
 	this->init_tap_signal();
 	this->init_verbal_feedback_tensor();
 	this->init_hrir_tensor();

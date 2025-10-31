@@ -4,7 +4,7 @@
 #include <vector>
 
 #define TARGET_FPS 5
-#define THREAD_SLEEP_MS 10
+#define THREAD_SLEEP_MS 5
 #define CONTROL_THREAD_SLEEP_MS 7000
 #define COMMAND_RETURN_SLEEP_MS 50
 #define PAUSED_SLEEP_MS 500

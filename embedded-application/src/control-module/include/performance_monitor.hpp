@@ -3,7 +3,8 @@
 #include <cstdint>
 #include <chrono>
 
-#define N_SAMPLES 100
+#define N_SAMPLES 1000
+#define N_REPEATS 10
 
 typedef std::chrono::steady_clock::time_point TimePoint;
 
@@ -35,6 +36,9 @@ typedef struct TotalTimes_ {
 } TotalTimes;
 
 typedef struct PerformanceStats_ {
+  double total_avg_ms;
+  double total_stddev_ms;
+
   double capture_avg_ms;
   double capture_stddev_ms;
 
@@ -56,7 +60,8 @@ public:
 
   void set_performance_monitoring(bool enabled);
 
-  bool print_performance_stats();
+  bool record_performance_stats();
+  void print_performance_stats();
 
   void add_capture_sample_start();
   void add_capture_sample_end();
@@ -69,8 +74,10 @@ public:
 private:
   bool performance_monitoring_enabled;
 
+  uint64_t repetition_count;
   SampleIndices sample_indices;
   ProcessingTimes processing_times[N_SAMPLES];
+  PerformanceStats performance_stats[N_REPEATS];
 
   double compute_stddev(uint64_t values[], double mean);
 
