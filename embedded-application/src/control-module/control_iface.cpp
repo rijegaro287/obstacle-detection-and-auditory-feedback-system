@@ -53,33 +53,25 @@ void IControl::unlock_mutexes() {
 }
 
 void IControl::add_capture_sample_start() {
-  ControlModule::get_instance().performance_monitor.add_capture_sample_start();
+  PerformanceMonitor::get_instance().add_capture_sample_start();
 }
 
 void IControl::add_capture_sample_end() {
-  ControlModule::get_instance().performance_monitor.add_capture_sample_end();
+  PerformanceMonitor::get_instance().add_capture_sample_end();
 }
 
 void IControl::add_detection_sample_start() {
-  ControlModule::get_instance().performance_monitor.add_detection_sample_start();
+  PerformanceMonitor::get_instance().add_detection_sample_start();
 }
 
 void IControl::add_detection_sample_end() {
-  ControlModule::get_instance().performance_monitor.add_detection_sample_end();
+  PerformanceMonitor::get_instance().add_detection_sample_end();
 }
 
 void IControl::add_feedback_sample_start() {
-  ControlModule::get_instance().performance_monitor.add_feedback_sample_start();
+  PerformanceMonitor::get_instance().add_feedback_sample_start();
 }
 
 void IControl::add_feedback_sample_end() {
-  ControlModule::get_instance().performance_monitor.add_feedback_sample_end();
-}
-
-void IControl::add_transmission_sample_start() {
-  ControlModule::get_instance().performance_monitor.add_transmission_sample_start();
-}
-
-void IControl::add_transmission_sample_end(uint64_t signal_duration_ms) {
-  ControlModule::get_instance().performance_monitor.add_transmission_sample_end(signal_duration_ms);
+  PerformanceMonitor::get_instance().add_feedback_sample_end();
 }

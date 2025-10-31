@@ -73,5 +73,4 @@ public:
   static void add_feedback_sample_end();
 
   static void add_transmission_sample_start();
-  static void add_transmission_sample_end(uint64_t signal_duration_ms);
 };

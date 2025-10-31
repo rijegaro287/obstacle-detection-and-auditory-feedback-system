@@ -187,15 +187,11 @@ void TransmissionModule::start() {
 			continue;
 		}
 
+		send_audio(signal);
+
 		uint64_t n_samples = signal.left_signal.size();
 		uint64_t sample_rate = signal.sample_rate;
 		uint64_t signal_duration_ms = (n_samples * 1000) / sample_rate;
-
-		IControl::add_transmission_sample_start();
-		send_audio(signal);
-		// IControl::add_transmission_sample_end(signal_duration_ms);
-
-		uint64_t sleep_ms = signal_duration_ms / 10;
-		std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+		std::this_thread::sleep_for(std::chrono::milliseconds(signal_duration_ms / 10));
 	}
 }
