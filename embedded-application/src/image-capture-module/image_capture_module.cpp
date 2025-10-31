@@ -180,6 +180,6 @@ void ImageCaptureModule::start() {
         // int key = cv::waitKey(1);
         // if (key == 27 || key == 'q') break;
         
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000/TARGET_FPS)); // ajustar frecuencia de captura
+        std::this_thread::sleep_for(std::chrono::milliseconds(1/TARGET_FPS)); // ajustar frecuencia de captura
     }
 }

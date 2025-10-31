@@ -3,13 +3,13 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-#define TARGET_FPS 1
+#define TARGET_FPS 5
 #define THREAD_SLEEP_MS 10
 #define CONTROL_THREAD_SLEEP_MS 7000
 #define COMMAND_RETURN_SLEEP_MS 50
 #define PAUSED_SLEEP_MS 500
 
-#define MAX_OBSTACLE_DISTANCE 4000
+#define MAX_OBSTACLE_DISTANCE 2000
 
 #define NON_VERBAL_MODE_STRING "non_verbal"
 #define VERBAL_MODE_STRING "verbal"

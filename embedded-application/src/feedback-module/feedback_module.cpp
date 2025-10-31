@@ -163,12 +163,14 @@ Audio FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
 
 Audio FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
 	uint64_t n_samples = this->verbal_feedback_tensor.shape()[1];
+	float distance_gain = (obstacle.meanDepth / MAX_OBSTACLE_DISTANCE);
+	float total_gain = this->volume * (1 -  distance_gain);
 	
 	Audio signal = Audio();
 	signal.left_signal = std::vector<float>(n_samples);
 	signal.right_signal = std::vector<float>(n_samples);
 	signal.sample_rate = VERBAL_SAMPLE_RATE;
-	signal.gain = this->volume;
+	signal.gain = total_gain;
 
 	uint8_t position_idx;
 	uint8_t position = this->calculate_verbal_position(obstacle);
@@ -239,7 +241,7 @@ void FeedbackModule::start() {
 		}
 
 		Obstacle obstacle = IControl::get_obstacle();
-		if (obstacle.meanDepth == 0) {
+		if (obstacle.meanDepth <= 0.1f || obstacle.meanDepth > MAX_OBSTACLE_DISTANCE) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_SLEEP_MS));
 			continue;
 		}
