@@ -1,3 +1,8 @@
+/**
+ * @file transmission_module.cpp
+ * @brief Implements ALSA-backed audio transmission utilities.
+ */
+
 #include "transmission_module.hpp"
 
 #include <chrono>
@@ -61,9 +66,14 @@ void TransmissionModule::convert_to_pcm(const vector<float>& interleaved,
 	
 	float scale = INT16_MAX / max_value;
 	for (uint64_t i = 0; i < interleaved.size(); i++) {
-		pcm[i] = static_cast<int16_t>(interleaved[i] * scale * gain);
-		if (pcm[i] > INT16_MAX) pcm[i] = INT16_MAX;
-		if (pcm[i] < INT16_MIN) pcm[i] = INT16_MIN;
+		float scaled = interleaved[i] * scale * gain;
+		if (scaled > static_cast<float>(INT16_MAX)) {
+			scaled = static_cast<float>(INT16_MAX);
+		}
+		else if (scaled < static_cast<float>(INT16_MIN)) {
+			scaled = static_cast<float>(INT16_MIN);
+		}
+		pcm[i] = static_cast<int16_t>(scaled);
 	}
 }
 
@@ -86,6 +96,11 @@ void TransmissionModule::interleave_audio(const vector<float>& left_channel,
 	}
 }	
 
+/**
+ * @brief Compute the maximum absolute sample magnitude within a mono buffer.
+ * @param audio Vector containing audio samples.
+ * @return Peak absolute value found in the buffer.
+ */
 float get_max_value(const vector<float>& audio) {
 	float max_value = 0.0;
 	for (const auto& sample : audio) {

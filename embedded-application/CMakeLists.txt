@@ -5,6 +5,40 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(ObstacleDetectionAndAuditoryFeedbackSystem)
 
+include(CTest)
+
+function(enable_coverage target)
+  if(NOT COVERAGE)
+    return()
+  endif()
+
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    return()
+  endif()
+
+  target_compile_options(${target} PRIVATE -O0 -g)
+
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(${target} PRIVATE
+      -fprofile-instr-generate
+      -fcoverage-mapping
+    )
+    target_link_options(${target} PRIVATE
+      -fprofile-instr-generate
+      -fcoverage-mapping
+    )
+  else()
+    target_compile_options(${target} PRIVATE --coverage)
+    target_link_options(${target} PRIVATE --coverage)
+  endif()
+
+  get_target_property(_target_type ${target} TYPE)
+  if(_target_type STREQUAL "EXECUTABLE" OR
+     _target_type STREQUAL "SHARED_LIBRARY" OR
+     _target_type STREQUAL "MODULE_LIBRARY")
+  endif()
+endfunction()
+
 # AddressSanitizer configuration
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
 set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
@@ -17,10 +51,10 @@ add_subdirectory(src/obstacle-detection-module)
 add_subdirectory(src/feedback-module)
 add_subdirectory(src/transmission-module)
 
-add_executable(main
+add_executable(obstacle-detection-and-auditory-feedback-system
   src/main.cpp
 )
-target_link_libraries(main PUBLIC
+target_link_libraries(obstacle-detection-and-auditory-feedback-system PUBLIC
   configuration_module
   control_module
   image_capture_module
@@ -29,3 +63,5 @@ target_link_libraries(main PUBLIC
   transmission_module
 )
 
+enable_testing()
+enable_coverage(obstacle-detection-and-auditory-feedback-system)

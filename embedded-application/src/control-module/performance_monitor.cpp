@@ -1,3 +1,8 @@
+/**
+ * @file performance_monitor.cpp
+ * @brief Implements latency tracking for the processing pipeline.
+ */
+
 #include "performance_monitor.hpp"
 
 #include <math.h>
@@ -8,6 +13,9 @@ PerformanceMonitor& PerformanceMonitor::get_instance() {
 	return instance;
 }
 
+/**
+ * @brief Initialize counters and disable monitoring by default.
+ */
 PerformanceMonitor::PerformanceMonitor() {
   this->performance_monitoring_enabled = false;
   this->repetition_count = 0;
@@ -16,6 +24,9 @@ PerformanceMonitor::PerformanceMonitor() {
   this->sample_indices.feedback_idx = 0;
 }
 
+/**
+ * @brief Default destructor retained for completeness.
+ */
 PerformanceMonitor::~PerformanceMonitor() {
 
 }

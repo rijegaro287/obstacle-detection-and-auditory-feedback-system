@@ -1,3 +1,8 @@
+/**
+ * @file configuration_module.cpp
+ * @brief Implements the BLE-backed configuration module command handlers.
+ */
+
 #include "configuration_module.hpp"
 #include "control_iface.hpp"
 
@@ -14,6 +19,9 @@ ConfigModule& ConfigModule::get_instance() {
 	return instance;
 }
 
+/**
+ * @brief Initialize the configuration module internal state.
+ */
 ConfigModule::ConfigModule() {
 	this->response_buffer = "";
 	this->found_devices.clear();
@@ -223,9 +231,6 @@ string ConfigModule::set_feedback_mode_command(vector<string>& args) {
 }
 
 void ConfigModule::process_command(const string& command) {
-	// printf("==========> CONFIG =========================================================\n");
-	// printf("Processing command: %s\n", command.c_str());
-
 	vector<string> tokens;
 	uint64_t command_code;
 	string response;
@@ -311,9 +316,6 @@ void ConfigModule::process_command(const string& command) {
 }
 
 void ConfigModule::start() {
-	// printf("==========> CONFIG ========================================================\n");
-	// printf("Starting configuration module...\n");
-
 	BLEServer& ble_server = BLEServer::get_instance();
 	BTAudioController& bt_audio_controller = BTAudioController::get_instance();
 

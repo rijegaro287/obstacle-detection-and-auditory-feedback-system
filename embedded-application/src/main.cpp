@@ -1,3 +1,9 @@
+/**
+ * @file main.cpp
+ * @brief Entry point that wires together all application modules and drives
+ * the multi-threaded execution of the embedded obstacle detection pipeline.
+ */
+
 #include "control_module.hpp"
 #include "configuration_module.hpp"
 #include "image_capture_module.hpp"
@@ -8,6 +14,14 @@
 #include <thread>
 #include <pthread.h>
 
+/**
+ * @brief Attempt to set the scheduling policy and priority of a C++ thread.
+ *
+ * @param thr Reference to the thread whose native handle will be adjusted.
+ * @param policy POSIX scheduling policy (for example `SCHED_FIFO`).
+ * @param priority Priority value compatible with the selected policy.
+ * @return true when the priority is successfully applied, false otherwise.
+ */
 bool set_thread_priority(std::thread &thr, int policy, int priority) {
   pthread_t handle = thr.native_handle();
   struct sched_param sch;
@@ -20,6 +34,10 @@ bool set_thread_priority(std::thread &thr, int policy, int priority) {
   return true;
 }
 
+/**
+ * @brief Program entry point that creates one thread per functional module
+ * and blocks until each worker thread completes.
+ */
 int main() {
   ConfigModule& config_module = ConfigModule::get_instance();
   ControlModule& control_module = ControlModule::get_instance();

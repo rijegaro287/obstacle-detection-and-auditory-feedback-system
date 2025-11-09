@@ -32,6 +32,7 @@ target_link_libraries(bluetooth_controller PUBLIC
   ${GLIB_LIBRARIES}
   ${GIO_LIBRARIES}
 )
+enable_coverage(bluetooth_controller)
 
 add_library(configuration_module STATIC
   configuration_module.cpp
@@ -45,14 +46,18 @@ target_link_libraries(configuration_module PUBLIC
   bluetooth_controller
   control_iface
 )
+enable_coverage(configuration_module)
 
 add_library(configuration_iface STATIC
   configuration_iface.cpp
 )
 target_include_directories(configuration_iface PUBLIC include)
 target_link_libraries(configuration_iface PUBLIC configuration_module)
+enable_coverage(configuration_iface)
 
 # Define the test executable
+enable_testing()
+
 add_executable(test_configuration_module 
   test/test_configuration_module.cpp
 )
@@ -63,3 +68,4 @@ target_link_libraries(test_configuration_module PRIVATE
 gtest_discover_tests(test_configuration_module
   DISCOVERY_TIMEOUT 30
 )
+enable_coverage(test_configuration_module)

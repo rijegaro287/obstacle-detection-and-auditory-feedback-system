@@ -34,6 +34,7 @@ target_link_libraries(image_capture_module PUBLIC
   control_iface
 )
 target_link_libraries(image_capture_module PRIVATE control_iface)
+enable_coverage(image_capture_module)
 
 # Define the interface library
 add_library(image_capture_iface STATIC
@@ -41,8 +42,11 @@ add_library(image_capture_iface STATIC
 )
 target_include_directories(image_capture_iface PUBLIC include)
 target_link_libraries(image_capture_iface PRIVATE image_capture_module)
+enable_coverage(image_capture_iface)
 
 # Define the test executable
+enable_testing()
+
 add_executable(test_image_capture_module 
   test/test_image_capture_module_gtest.cpp  
 )
@@ -53,8 +57,11 @@ target_link_libraries(test_image_capture_module PRIVATE
 gtest_discover_tests(test_image_capture_module
   DISCOVERY_TIMEOUT 30
 )
+enable_coverage(test_image_capture_module)
 
 # Define preview depth executable
 add_executable(preview_depth preview_depth.cpp)
 target_include_directories(preview_depth PRIVATE include)
 target_link_libraries(preview_depth PRIVATE image_capture_module ${CXXLIBS} ${OpenCV_LIBS})
+
+enable_coverage(preview_depth)

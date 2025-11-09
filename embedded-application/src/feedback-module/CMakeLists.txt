@@ -38,14 +38,18 @@ target_link_libraries(feedback_module PUBLIC
   kfr_dft
   control_iface 
 )
+enable_coverage(feedback_module)
 
 add_library(feedback_iface STATIC 
   feedback_iface.cpp
 )
 target_include_directories(feedback_iface PUBLIC include)
 target_link_libraries(feedback_iface PUBLIC feedback_module)
+enable_coverage(feedback_iface)
 
 # Define the test executable
+enable_testing()
+
 add_executable(test_feedback_module 
   test/test_feedback_module.cpp
 )
@@ -59,3 +63,4 @@ gtest_discover_tests(test_feedback_module
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DISCOVERY_TIMEOUT 30
 )
+enable_coverage(test_feedback_module)

@@ -1,5 +1,13 @@
+/**
+ * @file kd_tree.cpp
+ * @brief Provides template definitions for the k-d tree implementation.
+ */
+
 #include "kd_tree.hpp"
 
+/**
+ * @brief Compute the Euclidean distance between a stored point and a target.
+ */
 template <uint8_t K>
 double kd_tree<K>::calculate_distance(Node* node, const array<double, K>& target) {
   double dist = 0.0;
@@ -9,6 +17,9 @@ double kd_tree<K>::calculate_distance(Node* node, const array<double, K>& target
   return sqrt(dist);
 }
 
+/**
+ * @brief Recursive helper used by @ref insert.
+ */
 template <uint8_t K>
 typename kd_tree<K>::Node* kd_tree<K>::insert_recursive(Node* node, uint64_t idx, const array<double, K>& point, uint64_t depth) {
   if (node == nullptr) return new Node(idx, point);
@@ -24,6 +35,9 @@ typename kd_tree<K>::Node* kd_tree<K>::insert_recursive(Node* node, uint64_t idx
   return node;
 }
 
+/**
+ * @brief Recursive helper used by @ref find_nearest.
+ */
 template<uint8_t K>
 typename kd_tree<K>::Node* kd_tree<K>::find_nearest_recursive(Node* node, Node*& best, double& best_dist, const array<double, K>& target, uint64_t depth) {
   if (node == nullptr) return nullptr;
@@ -54,11 +68,17 @@ typename kd_tree<K>::Node* kd_tree<K>::find_nearest_recursive(Node* node, Node*&
   return best;
 }
 
+/**
+ * @copydoc kd_tree<K>::insert
+ */
 template <uint8_t K>
 void kd_tree<K>::insert(uint64_t idx, const array<double, K>& point) {
   root = insert_recursive(root, idx, point, 0);
 }
 
+/**
+ * @copydoc kd_tree<K>::find_nearest
+ */
 template <uint8_t K>
 uint64_t kd_tree<K>::find_nearest(const array<double, K>& target) {
   Node* best = nullptr;
@@ -67,6 +87,9 @@ uint64_t kd_tree<K>::find_nearest(const array<double, K>& target) {
   return (best != nullptr) ? best->idx : UINT64_MAX;
 }
 
+/**
+ * @brief Recursively release nodes.
+ */
 template <uint8_t K>
 void kd_tree<K>::delete_recursive(Node* node) {
   if (node != nullptr) {

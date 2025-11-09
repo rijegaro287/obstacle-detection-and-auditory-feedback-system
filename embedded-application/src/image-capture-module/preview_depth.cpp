@@ -1,3 +1,9 @@
+/**
+ * @file preview_depth.cpp
+ * @brief Utility executable that previews depth frames from the Arducam ToF
+ * camera and allows saving raw dumps for offline inspection.
+ */
+
 // Dependencias de la Raspberry Pi
 #include "ArducamTOFCamera.hpp"
 #include <chrono>
@@ -12,18 +18,27 @@ using namespace Arducam;
 // MAX_DISTANCE value modifiable  is 2 or 4
 #define MAX_DISTANCE 4000
 
+/** @brief Selection rectangle used to display distance statistics. */
 cv::Rect seletRect(0, 0, 0, 0);
+/** @brief Rectangle tracking cursor position. */
 cv::Rect followRect(0, 0, 0, 0);
 int max_width = 240;
 int max_height = 180;
 int max_range = 0;
 int confidence_value = 30;
 
+/**
+ * @brief Placeholder callback for trackbar changes.
+ */
 void on_confidence_changed(int pos, void* userdata)
 {
-    //
+    (void)pos;
+    (void)userdata;
 }
 
+/**
+ * @brief Display an approximate frames-per-second counter on stdout.
+ */
 void display_fps(void)
 {
     using std::chrono::high_resolution_clock;
@@ -40,6 +55,9 @@ void display_fps(void)
     }
 }
 
+/**
+ * @brief Persist the raw depth buffer to disk for offline analysis.
+ */
 void save_image(float* image, int width, int height)
 {
     using namespace std::literals;
@@ -52,6 +70,9 @@ void save_image(float* image, int width, int height)
     file.close();
 }
 
+/**
+ * @brief Rotate a matrix 180 degrees.
+ */
 cv::Mat matRotateClockWise180(cv::Mat src)
 {
     if (src.empty()) {
@@ -63,6 +84,9 @@ cv::Mat matRotateClockWise180(cv::Mat src)
     return src;
 }
 
+/**
+ * @brief Highlight unreliable pixels in the preview using the amplitude map.
+ */
 void getPreview(cv::Mat preview_ptr, cv::Mat amplitude_image_ptr)
 {
     auto len = preview_ptr.rows * preview_ptr.cols;
@@ -74,12 +98,18 @@ void getPreview(cv::Mat preview_ptr, cv::Mat amplitude_image_ptr)
     }
 }
 
+/**
+ * @brief Set unreliable pixels in the RGB preview to black.
+ */
 void getPreviewRGB(cv::Mat preview_ptr, cv::Mat amplitude_image_ptr)
 {
     preview_ptr.setTo(cv::Scalar(0, 0, 0), amplitude_image_ptr < confidence_value);
     // cv::GaussianBlur(preview_ptr, preview_ptr, cv::Size(7, 7), 0);
 }
 
+/**
+ * @brief Mouse callback that updates selection rectangles used for inspection.
+ */
 void onMouse(int event, int x, int y, int flags, void* param)
 {
     if (x < 4 || x > (max_width - 4) || y < 4 || y > (max_height - 4))
@@ -104,6 +134,9 @@ void onMouse(int event, int x, int y, int flags, void* param)
     }
 }
 
+/**
+ * @brief Standalone preview tool entry point.
+ */
 int main()
 {
     ArducamTOFCamera tof;

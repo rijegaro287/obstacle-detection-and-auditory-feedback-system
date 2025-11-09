@@ -13,8 +13,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 find_package(ArducamDepthCamera REQUIRED)
 
-# find_package(GTest REQUIRED)
-# include(GoogleTest)
+find_package(GTest REQUIRED)
+include(GoogleTest)
 
 set(CLIBS ArducamDepthCamera::ArducamDepthCamera4C)
 set(CXXLIBS ArducamDepthCamera::ArducamDepthCamera)
@@ -34,6 +34,7 @@ target_link_libraries(obstacle_detection_module PUBLIC
   control_iface
 )
 target_link_libraries(obstacle_detection_module PRIVATE control_iface)
+enable_coverage(obstacle_detection_module)
 
 # Define the interface library
 add_library(obstacle_detection_iface STATIC
@@ -41,14 +42,19 @@ add_library(obstacle_detection_iface STATIC
 )
 target_include_directories(obstacle_detection_iface PUBLIC include)
 target_link_libraries(obstacle_detection_iface PRIVATE obstacle_detection_module)
+enable_coverage(obstacle_detection_iface)
 
 # Define the test executable with GTest
-add_executable(test_obstacle_detection_module 
-  test/test_obstacle_detection_module.cpp
+enable_testing()
+
+add_executable(test_obstacle_detection_module
+  test/test_obstacle_detection_module_gtest.cpp
 )
 target_link_libraries(test_obstacle_detection_module PRIVATE 
+  GTest::gtest_main
   obstacle_detection_module
 )
-# gtest_discover_tests(test_obstacle_detection_module
-#   DISCOVERY_TIMEOUT 30
-# )
+gtest_discover_tests(test_obstacle_detection_module
+  DISCOVERY_TIMEOUT 30
+)
+enable_coverage(test_obstacle_detection_module)

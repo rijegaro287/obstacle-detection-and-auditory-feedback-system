@@ -1,3 +1,8 @@
+/**
+ * @file bt_audio.cpp
+ * @brief Implements high-level Bluetooth audio management helpers.
+ */
+
 #include "bt_audio.hpp"
 
 #include <iostream>
@@ -11,6 +16,9 @@ BTAudioController& BTAudioController::get_instance() {
 	return instance;
 }
 
+/**
+ * @brief Prepare GLib primitives and reset runtime state.
+ */
 BTAudioController::BTAudioController() {
 	GError *error = nullptr;
 	this->main_loop = g_main_loop_new(nullptr, FALSE);

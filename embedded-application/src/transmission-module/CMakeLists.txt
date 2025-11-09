@@ -27,14 +27,18 @@ target_link_libraries(transmission_module PUBLIC
   ${ALSA_LIBRARIES}
   control_iface
 )
+enable_coverage(transmission_module)
 
 add_library(transmission_iface STATIC
   transmission_iface.cpp
 )
 target_include_directories(transmission_iface PUBLIC include)
 target_link_libraries(transmission_iface PUBLIC transmission_module)
+enable_coverage(transmission_iface)
 
 # Define the test executable
+enable_testing()
+
 add_executable(test_transmission_module 
     test/test_transmission_module.cpp
 )
@@ -43,3 +47,4 @@ target_link_libraries(test_transmission_module PRIVATE
     control_module
 )
 gtest_discover_tests(test_transmission_module)
+enable_coverage(test_transmission_module)

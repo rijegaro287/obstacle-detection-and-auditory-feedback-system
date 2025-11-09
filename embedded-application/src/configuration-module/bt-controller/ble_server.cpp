@@ -1,3 +1,9 @@
+/**
+ * @file ble_server.cpp
+ * @brief Implements the Bluetooth Low-Energy GATT server used for
+ * configuration commands.
+ */
+
 #include "ble_server.hpp"
 
 #include "configuration_iface.hpp"
@@ -11,6 +17,9 @@ BLEServer& BLEServer::get_instance() {
 	return instance;
 }
 
+/**
+ * @brief Initialize member pointers to safe defaults.
+ */
 BLEServer::BLEServer() {
 	this->main_loop = nullptr;
 	this->connection = nullptr;

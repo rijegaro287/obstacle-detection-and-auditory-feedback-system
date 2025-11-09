@@ -1,16 +1,22 @@
+/**
+ * @file obstacle_detection_module.cpp
+ * @brief Implements colour-based obstacle segmentation and characterization.
+ */
+
 #include "obstacle_detection_module.hpp"
 #include "control_iface.hpp"
 
 #include <iostream>
 #include <thread>
 #include <chrono>
-
 ObstacleDetectionModule& ObstacleDetectionModule::get_instance() {
     static ObstacleDetectionModule instance;
     return instance;
 }
 
-// Contructor: asigna los rangos de rojo para la detección
+/**
+ * @brief Configure colour ranges used during segmentation.
+ */
 ObstacleDetectionModule::ObstacleDetectionModule():
     // Rango 1 - Tonos (H) del 0 al 10, para todas las saturaciones (S) y brillos (V)
     lowerRed1_(0, 0, 100),
@@ -24,7 +30,9 @@ ObstacleDetectionModule::ObstacleDetectionModule():
     running(false)
 {}
 
-// Método segmentRed: segmenta los rangos de rojo en las imagenes usando una mascara de color
+/**
+ * @brief Segment red/orange hues from the input HSV image.
+ */
 cv::Mat ObstacleDetectionModule::segmentRed(const cv::Mat& image) const { //imagen en HSV
     cv::Mat mask1, mask2, mask3, redOrangeMask;
 
@@ -41,6 +49,9 @@ cv::Mat ObstacleDetectionModule::segmentRed(const cv::Mat& image) const { //imag
 
     return redOrangeMask;
 }
+/**
+ * @brief Filter segmented regions by ensuring their minimum depth is below a threshold.
+ */
 
 // Método filterByDepth: verifica que el obstáculo encontrado tenga valores de profundidad coherentes (control FP)
 // mask: máscara binaria, salida de segmentRed
@@ -68,6 +79,9 @@ cv::Mat ObstacleDetectionModule::filterByDepth(const cv::Mat& mask, const cv::Ma
 
         if (minDepth < maxDepthThreshold) { 
             filteredMask |= contourMask; // mantener áreas de la máscara que cumplen con el umbral
+/**
+ * @brief Filter segmented regions by area and colour density.
+ */
         }
     }
 
@@ -103,6 +117,9 @@ cv::Mat ObstacleDetectionModule::filterByColorDensity(const cv::Mat& mask, doubl
         if (colorDensity < minDensity) {
             continue;
         }
+/**
+ * @brief Separate connected components and create a coloured visualization.
+ */
         solidMask |= contourMask;
     }
 
@@ -144,6 +161,9 @@ ObstacleDetectionModule::Components ObstacleDetectionModule::divideComponents(co
                               rng.uniform(0, 255),
                               rng.uniform(0, 255));
     }
+/**
+ * @brief Select the most relevant obstacle according to heuristic scoring.
+ */
 
     // Asignar colores según etiqueta
     for (int y = 0; y < comp.labels.rows; y++) {
@@ -250,6 +270,9 @@ Obstacle ObstacleDetectionModule::selectObstacle(
 
         
     }
+/**
+ * @brief Compute azimuth and elevation angles for the chosen obstacle.
+ */
     
     // dibujar mascara del obstaculo seleccionado como main
     if (mainObstacle.label > 0) {  // si se selecciona un obstaculo valido
@@ -274,6 +297,9 @@ Obstacle ObstacleDetectionModule::calculateAngles(Obstacle& obstacle) {
     double frameHeight = 180;
 
     // Centro de la imagen completa
+/**
+ * @brief Map raw azimuth angles into a 0-360 range expected by audio mapping.
+ */
     const double cx_img = frameWidth  / 2.0;   // 120 en 240x180
     const double cy_img = frameHeight / 2.0;   // 90  en 240x180
 
@@ -284,10 +310,16 @@ Obstacle ObstacleDetectionModule::calculateAngles(Obstacle& obstacle) {
     // Normalización a [-1,1] aprox
     const double relX = dx / (frameWidth  / 2.0);
     const double relY = dy / (frameHeight / 2.0);
+/**
+ * @brief Display the pre-processed depth preview.
+ */
 
     // Ángulos en grados 
     obstacle.azimuth   = relX * (FOV_X_DEG / 2.0);  
     obstacle.elevation = relY * (FOV_Y_DEG / 2.0);  
+/**
+ * @brief Display a visualization of the detected obstacle.
+ */
 
     return obstacle;
 }
@@ -354,7 +386,9 @@ void ObstacleDetectionModule::viewDetection(Obstacle& obstacle){
     cv::imshow("Distancia y Angulo del obstaculo seleccionado", display);
 }
 
-// Método startDetection: Realiza el proceso de detectar obstáculos
+/**
+ * @brief Run the detection pipeline on the provided image/depth pair.
+ */
 Obstacle ObstacleDetectionModule::detect(cv::Mat& image, cv::Mat& depthMap){       
     // Aplicar segmentar rojo
     cv::Mat img_hsv;
@@ -398,6 +432,9 @@ void ObstacleDetectionModule::stop_detection() {
     this->running = false;
 }
 
+/**
+ * @brief Worker loop that retrieves frames and publishes obstacle detections.
+ */
 void ObstacleDetectionModule::start() { 
     while (true) {
         if (!this->running) {

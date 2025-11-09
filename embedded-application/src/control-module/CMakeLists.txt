@@ -34,14 +34,18 @@ target_link_libraries(control_module PUBLIC
     feedback_iface
     transmission_iface
 )
+enable_coverage(control_module)
 
 add_library(control_iface STATIC
     control_iface.cpp
 )
 target_include_directories(control_iface PUBLIC include)
 target_link_libraries(control_iface PUBLIC control_module ${OpenCV_LIBS})
+enable_coverage(control_iface)
 
 # Define the test executable
+enable_testing()
+
 add_executable(test_control_module 
     test/test_control_module.cpp
 )
@@ -52,3 +56,4 @@ target_link_libraries(test_control_module PRIVATE
 gtest_discover_tests(test_control_module
     DISCOVERY_TIMEOUT 30
 )
+enable_coverage(test_control_module)

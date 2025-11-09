@@ -1,3 +1,10 @@
+/**
+ * @file image_capture_module.cpp
+ * @brief Implements acquisition and pre-processing routines for the depth
+ * camera module.
+ */
+
+#include <exception>
 #include <iostream>
 
 #include "image_capture_module.hpp"
@@ -20,38 +27,85 @@ ImageCaptureModule& ImageCaptureModule::get_instance() {
     return instance;
 }
 
-// Constructor: Inicializacion del modulo (frame=nullptr)
+/**
+ * @brief Construct the capture module with a dormant camera handle.
+ */
 ImageCaptureModule::ImageCaptureModule() {
     this->running = false;
+    this->camera_initialized = false;
     frame_ = nullptr;
     depth_frame_ = cv::Mat();
     result_frame_ = cv::Mat();
 }
 
-// Destructor 
+/**
+ * @brief Ensure the camera is stopped and closed during destruction.
+ */
 ImageCaptureModule::~ImageCaptureModule() {
-    tof_.stop();
-    tof_.close();
+    if (!camera_initialized) {
+        return;
+    }
+
+    try {
+        tof_.stop();
+    }
+    catch (const std::exception& err) {
+        std::cerr << "ImageCaptureModule stop failed: " << err.what() << '\n';
+        camera_initialized = false;
+        return;
+    }
+    catch (...) {
+        std::cerr << "ImageCaptureModule stop failed with unknown error\n";
+        camera_initialized = false;
+        return;
+    }
+
+    try {
+        tof_.close();
+    }
+    catch (const std::exception& err) {
+        std::cerr << "ImageCaptureModule close failed: " << err.what() << '\n';
+    }
+    catch (...) {
+        std::cerr << "ImageCaptureModule close failed with unknown error\n";
+    }
+
+    camera_initialized = false;
 }
 
 // Metodo initialize: inicializar camara ToF
 bool ImageCaptureModule::initialize() {
+    camera_initialized = false;
     if (tof_.open(Connection::CSI, 0)) {
         std::cerr << "Failed to open camera" << std::endl;
         return false;
     }
     if (tof_.start(FrameType::DEPTH_FRAME)) {
         std::cerr << "Failed to start camera" << std::endl;
+        try {
+            tof_.close();
+        }
+        catch (const std::exception& err) {
+            std::cerr << "ImageCaptureModule close failed: " << err.what() << '\n';
+        }
+        catch (...) {
+            std::cerr << "ImageCaptureModule close failed with unknown error\n";
+        }
         return false;
     }
     tof_.setControl(Control::RANGE, MAX_DISTANCE);
     tof_.getControl(Control::RANGE, &max_range);
 
+    camera_initialized = true;
     return true;
 }
 
 // Metodo captureFrame: captura imagenes
 bool ImageCaptureModule::captureFrame() {
+    if (!camera_initialized) {
+        return false;
+    }
+
     frame_ = tof_.requestFrame(200); // capturar frame
     if (!frame_) {
         return false;

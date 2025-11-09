@@ -1,8 +1,9 @@
 .vscode/
 .github/
+**/docs
 **/build/
+**/test-results/
 **/Testing/
-**/kfr
 
 **/*.sofa
 **/*.npy
@@ -11,5 +12,6 @@
 **/*.onnx.json
 
 **/*.log
+**/*.bak
 **/*.png
 **/*.svg

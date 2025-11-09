@@ -1,3 +1,8 @@
+/**
+ * @file feedback_module.cpp
+ * @brief Implements spatial audio rendering for obstacle feedback.
+ */
+
 #include "feedback_module.hpp"
 #include "control_iface.hpp"
 
@@ -10,6 +15,9 @@ FeedbackModule& FeedbackModule::get_instance() {
 	return instance;
 }
 
+/**
+ * @brief Load datasets and initialize the audio rendering state.
+ */
 FeedbackModule::FeedbackModule() {
 	this->running = false;
 	this->volume = 0.5f;

@@ -1,3 +1,8 @@
+/**
+ * @file bt_controller.cpp
+ * @brief Implements generic GDBus helpers for interacting with BlueZ.
+ */
+
 #include "bt_controller.hpp"
 
 #include <iostream>

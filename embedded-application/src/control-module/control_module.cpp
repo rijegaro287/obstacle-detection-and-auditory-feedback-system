@@ -1,3 +1,9 @@
+/**
+ * @file control_module.cpp
+ * @brief Implements the central coordinating logic for the processing
+ * pipeline.
+ */
+
 #include "control_module.hpp"
 #include "configuration_iface.hpp"
 #include "control_iface.hpp"
@@ -10,6 +16,9 @@
 #include <thread>
 #include <chrono>
 
+/**
+ * @brief Tracks whether audio commands were recently received via BLE.
+ */
 static bool received_audio_commands = false;
 
 ControlModule& ControlModule::get_instance() {
@@ -17,6 +26,9 @@ ControlModule& ControlModule::get_instance() {
 	return instance;
 }
 
+/**
+ * @brief Initialize shared resources and lock mutexes until hardware setup.
+ */
 ControlModule::ControlModule() {
   this->frame_mtx.lock();
   this->obstacle_mtx.lock();
