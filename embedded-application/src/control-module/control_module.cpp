@@ -112,27 +112,26 @@ void ControlModule::unlock_mutexes() {
 void ControlModule::start() {
   this->unlock_mutexes();
   
-  PerformanceMonitor& performance_monitor = PerformanceMonitor::get_instance();
-  performance_monitor.set_performance_monitoring(true);
-  this->start_feedback();
-  while (true) {
-    bool finished = PerformanceMonitor::get_instance().record_performance_stats();
-    if (finished) {
-      PerformanceMonitor::get_instance().print_performance_stats();
-      break;
-    }
-    this_thread::sleep_for(chrono::milliseconds(THREAD_SLEEP_MS*100));
-  }
-  
+  // PerformanceMonitor& performance_monitor = PerformanceMonitor::get_instance();
+  // performance_monitor.set_performance_monitoring(true);
+  // this->start_feedback();
   // while (true) {
-    //   if (received_audio_commands) {
-      //     received_audio_commands = false;
-      //   }
-      //   else {
-        //     printf("No commands received in the last %.1f seconds. Stopping feedback...\n", CONTROL_THREAD_SLEEP_MS / 1000.0);
-        //     this->stop_feedback();
-        //   }
-        //   this_thread::sleep_for(chrono::milliseconds(CONTROL_THREAD_SLEEP_MS));
-        // }
-  // this_thread::sleep_for(chrono::milliseconds(CONTROL_THREAD_SLEEP_MS));
+  //   bool finished = PerformanceMonitor::get_instance().record_performance_stats();
+  //   if (finished) {
+  //     PerformanceMonitor::get_instance().print_performance_stats();
+  //     break;
+  //   }
+  //   this_thread::sleep_for(chrono::milliseconds(THREAD_SLEEP_MS*100));
+  // }
+  
+  while (true) {
+    if (received_audio_commands) {
+      received_audio_commands = false;
+    }
+    else {
+      printf("No commands received in the last %.1f seconds. Stopping feedback...\n", CONTROL_THREAD_SLEEP_MS / 1000.0);
+      this->stop_feedback();
+    }
+    this_thread::sleep_for(chrono::milliseconds(CONTROL_THREAD_SLEEP_MS));
+  }
 }

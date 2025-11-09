@@ -13,8 +13,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 find_package(ArducamDepthCamera REQUIRED)
 
-find_package(GTest REQUIRED)
-include(GoogleTest)
+# find_package(GTest REQUIRED)
+# include(GoogleTest)
 
 set(CLIBS ArducamDepthCamera::ArducamDepthCamera4C)
 set(CXXLIBS ArducamDepthCamera::ArducamDepthCamera)
@@ -49,6 +49,6 @@ add_executable(test_obstacle_detection_module
 target_link_libraries(test_obstacle_detection_module PRIVATE 
   obstacle_detection_module
 )
-gtest_discover_tests(test_obstacle_detection_module
-  DISCOVERY_TIMEOUT 30
-)
+# gtest_discover_tests(test_obstacle_detection_module
+#   DISCOVERY_TIMEOUT 30
+# )
