@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: install-dependencies
+        run: |
+          sudo apt update
+          sudo apt full-upgrade -y
+          sudo apt install libgtest-dev
+          sudo apt install cmake 
+          sudo apt install clang
+          sudo apt install alsa-utils libasound2-dev
+          sudo apt install libglib2.0-dev
+          sudo apt install libopencv-dev
+      - name: build
+        run: |
+          cmake -B build -S . -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build
+      - name: Archive executable
+        run: |
+          cd build
+          tar -czvf obstacle-detection-and-auditory-feedback-system-aarch64-linux.tar.gz obstacle-detection-and-auditory-feedback-system
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Built executable for Raspberry Pi (aarch64).
+          artifacts: build/obstacle-detection-and-auditory-feedback-system-aarch64-linux.tar.gz
+
+
