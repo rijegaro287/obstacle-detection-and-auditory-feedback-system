@@ -44,10 +44,9 @@ target_link_libraries(obstacle_detection_iface PRIVATE obstacle_detection_module
 
 # Define the test executable with GTest
 add_executable(test_obstacle_detection_module 
-  test/test_obstacle_detection_module_gtest.cpp
+  test/test_obstacle_detection_module.cpp
 )
 target_link_libraries(test_obstacle_detection_module PRIVATE 
-  GTest::gtest_main
   obstacle_detection_module
 )
 gtest_discover_tests(test_obstacle_detection_module

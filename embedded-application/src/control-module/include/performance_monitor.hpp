@@ -23,9 +23,6 @@ typedef struct ProcessingTimes_ {
 
   TimePoint feedback_start_time;
   TimePoint feedback_end_time;
-
-  TimePoint transmission_start_time;
-  TimePoint transmission_end_time;
 } ProcessingTimes;
 
 typedef struct TotalTimes_ {

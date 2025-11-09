@@ -91,9 +91,7 @@ void FeedbackModule::init_verbal_feedback_tensor() {
 
 kfr::univector<float, HRIR_N_TAPS> FeedbackModule::make_hrir_univector(uint64_t sample, uint64_t channel) {
 	kfr::univector<float, HRIR_N_TAPS> hrir;
-	for (uint64_t i = 0; i < HRIR_N_TAPS; i++) {
-		hrir[i] = this->hrir_tensor(sample, i, channel);
-	}
+	memcpy(hrir.data(), &this->hrir_tensor(sample, 0, channel), HRIR_N_TAPS * sizeof(float));
 	return hrir;
 }
 
@@ -153,10 +151,8 @@ Audio FeedbackModule::generate_non_verbal_feedback(Obstacle obstacle) {
 	kfr::univector<float> output_l = kfr::convolve(this->tap_signal, hrir_l);
 	kfr::univector<float> output_r = kfr::convolve(this->tap_signal, hrir_r);
 
-	for (uint64_t i = 0; i < n_samples; i++) {
-		signal.left_signal[i] = output_l[i];
-		signal.right_signal[i] = output_r[i];
-	}
+	memcpy(signal.left_signal.data(), output_l.data(), n_samples * sizeof(float));
+	memcpy(signal.right_signal.data(), output_r.data(), n_samples * sizeof(float));
 
 	return signal;
 }
@@ -206,10 +202,9 @@ Audio FeedbackModule::generate_verbal_feedback(Obstacle obstacle) {
 		return signal;
 	}
 
-	for (uint64_t i = 0; i < n_samples; i++) {
-		signal.left_signal[i] = this->verbal_feedback_tensor(position_idx, i);
-		signal.right_signal[i] = this->verbal_feedback_tensor(position_idx, i);
-	}
+	float* src = &this->verbal_feedback_tensor(position_idx, 0);
+	std::memcpy(signal.left_signal.data(), src, n_samples * sizeof(float));
+	std::memcpy(signal.right_signal.data(), src, n_samples * sizeof(float));
 
 	return signal;
 }

@@ -9,3 +9,7 @@
 **/*.wav
 **/*.onnx
 **/*.onnx.json
+
+**/*.log
+**/*.png
+**/*.svg
