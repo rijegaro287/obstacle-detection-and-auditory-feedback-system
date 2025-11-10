@@ -25,6 +25,7 @@ jobs:
           sudo apt install libopencv-dev
       - name: build
         run: |
+          cd ./embedded-application/
           cmake -B build -S . -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
           cmake --build build
       - name: Archive executable

@@ -25,5 +25,7 @@ jobs:
           sudo apt install libopencv-dev
           sudo apt install lcov
           sudo apt install llvm
-      - name: build
-        run: ./run_unit_tests.sh
+      - name: test
+        run: |
+          cd ./embedded-application/
+          ./run_unit_tests.sh
