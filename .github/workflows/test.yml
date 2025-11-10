@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: install-dependencies
+        run: |
+          sudo apt update
+          sudo apt full-upgrade -y
+          sudo apt install libgtest-dev
+          sudo apt install cmake 
+          sudo apt install clang
+          sudo apt install alsa-utils libasound2-dev
+          sudo apt install libglib2.0-dev
+          sudo apt install libopencv-dev
+          sudo apt install lcov
+          sudo apt install llvm
+      - name: build
+        run: ./run_unit_tests.sh
