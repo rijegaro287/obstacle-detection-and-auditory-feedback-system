@@ -10,6 +10,7 @@
 **/*.wav
 **/*.onnx
 **/*.onnx.json
+**/*.profraw
 
 **/*.log
 **/*.bak

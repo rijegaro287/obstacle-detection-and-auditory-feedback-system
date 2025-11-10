@@ -7,6 +7,8 @@ project(ObstacleDetectionAndAuditoryFeedbackSystem)
 
 include(CTest)
 
+set_property(GLOBAL PROPERTY COVERAGE_EXECUTABLES "")
+
 function(enable_coverage target)
   if(NOT COVERAGE)
     return()
@@ -33,15 +35,16 @@ function(enable_coverage target)
   endif()
 
   get_target_property(_target_type ${target} TYPE)
-  if(_target_type STREQUAL "EXECUTABLE" OR
-     _target_type STREQUAL "SHARED_LIBRARY" OR
-     _target_type STREQUAL "MODULE_LIBRARY")
+  if(_target_type STREQUAL "EXECUTABLE")
+    set_property(GLOBAL APPEND PROPERTY COVERAGE_EXECUTABLES ${target})
   endif()
 endfunction()
 
-# AddressSanitizer configuration
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
-set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
+# AddressSanitizer configuration (disabled during coverage builds to avoid conflicts)
+if(NOT COVERAGE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -g")
+  set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
+endif()
 
 # Add all modules as subdirectories
 add_subdirectory(src/configuration-module)
@@ -65,3 +68,15 @@ target_link_libraries(obstacle-detection-and-auditory-feedback-system PUBLIC
 
 enable_testing()
 enable_coverage(obstacle-detection-and-auditory-feedback-system)
+
+if(COVERAGE)
+  get_property(_coverage_execs GLOBAL PROPERTY COVERAGE_EXECUTABLES)
+  if(_coverage_execs)
+    list(REMOVE_DUPLICATES _coverage_execs)
+    set(_coverage_file_content "")
+    foreach(_exec IN LISTS _coverage_execs)
+      string(APPEND _coverage_file_content "$<TARGET_FILE:${_exec}>\n")
+    endforeach()
+    file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/coverage_targets.txt" CONTENT "${_coverage_file_content}")
+  endif()
+endif()
