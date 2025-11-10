@@ -8,6 +8,7 @@
 #define private public
 #define protected public
 #include "feedback_module.hpp"
+#include "feedback_iface.hpp"
 #undef private
 #undef protected
 
@@ -131,4 +132,24 @@ TEST(FeedbackModuleUtilityTest, KDTreeFindsNearestNeighbour) {
   EXPECT_EQ(tree.find_nearest({0.1, 0.1, 0.1}), 0u);
   EXPECT_EQ(tree.find_nearest({9.5, 0.1, 0.0}), 1u);
   EXPECT_EQ(tree.find_nearest({0.1, 9.5, 0.0}), 2u);
+}
+
+TEST(FeedbackInterfaceTest, FacadeControlsDelegateToModule) {
+  auto& module = FeedbackModule::get_instance();
+
+  module.stop_feedback();
+  IFeedback::start_feedback();
+  EXPECT_TRUE(module.running);
+
+  IFeedback::set_volume(10);
+  EXPECT_NEAR(module.volume, 0.1f, 1e-6f);
+
+  IFeedback::set_feedback_mode(VERBAL_MODE);
+  EXPECT_EQ(module.feedback_mode, VERBAL_MODE);
+
+  IFeedback::stop_feedback();
+  EXPECT_FALSE(module.running);
+
+  module.set_feedback_mode(NON_VERBAL_MODE);
+  module.set_volume(50);
 }

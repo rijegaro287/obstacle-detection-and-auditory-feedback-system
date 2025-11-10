@@ -130,4 +130,20 @@ public:
    * @param devices Vector of devices to clear.
    */
   void clear_devices(vector<BlueZDevice>& devices);
+
+#ifdef UNIT_TESTING
+  /**
+   * @brief Override the system bus connection used by helper methods during tests.
+   * @param connection Reference-counted GDBus connection to reuse.
+   */
+  static void set_test_system_connection(GDBusConnection* connection);
+
+  /**
+   * @brief Clear any test-specific system bus override.
+   */
+  static void clear_test_system_connection();
+
+private:
+  static GDBusConnection* test_system_connection;
+#endif
 };

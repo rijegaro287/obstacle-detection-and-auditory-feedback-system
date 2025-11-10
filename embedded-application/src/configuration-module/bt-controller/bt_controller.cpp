@@ -9,14 +9,41 @@
 #include <thread>
 #include <chrono>
 
+#ifdef UNIT_TESTING
+GDBusConnection* BTController::test_system_connection = nullptr;
+
+void BTController::set_test_system_connection(GDBusConnection* connection) {
+	if (BTController::test_system_connection) {
+		g_object_unref(BTController::test_system_connection);
+	}
+	BTController::test_system_connection = connection ? G_DBUS_CONNECTION(g_object_ref(connection)) : nullptr;
+}
+
+void BTController::clear_test_system_connection() {
+	if (BTController::test_system_connection) {
+		g_object_unref(BTController::test_system_connection);
+		BTController::test_system_connection = nullptr;
+	}
+}
+#endif
+
 GDBusConnection* BTController::create_system_bus_connection() {
+#ifdef UNIT_TESTING
+	if (BTController::test_system_connection) {
+		return G_DBUS_CONNECTION(g_object_ref(BTController::test_system_connection));
+	}
+#endif
 	GError *error = nullptr;
 
 	GDBusConnection* connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, nullptr, &error);
 
 	if (!connection) {
-		printf("Error getting system bus connection: %s\n", error->message);
-		g_error_free(error);
+		if (error) {
+			printf("Error getting system bus connection: %s\n", error->message);
+			g_error_free(error);
+		} else {
+			printf("Error getting system bus connection: unknown error\n");
+		}
 		return nullptr;
 	}
 
@@ -31,6 +58,29 @@ GDBusConnection* BTController::create_system_bus_connection() {
 
 GDBusProxy* BTController::create_object_manager_proxy() {
 	GError* error = nullptr;
+
+#ifdef UNIT_TESTING
+	if (BTController::test_system_connection) {
+		GDBusProxy *object_manager_proxy = g_dbus_proxy_new_sync(
+			BTController::test_system_connection,
+			G_DBUS_PROXY_FLAGS_NONE,
+			nullptr,
+			BLUEZ_SERVICE,
+			"/",
+			"org.freedesktop.DBus.ObjectManager",
+			nullptr,
+			&error
+		);
+
+		if (error) {
+			printf("Error creating object_manager_proxy: %s\n", error->message);
+			g_error_free(error);
+			return nullptr;
+		}
+
+		return object_manager_proxy;
+	}
+#endif
 
 	GDBusProxy *object_manager_proxy = g_dbus_proxy_new_for_bus_sync(
 		G_BUS_TYPE_SYSTEM,
@@ -52,12 +102,83 @@ GDBusProxy* BTController::create_object_manager_proxy() {
 	return object_manager_proxy;
 }
 
+GDBusProxy* BTController::create_properties_proxy() {
+	GError* error = nullptr;
+
+#ifdef UNIT_TESTING
+	if (BTController::test_system_connection) {
+		GDBusProxy *properties_proxy = g_dbus_proxy_new_sync(
+			BTController::test_system_connection,
+			G_DBUS_PROXY_FLAGS_NONE,
+			nullptr,
+			BLUEZ_SERVICE,
+			"/",
+			"org.freedesktop.DBus.Properties",
+			nullptr,
+			&error
+		);
+
+		if (error) {
+			printf("Error creating properties proxy: %s\n", error->message);
+			g_error_free(error);
+			return nullptr;
+		}
+
+		return properties_proxy;
+	}
+#endif
+
+	GDBusProxy *properties_proxy = g_dbus_proxy_new_for_bus_sync(
+		G_BUS_TYPE_SYSTEM,
+		G_DBUS_PROXY_FLAGS_NONE,
+		nullptr,
+		BLUEZ_SERVICE,
+		"/",
+		"org.freedesktop.DBus.Properties",
+		nullptr,
+		&error
+	);
+
+	if (error) {
+		printf("Error creating properties proxy: %s\n", error->message);
+		g_error_free(error);
+		return nullptr;
+	}
+
+	return properties_proxy;
+}
+
 GDBusProxy* BTController::create_adapter_proxy() {
 	GError* error = nullptr;
 
-	GDBusProxy *adapter_proxy = g_dbus_proxy_new_for_bus_sync(
-		G_BUS_TYPE_SYSTEM,
-		G_DBUS_PROXY_FLAGS_NONE,
+#ifdef UNIT_TESTING
+	if (BTController::test_system_connection) {
+		GDBusProxy *adapter_proxy = g_dbus_proxy_new_sync(
+			BTController::test_system_connection,
+			static_cast<GDBusProxyFlags>(G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START |
+				G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES |
+				G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS),
+			nullptr,
+			BLUEZ_SERVICE,
+			BLUEZ_ADAPTER_PATH,
+			BLUEZ_ADAPTER_IFACE,
+			nullptr,
+			&error
+		);
+
+		if (error) {
+			printf("Error creating device proxy: %s\n", error->message);
+			g_error_free(error);
+			return nullptr;
+		}
+
+		return adapter_proxy;
+	}
+#endif
+
+GDBusProxy *adapter_proxy = g_dbus_proxy_new_for_bus_sync(
+	G_BUS_TYPE_SYSTEM,
+	static_cast<GDBusProxyFlags>(G_DBUS_PROXY_FLAGS_NONE),
 		nullptr,
 		BLUEZ_SERVICE,
 		BLUEZ_ADAPTER_PATH,
@@ -86,9 +207,38 @@ GDBusProxy* BTController::create_device_proxy(BlueZDevice& device) {
 	snprintf(device_path, BUFFER_SIZE_L, "%s/dev_%s", BLUEZ_ADAPTER_PATH, device_addr);
 	device_path[BUFFER_SIZE_L - 1] = '\0';
 
+#ifdef UNIT_TESTING
+	if (BTController::test_system_connection) {
+		GDBusProxy *device_proxy = g_dbus_proxy_new_sync(
+			BTController::test_system_connection,
+			static_cast<GDBusProxyFlags>(
+				G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START |
+				G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES |
+				G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS),
+			nullptr,
+			BLUEZ_SERVICE,
+			device_path,
+			BLUEZ_DEVICE_IFACE,
+			nullptr,
+			&error
+		);
+
+		if (error) {
+			printf("Error creating device proxy: %s\n", error->message);
+			g_error_free(error);
+			return nullptr;
+		}
+
+		return device_proxy;
+	}
+#endif
+
 	GDBusProxy *device_proxy = g_dbus_proxy_new_for_bus_sync(
 		G_BUS_TYPE_SYSTEM,
-		G_DBUS_PROXY_FLAGS_NONE,
+		static_cast<GDBusProxyFlags>(
+			G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START |
+			G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES |
+			G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS),
 		nullptr,
 		BLUEZ_SERVICE,
 		device_path,

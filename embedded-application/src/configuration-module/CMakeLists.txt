@@ -62,11 +62,23 @@ enable_testing()
 
 add_executable(test_configuration_module 
   test/test_configuration_module.cpp
+  test/test_bt_controller.cpp
+)
+target_include_directories(test_configuration_module PRIVATE
+  include
+  include/bt-controller
+  ${GLIB_INCLUDE_DIRS}
+  ${GIO_INCLUDE_DIRS}
 )
 target_link_libraries(test_configuration_module PRIVATE 
   GTest::gtest_main
+  bluetooth_controller
   control_module
+  ${GLIB_LIBRARIES}
+  ${GIO_LIBRARIES}
 )
+target_compile_definitions(bluetooth_controller PUBLIC UNIT_TESTING=1)
+target_compile_definitions(test_configuration_module PRIVATE UNIT_TESTING=1)
 gtest_discover_tests(test_configuration_module
   DISCOVERY_TIMEOUT 30
 )

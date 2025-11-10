@@ -7,6 +7,7 @@
 #define private public
 #define protected public
 #include "transmission_module.hpp"
+#include "transmission_iface.hpp"
 #undef private
 #undef protected
 
@@ -81,4 +82,58 @@ TEST_F(TransmissionModuleTest, PreprocessAudioGeneratesInterleavedPcm) {
   }
 
   EXPECT_EQ(pcm, expected);
+}
+
+TEST_F(TransmissionModuleTest, ConvertToPcmValidatesBufferLayout) {
+  vector<float> odd_samples = {0.1f};
+  vector<int16_t> pcm = {7, 8};
+  vector<int16_t> original = pcm;
+  module->convert_to_pcm(odd_samples, pcm, 1.0f, 1.0f);
+  EXPECT_EQ(pcm, original);
+
+  vector<float> even_samples = {0.1f, -0.2f};
+  vector<int16_t> short_pcm = {1};
+  module->convert_to_pcm(even_samples, short_pcm, 1.0f, 1.0f);
+  EXPECT_EQ(short_pcm[0], 1);
+}
+
+TEST_F(TransmissionModuleTest, SendPcmDataGuardsAgainstInvalidArguments) {
+  vector<int16_t> empty_pcm;
+  module->send_pcm_data(empty_pcm, 48000);
+
+  vector<int16_t> pcm = {0, 1};
+  module->send_pcm_data(pcm, 0);
+
+  snd_pcm_t* original_handle = module->pcm_handle;
+  module->pcm_handle = nullptr;
+  module->send_pcm_data(pcm, 48000);
+  module->pcm_handle = original_handle;
+}
+
+TEST_F(TransmissionModuleTest, SendAudioValidatesSignal) {
+  Audio audio;
+  audio.left_signal = {0.1f, 0.2f};
+  audio.right_signal = {0.3f};
+  audio.sample_rate = 48000;
+  audio.gain = 1.0f;
+  module->send_audio(audio);
+
+  audio.right_signal = audio.left_signal;
+  audio.sample_rate = 0;
+  module->send_audio(audio);
+
+  audio.sample_rate = 48000;
+  snd_pcm_t* original_handle = module->pcm_handle;
+  module->pcm_handle = nullptr;
+  module->send_audio(audio);
+  module->pcm_handle = original_handle;
+}
+
+TEST(TransmissionInterfaceTest, FacadeStartStopToggleModuleState) {
+  auto& module = TransmissionModule::get_instance();
+  module.running = false;
+  ITransmission::start_transmission();
+  EXPECT_TRUE(module.running);
+  ITransmission::stop_transmission();
+  EXPECT_FALSE(module.running);
 }

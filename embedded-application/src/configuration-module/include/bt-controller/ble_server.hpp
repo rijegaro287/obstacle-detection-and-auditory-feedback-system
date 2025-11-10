@@ -8,6 +8,10 @@
 
 #include "bt_controller.hpp"
 
+#ifdef UNIT_TESTING
+#include <functional>
+#endif
+
 /** @brief Interface name for the BlueZ GATT manager. */
 #define GATT_MANAGER_IFACE "org.bluez.GattManager1"
 /** @brief Interface used to represent a GATT application. */
@@ -118,6 +122,10 @@ public:
 	 * @brief Release all GLib and BlueZ resources associated with the server.
 	 */
 	void cleanup();
+	int64_t init_for_test();
+	int64_t register_application_for_test();
+	int64_t advertise_application_for_test();
+
 private:
   GMainLoop *main_loop;           /**< GLib event loop used by the server. */
   GDBusConnection *connection;    /**< Connection handle to the system bus. */
@@ -126,6 +134,50 @@ private:
   GDBusNodeInfo *app_info;        /**< Introspection data for the GATT application. */
   GDBusNodeInfo *service_info;    /**< Introspection data for the service. */
   GDBusNodeInfo *char_info;       /**< Introspection data for the characteristic. */
+
+	#ifdef UNIT_TESTING
+	public:
+		/**
+		 * @brief Limit the number of iterations the main loop executes during tests.
+		 * @param iterations Number of iterations to run before exiting.
+		 */
+		static void set_loop_iterations(uint32_t iterations);
+
+		/**
+		 * @brief Disable the iteration limiter set for unit tests.
+		 */
+		static void disable_loop_iteration_limit();
+
+		/**
+		 * @brief Skip running the GLib main loop during tests to avoid blocking.
+		 * @param skip Whether to skip the main loop invocation.
+		 */
+		static void skip_main_loop_for_tests(bool skip);
+
+		/**
+		 * @brief Provide a test-only response generator for characteristic reads.
+		 * @param provider Callback that returns the payload to expose.
+		 */
+		static void set_test_response_provider(std::function<std::string()> provider);
+
+		/**
+		 * @brief Provide a test-only handler invoked when commands are written.
+		 * @param handler Callback receiving the written command string.
+		 */
+		static void set_test_command_handler(std::function<void(const std::string&)> handler);
+
+		/**
+		 * @brief Reset all unit-testing hooks to their defaults.
+		 */
+		static void reset_test_hooks();
+
+	private:
+		static uint32_t loop_iteration_budget;
+		static bool loop_limit_enabled;
+		static bool skip_main_loop;
+		static std::function<std::string()> test_response_provider;
+		static std::function<void(const std::string&)> test_command_handler;
+	#endif
 
 	/**
 	 * @brief Handle property reads on the advertisement object.
@@ -224,6 +276,9 @@ private:
 																			 GError** error,
 																			 gpointer user_data);
 
+#ifdef UNIT_TESTING
+public:
+#endif
 	/**
 	 * @brief Set up the GLib main loop and parse the XML descriptors.
 	 * @return 0 on success, -1 on failure.
@@ -242,6 +297,9 @@ private:
 	 */
 	int64_t advertise_application();
 
+#ifdef UNIT_TESTING
+private:
+#endif
 	BLEServer();
 	~BLEServer() { this->cleanup(); };
 };

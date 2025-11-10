@@ -318,7 +318,6 @@ void ConfigModule::process_command(const string& command) {
 void ConfigModule::start() {
 	BLEServer& ble_server = BLEServer::get_instance();
 	BTAudioController& bt_audio_controller = BTAudioController::get_instance();
-
 	ble_server.start();
 }
 

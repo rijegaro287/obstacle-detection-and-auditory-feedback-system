@@ -8,6 +8,10 @@
 
 #include "bt_controller.hpp"
 
+#ifdef UNIT_TESTING
+#include <functional>
+#endif
+
 
 /** @brief UUID representing the Advanced Audio Distribution Profile sink. */
 #define A2DP_SINK_UUID "0000110b-0000-1000-8000-00805F9B34FB"
@@ -116,4 +120,22 @@ private:
 
 	BTAudioController();
 	~BTAudioController() = default;
+
+#ifdef UNIT_TESTING
+public:
+	struct TestOverrides {
+		std::function<int64_t()> start_discovery;
+		std::function<int64_t()> stop_discovery;
+		std::function<int64_t(vector<BlueZDevice>&)> get_discovered_devices;
+		std::function<int64_t(BlueZDevice&)> pair_device;
+		std::function<int64_t(BlueZDevice&)> connect_device;
+		std::function<int64_t(BlueZDevice&)> disconnect_device;
+		std::function<bool(BlueZDevice&)> is_paired;
+		std::function<bool(BlueZDevice&)> is_connected;
+		std::function<void(vector<BlueZDevice>&)> cleanup;
+	};
+
+	static TestOverrides test_overrides;
+	static void reset_test_overrides();
+#endif
 };

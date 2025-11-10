@@ -74,6 +74,6 @@ llvm-cov export --format=lcov --ignore-filename-regex "$IGNORE_REGEX" --instr-pr
 mv "$tmp_lcov_file" "$LCOV_FILE"
 trap - EXIT
 
-genhtml "$LCOV_FILE" --output-directory "$COVERAGE_DIR/html"
+genhtml "$LCOV_FILE" --output-directory "$COVERAGE_DIR/html" --ignore-errors inconsistent,corrupt
 
 echo "Coverage report generated at $COVERAGE_DIR/html/index.html"

@@ -345,8 +345,131 @@ TEST_F(ControlModuleTest, PerformanceMonitorRecordPerformanceStatsRollsOverAfter
   monitor.sample_indices = SampleIndices();
 }
 
+TEST_F(ControlModuleTest, PerformanceMonitorSkipsSamplesExceedingDurationThreshold) {
+  auto& monitor = PerformanceMonitor::get_instance();
+  monitor.performance_monitoring_enabled = true;
+  monitor.sample_indices.capture_idx = 0;
+  monitor.processing_times[0].capture_start_time = chrono::steady_clock::now() - chrono::milliseconds(150);
+  monitor.add_capture_sample_end();
+  EXPECT_EQ(monitor.sample_indices.capture_idx, 0u);
+
+  monitor.sample_indices.detection_idx = 0;
+  monitor.processing_times[0].detection_start_time = chrono::steady_clock::now() - chrono::milliseconds(150);
+  monitor.add_detection_sample_end();
+  EXPECT_EQ(monitor.sample_indices.detection_idx, 0u);
+
+  monitor.sample_indices.feedback_idx = 0;
+  monitor.processing_times[0].feedback_start_time = chrono::steady_clock::now() - chrono::milliseconds(150);
+  monitor.add_feedback_sample_end();
+  EXPECT_EQ(monitor.sample_indices.feedback_idx, 0u);
+
+  monitor.performance_monitoring_enabled = false;
+  monitor.sample_indices = SampleIndices();
+}
+
+TEST_F(ControlModuleTest, PerformanceMonitorRecordPerformanceStatsWaitsForAllSamples) {
+  auto& monitor = PerformanceMonitor::get_instance();
+  monitor.sample_indices.capture_idx = N_SAMPLES;
+  monitor.sample_indices.detection_idx = N_SAMPLES - 1;
+  monitor.sample_indices.feedback_idx = N_SAMPLES;
+  monitor.repetition_count = 0;
+
+  EXPECT_FALSE(monitor.record_performance_stats());
+  monitor.sample_indices = SampleIndices();
+}
+
 TEST_F(ControlModuleTest, BasicFunctionality) {
   ControlModule& cm = ControlModule::get_instance();
   EXPECT_NO_THROW({ ensure_control_module_ready(); });
   (void)cm;
+}
+
+TEST_F(ControlModuleTest, IControlFacadeForFrameObstacleAndAudio) {
+  ensure_control_module_ready();
+  // Frame
+  Frame f;
+  f.depthMap = cv::Mat::ones(2,2,CV_8U);
+  IControl::set_frame(f);
+  Frame rf = IControl::get_frame();
+  EXPECT_FALSE(rf.depthMap.empty());
+
+  // Obstacle
+  Obstacle o = {};
+  o.meanDepth = 123.4;
+  o.image = cv::Mat::ones(1,1,CV_8U);
+  IControl::set_obstacle(o);
+  Obstacle ro = IControl::get_obstacle();
+  EXPECT_DOUBLE_EQ(ro.meanDepth, o.meanDepth);
+
+  // Audio
+  Audio a;
+  a.left_signal = {0.1f};
+  a.right_signal = {0.2f};
+  a.sample_rate = 22050;
+  IControl::set_audio_data(a);
+  Audio ra = IControl::get_audio_data();
+  EXPECT_EQ(ra.left_signal.size(), 1u);
+  EXPECT_EQ(ra.sample_rate, 22050u);
+}
+
+TEST_F(ControlModuleTest, IControlPerformanceMonitorSamplesViaFacade) {
+  auto& monitor = PerformanceMonitor::get_instance();
+  // enable monitoring
+  monitor.set_performance_monitoring(true);
+
+  monitor.sample_indices.capture_idx = 0;
+  IControl::add_capture_sample_start();
+  this_thread::sleep_for(chrono::milliseconds(1));
+  IControl::add_capture_sample_end();
+  EXPECT_EQ(monitor.sample_indices.capture_idx, 1u);
+
+  monitor.sample_indices.detection_idx = 0;
+  IControl::add_detection_sample_start();
+  this_thread::sleep_for(chrono::milliseconds(1));
+  IControl::add_detection_sample_end();
+  EXPECT_EQ(monitor.sample_indices.detection_idx, 1u);
+
+  monitor.sample_indices.feedback_idx = 0;
+  IControl::add_feedback_sample_start();
+  this_thread::sleep_for(chrono::milliseconds(1));
+  IControl::add_feedback_sample_end();
+  EXPECT_EQ(monitor.sample_indices.feedback_idx, 1u);
+
+  // restore
+  monitor.set_performance_monitoring(false);
+  monitor.sample_indices = SampleIndices();
+}
+
+TEST_F(ControlModuleTest, IControlStartStopFeedbackViaFacade) {
+  auto& image_module = ImageCaptureModule::get_instance();
+  auto& detection_module = ObstacleDetectionModule::get_instance();
+  auto& feedback_module = FeedbackModule::get_instance();
+  auto& transmission_module = TransmissionModule::get_instance();
+
+  bool orig_image = image_module.running;
+  bool orig_detection = detection_module.running;
+  bool orig_feedback = feedback_module.running;
+  bool orig_transmission = transmission_module.running;
+
+  image_module.running = false;
+  detection_module.running = false;
+  feedback_module.running = false;
+  transmission_module.running = false;
+
+  IControl::start_feedback();
+  EXPECT_TRUE(image_module.running);
+  EXPECT_TRUE(detection_module.running);
+  EXPECT_TRUE(feedback_module.running);
+  EXPECT_TRUE(transmission_module.running);
+
+  IControl::stop_feedback();
+  EXPECT_FALSE(image_module.running);
+  EXPECT_FALSE(detection_module.running);
+  EXPECT_FALSE(feedback_module.running);
+  EXPECT_FALSE(transmission_module.running);
+
+  image_module.running = orig_image;
+  detection_module.running = orig_detection;
+  feedback_module.running = orig_feedback;
+  transmission_module.running = orig_transmission;
 }

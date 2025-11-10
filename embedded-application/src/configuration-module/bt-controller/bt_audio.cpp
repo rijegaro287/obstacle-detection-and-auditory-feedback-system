@@ -11,6 +11,14 @@
 
 #include "control_iface.hpp"
 
+#ifdef UNIT_TESTING
+BTAudioController::TestOverrides BTAudioController::test_overrides{};
+
+void BTAudioController::reset_test_overrides() {
+	test_overrides = TestOverrides{};
+}
+#endif
+
 BTAudioController& BTAudioController::get_instance() {
 	static BTAudioController instance;
 	return instance;
@@ -30,6 +38,11 @@ BTAudioController::BTAudioController() {
 }
 
 int64_t BTAudioController::start_discovery() {
+#ifdef UNIT_TESTING
+	if (test_overrides.start_discovery) {
+		return test_overrides.start_discovery();
+	}
+#endif
 	GError *error = nullptr;
 	GVariant *result = nullptr;
 	GDBusProxy *adapter_proxy = nullptr;
@@ -63,6 +76,11 @@ int64_t BTAudioController::start_discovery() {
 }
 
 int64_t BTAudioController::stop_discovery() {
+#ifdef UNIT_TESTING
+	if (test_overrides.stop_discovery) {
+		return test_overrides.stop_discovery();
+	}
+#endif
 	GError *error = nullptr;
 	GVariant *result = nullptr;
 	GDBusProxy *adapter_proxy = nullptr;
@@ -96,6 +114,11 @@ int64_t BTAudioController::stop_discovery() {
 }
 
 int64_t BTAudioController::get_discovered_devices(vector<BlueZDevice>& devices) {
+#ifdef UNIT_TESTING
+	if (test_overrides.get_discovered_devices) {
+		return test_overrides.get_discovered_devices(devices);
+	}
+#endif
 	bool error = false;
 
 	GDBusProxy *object_manager_proxy = nullptr;
@@ -147,6 +170,11 @@ int64_t BTAudioController::find_device_idx(vector<BlueZDevice>& devices, string 
 }
 
 int64_t BTAudioController::pair_device(BlueZDevice& device) {
+#ifdef UNIT_TESTING
+	if (test_overrides.pair_device) {
+		return test_overrides.pair_device(device);
+	}
+#endif
 	bool found_error = false;
 	GError* error = nullptr;
 	GVariant *result = nullptr;
@@ -180,6 +208,11 @@ int64_t BTAudioController::pair_device(BlueZDevice& device) {
 }
 
 int64_t BTAudioController::connect_device(BlueZDevice& device) {
+#ifdef UNIT_TESTING
+	if (test_overrides.connect_device) {
+		return test_overrides.connect_device(device);
+	}
+#endif
 	bool found_error = false;
 	GError* error = nullptr;
 	GVariant *result = nullptr;
@@ -213,6 +246,11 @@ int64_t BTAudioController::connect_device(BlueZDevice& device) {
 }
 
 int64_t BTAudioController::disconnect_device(BlueZDevice& device) {
+#ifdef UNIT_TESTING
+	if (test_overrides.disconnect_device) {
+		return test_overrides.disconnect_device(device);
+	}
+#endif
 	bool found_error = false;
 	GError* error = nullptr;
 	GVariant *result = nullptr;
@@ -246,6 +284,11 @@ int64_t BTAudioController::disconnect_device(BlueZDevice& device) {
 }
 
 bool BTAudioController::is_paired(BlueZDevice& device) {
+#ifdef UNIT_TESTING
+	if (test_overrides.is_paired) {
+		return test_overrides.is_paired(device);
+	}
+#endif
 	bool is_paired = false;
 	GVariant *result = nullptr;
 	GDBusProxy *device_proxy = nullptr;
@@ -271,6 +314,11 @@ bool BTAudioController::is_paired(BlueZDevice& device) {
 }
 
 bool BTAudioController::is_connected(BlueZDevice& device) {
+#ifdef UNIT_TESTING
+	if (test_overrides.is_connected) {
+		return test_overrides.is_connected(device);
+	}
+#endif
 	bool is_connected = false;
 	GVariant *result = nullptr;
 	GDBusProxy *device_proxy = nullptr;
@@ -296,69 +344,42 @@ bool BTAudioController::is_connected(BlueZDevice& device) {
 }
 
 bool BTAudioController::get_boolean_value(GVariant *variant) {
-	if (variant == nullptr) return false;
-
-	GVariant *variant_container = nullptr;
-	GVariant *boolean_variant = nullptr;
-	bool value = false;
-
-	variant_container = g_variant_get_child_value(variant, 0);
-	if (variant_container == nullptr) {
-		goto cleanup;
+	if (variant == nullptr) {
+		return false;
 	}
 
-	boolean_variant = g_variant_get_variant(variant_container);
-	if (boolean_variant == nullptr) {
-		goto cleanup;
+	if (g_variant_is_of_type(variant, G_VARIANT_TYPE_BOOLEAN)) {
+		return g_variant_get_boolean(variant);
 	}
 
-	value = g_variant_get_boolean(boolean_variant);
+	if (g_variant_is_of_type(variant, G_VARIANT_TYPE_VARIANT)) {
+		GVariant *inner = g_variant_get_variant(variant);
+		bool value = BTAudioController::get_boolean_value(inner);
+		if (inner) {
+			g_variant_unref(inner);
+		}
+		return value;
+	}
 
-	cleanup:
-	if (boolean_variant) g_variant_unref(boolean_variant);
-	if (variant_container) g_variant_unref(variant_container);
+	if (g_variant_is_of_type(variant, G_VARIANT_TYPE_TUPLE) && g_variant_n_children(variant) > 0) {
+		GVariant *child = g_variant_get_child_value(variant, 0);
+		bool value = BTAudioController::get_boolean_value(child);
+		if (child) {
+			g_variant_unref(child);
+		}
+		return value;
+	}
 
-	return value;
+	return false;
 }
 
-void BTAudioController::start() {
-	vector<BlueZDevice> devices;
-	while (true) {
-		// printf("Scanning for Bluetooth Audio Devices...\n");
-		// std::this_thread::sleep_for(std::chrono::seconds(1));
-
-		// if (this->scan_devices(devices, 3) < 0) {
-		// 	printf("Failed to scan devices\n");
-		// 	this->cleanup(devices);
-		// 	continue;
-		// }
-
-		// this->print_devices(devices);
-
-		// this->connected_device = this->find_device(devices, "QCY H3");
-		// if (this->connected_device == nullptr) {
-		// 	this->cleanup(devices);
-		// 	continue;
-		// }
-
-		// printf("Connecting to device: %s (%s)\n", this->connected_device->name, this->connected_device->address);
-
-		// if (this->pair_and_connect_device(this->connected_device) < 0) {
-		// 	printf("Failed to connect and pair to device\n");
-		// 	this->cleanup(devices);
-		// 	continue;
-		// }
-
-		// printf("Connected to device: %s\n", this->connected_device->name);
-		// IControl::unlock_mutexes();
-
-		// if (this->main_loop) {
-		// 	g_main_loop_run(this->main_loop);
-		// }
-	}
-}
 
 void BTAudioController::cleanup(vector<BlueZDevice>& devices) {
+#ifdef UNIT_TESTING
+	if (test_overrides.cleanup) {
+		test_overrides.cleanup(devices);
+	}
+#endif
 	if (this->main_loop) {
 		g_main_loop_quit(this->main_loop);
 		g_main_loop_unref(this->main_loop);
