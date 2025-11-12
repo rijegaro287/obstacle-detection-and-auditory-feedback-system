@@ -29,7 +29,7 @@ sudo apt install libglib2.0-dev
 sudo apt install libopencv-dev
 
 # eSpeak NG
-sudo apt-get install espeak-ng
+sudo apt install espeak-ng
 
 # Generate Feedback Module files
 cd ./embedded-application/src/feedback-module
