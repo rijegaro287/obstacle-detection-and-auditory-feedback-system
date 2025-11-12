@@ -2,11 +2,11 @@ set -o errexit
 set -o nounset
 set -o pipefail 
 
-sudo apt update
+sudo apt update -y
 sudo apt full-upgrade -y
 
 # GTest
-sudo apt install libgtest-dev
+sudo apt install libgtest-dev -y
 
 # Python3 venv
 sudo apt install python3-venv
@@ -14,22 +14,22 @@ python3 -m venv venv
 source venv/bin/activate
 
 # CMake
-sudo apt install cmake
+sudo apt install cmake -y
 
 # Clang
-sudo apt install clang
+sudo apt install clang -y
 
 # Alsa
-sudo apt install alsa-utils libasound2-dev
+sudo apt install alsa-utils libasound2-dev -y
 
 # Glib
-sudo apt install libglib2.0-dev
+sudo apt install libglib2.0-dev -y
 
 # OpenCV
-sudo apt install libopencv-dev
+sudo apt install libopencv-dev -y
 
 # eSpeak NG
-sudo apt install espeak-ng
+sudo apt install espeak-ng -y
 
 # Generate Feedback Module files
 cd ./embedded-application/src/feedback-module
