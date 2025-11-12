@@ -15,7 +15,6 @@
 - [Testing and Quality Gates](#testing-and-quality-gates)
 - [Mobile Application](#mobile-application)
 - [Documentation and Analysis](#documentation-and-analysis)
-- [Additional Resources](#additional-resources)
 
 ## Overview
 The project delivers a wearable assistive solution that combines a time-of-flight (ToF) depth camera, real-time computer vision, and spatial audio to help people with visual impairments detect and avoid obstacles. A Raspberry Pi 5 performs depth acquisition and obstacle detection in C++, synthesizes directional audio cues (verbal or non-verbal), and streams them over Bluetooth to a headset. A companion Android application exposes a voice-first interface that mirrors the hardware controls, making it possible to configure the device hands-free.
@@ -28,7 +27,7 @@ The project delivers a wearable assistive solution that combines a time-of-fligh
 - Android 13 (API 33) mobile client using Jetpack Compose, BLE GATT, and voice commands in Latin American Spanish.
 
 ## Hardware Requirements
-- Raspberry Pi 5 (or equivalent SBC running 64-bit Linux) with BLE 5 and ALSA-compatible audio output.
+- Raspberry Pi 5.
 - Arducam Time-of-Flight camera (MIPI CSI-2) plus official Arducam Depth Camera SDK.
 - Li-ion battery pack with UPS HAT capable of 5 V / 5 A supply.
 - Stereo Bluetooth headset or bone-conduction headphones.
@@ -150,8 +149,3 @@ Regenerate API docs:
   doxygen Doxyfile
   ```
 Open `embedded-application/docs/html/index.html` for module overviews.
-
-## Additional Resources
-- [User Manual](docs/user-manual.md)
-- [API Reference (Doxygen)](embedded-application/docs/html/index.html)
-- [Coverage Report](embedded-application/test-results/coverage/html/index.html)
