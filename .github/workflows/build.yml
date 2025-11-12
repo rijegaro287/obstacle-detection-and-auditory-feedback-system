@@ -13,9 +13,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: install-dependencies
+      - name: prepare
         run: ./prepare_environment.sh
       - name: build
         run: |
           cd ./embedded-application/
           ./compile.sh
+      - name: test
+        run: ./run_unit_tests.sh
