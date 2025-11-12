@@ -14,17 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install-dependencies
+        run: ./prepare_environment.sh
+      - name: build
         run: |
-          sudo apt update
-          sudo apt full-upgrade -y
-          sudo apt install libgtest-dev
-          sudo apt install cmake 
-          sudo apt install clang
-          sudo apt install alsa-utils libasound2-dev
-          sudo apt install libglib2.0-dev
-          sudo apt install libopencv-dev
-          sudo apt install lcov
-          sudo apt install llvm
+          cd ./embedded-application/
+          ./compile.sh
       - name: test
         run: |
           cd ./embedded-application/
